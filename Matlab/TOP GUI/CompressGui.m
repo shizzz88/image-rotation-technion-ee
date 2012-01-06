@@ -24,7 +24,7 @@ function varargout = CompressGui(varargin)
 
 % Edit the above text to modify the response to help CompressGui
 
-% Last Modified by GUIDE v2.5 06-Jan-2012 17:23:38
+% Last Modified by GUIDE v2.5 06-Jan-2012 20:02:42
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -424,7 +424,7 @@ function pushbutton_tx_data_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 clc;
 
-%% Compress Image
+%% Get Image
 DirN=get(handles.edit_dir,'String');
 Files=get(handles.listbox_files, 'String');
 
@@ -447,6 +447,17 @@ colormap(gray);
 
 %Compress image
 tic;
+
+%display rotated image
+rotangle=str2double(get(handles.RotAngle,'String'));
+zoom=str2double(get(handles.ZoomFactor,'String'));
+xstart=str2double(get(handles.Xstart,'String'));
+ystart=str2double(get(handles.Ystart,'String'));
+rotimg=Imrotate5(OriginalImg,rotangle,zoom,xstart,ystart,600,800);
+axes(handles.axes2);
+imshow(rotimg);
+colormap(gray);
+
 % CmpImg = compress_img(get(handles.edit1,'String'),1);%cmp ratio RAN URI
 CmpImg = OriginalImg';% don't compress image
 set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);
@@ -468,13 +479,17 @@ clear('sbytesorig', 'sbytescmp');
 % end
 % serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 % fopen(serial_port); %Open serial port
-fid = fopen('h:\uart_tx_1.txt', 'w');  % open the file with write permission
 
-
-%print user data URI RAN
-fprintf(fid, '#param\r\n'); %Write summary chunk
-dataToSend1=[hObject.RotAngle     handles.ZoomFactor    handles.Xstart   handles.Ystart];
-fprintf(fid, '%02X\r\n',dataToSend1 ); %write summary chunk
+fid = fopen('C:\Users\urizi\Desktop\uart_tx_1.txt', 'w');  % open the file with write permission
+%prepare user parameters 
+rotangle=str2double(get(handles.RotAngle,'String'));
+zoom=str2double(get(handles.ZoomFactor,'String'));
+xstart=str2double(get(handles.Xstart,'String'));
+ystart=str2double(get(handles.Ystart,'String'));
+%write to file
+fprintf(fid, '#param\r\n'); %write user parameters chunk
+dataToSend1=[rotangle     zoom   xstart   ystart]; %prepare user param
+fprintf(fid, '%02X\r\n',dataToSend1 ); %write user parameters chunk
 
 
 % Prepare data
@@ -815,8 +830,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+%%TX Debug
 
-% --- Executes on button press in pushbutton_tx_dbg.
+%  Executes on button press in pushbutton_tx_dbg.
 function pushbutton_tx_dbg_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_tx_dbg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -917,7 +933,6 @@ function RotAngle_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of RotAngle as text
 %        str2double(get(hObject,'String')) returns contents of RotAngle as a double
-assignin('base','RotAngle',str2double(get(hObject,'String')))
 
 % --- Executes during object creation, after setting all properties.
 function RotAngle_CreateFcn(hObject, eventdata, handles)
@@ -941,8 +956,6 @@ function ZoomFactor_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of ZoomFactor as text
 %        str2double(get(hObject,'String')) returns contents of ZoomFactor as a double
 % Read user input parameters
-assignin('base','ZoomFactor',str2double(get(hObject,'String')));
-
 
 % --- Executes during object creation, after setting all properties.
 function ZoomFactor_CreateFcn(hObject, eventdata, handles)
@@ -966,8 +979,6 @@ function Xstart_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of Xstart as text
 %        str2double(get(hObject,'String')) returns contents of Xstart as a double
 % Read user input parameters
-assignin('base','Xstart',str2double(get(hObject,'String')));
-
 
 % --- Executes during object creation, after setting all properties.
 function Xstart_CreateFcn(hObject, eventdata, handles)
@@ -991,7 +1002,6 @@ function Ystart_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of Ystart as text
 %        str2double(get(hObject,'String')) returns contents of Ystart as a double
 % Read user input parameters
-assignin('base','Ystart',str2double(get(hObject,'String')));
 
 % --- Executes during object creation, after setting all properties.
 function Ystart_CreateFcn(hObject, eventdata, handles)
@@ -1007,3 +1017,11 @@ end
 
 
 
+
+
+% --- If Enable == 'on', executes on mouse press in 5 pixel border.
+% --- Otherwise, executes on mouse press in 5 pixel border or over crc_checkbox.
+function crc_checkbox_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to crc_checkbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
