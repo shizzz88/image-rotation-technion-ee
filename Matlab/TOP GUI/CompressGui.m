@@ -24,7 +24,7 @@ function varargout = CompressGui(varargin)
 
 % Edit the above text to modify the response to help CompressGui
 
-% Last Modified by GUIDE v2.5 28-Dec-2011 10:35:35
+% Last Modified by GUIDE v2.5 06-Jan-2012 17:23:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -423,6 +423,7 @@ function pushbutton_tx_data_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 clc;
+
 %% Compress Image
 DirN=get(handles.edit_dir,'String');
 Files=get(handles.listbox_files, 'String');
@@ -468,6 +469,13 @@ clear('sbytesorig', 'sbytescmp');
 % serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 % fopen(serial_port); %Open serial port
 fid = fopen('h:\uart_tx_1.txt', 'w');  % open the file with write permission
+
+
+%print user data URI RAN
+fprintf(fid, '#param\r\n'); %Write summary chunk
+dataToSend1=[hObject.RotAngle     handles.ZoomFactor    handles.Xstart   handles.Ystart];
+fprintf(fid, '%02X\r\n',dataToSend1 ); %write summary chunk
+
 
 % Prepare data
 sof = hex2dec(get(handles.sof_edit, 'String'));
@@ -902,18 +910,18 @@ function axes2_CreateFcn(hObject, eventdata, handles)
 
 
 
-function edit23_Callback(hObject, eventdata, handles)
-% hObject    handle to edit23 (see GCBO)
+function RotAngle_Callback(hObject, eventdata, handles)
+% hObject    handle to RotAngle (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit23 as text
-%        str2double(get(hObject,'String')) returns contents of edit23 as a double
-
+% Hints: get(hObject,'String') returns contents of RotAngle as text
+%        str2double(get(hObject,'String')) returns contents of RotAngle as a double
+assignin('base','RotAngle',str2double(get(hObject,'String')))
 
 % --- Executes during object creation, after setting all properties.
-function edit23_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit23 (see GCBO)
+function RotAngle_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to RotAngle (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -925,18 +933,20 @@ end
 
 
 
-function edit24_Callback(hObject, eventdata, handles)
-% hObject    handle to edit24 (see GCBO)
+function ZoomFactor_Callback(hObject, eventdata, handles)
+% hObject    handle to ZoomFactor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit24 as text
-%        str2double(get(hObject,'String')) returns contents of edit24 as a double
+% Hints: get(hObject,'String') returns contents of ZoomFactor as text
+%        str2double(get(hObject,'String')) returns contents of ZoomFactor as a double
+% Read user input parameters
+assignin('base','ZoomFactor',str2double(get(hObject,'String')));
 
 
 % --- Executes during object creation, after setting all properties.
-function edit24_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit24 (see GCBO)
+function ZoomFactor_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ZoomFactor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -948,18 +958,20 @@ end
 
 
 
-function edit25_Callback(hObject, eventdata, handles)
-% hObject    handle to edit25 (see GCBO)
+function Xstart_Callback(hObject, eventdata, handles)
+% hObject    handle to Xstart (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit25 as text
-%        str2double(get(hObject,'String')) returns contents of edit25 as a double
+% Hints: get(hObject,'String') returns contents of Xstart as text
+%        str2double(get(hObject,'String')) returns contents of Xstart as a double
+% Read user input parameters
+assignin('base','Xstart',str2double(get(hObject,'String')));
 
 
 % --- Executes during object creation, after setting all properties.
-function edit25_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit25 (see GCBO)
+function Xstart_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Xstart (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -971,18 +983,19 @@ end
 
 
 
-function edit26_Callback(hObject, eventdata, handles)
-% hObject    handle to edit26 (see GCBO)
+function Ystart_Callback(hObject, eventdata, handles)
+% hObject    handle to Ystart (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit26 as text
-%        str2double(get(hObject,'String')) returns contents of edit26 as a double
-
+% Hints: get(hObject,'String') returns contents of Ystart as text
+%        str2double(get(hObject,'String')) returns contents of Ystart as a double
+% Read user input parameters
+assignin('base','Ystart',str2double(get(hObject,'String')));
 
 % --- Executes during object creation, after setting all properties.
-function edit26_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit26 (see GCBO)
+function Ystart_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ystart (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -994,46 +1007,3 @@ end
 
 
 
-function edit27_Callback(hObject, eventdata, handles)
-% hObject    handle to edit27 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit27 as text
-%        str2double(get(hObject,'String')) returns contents of edit27 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit27_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit27 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit28_Callback(hObject, eventdata, handles)
-% hObject    handle to edit28 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit28 as text
-%        str2double(get(hObject,'String')) returns contents of edit28 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit28_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit28 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
