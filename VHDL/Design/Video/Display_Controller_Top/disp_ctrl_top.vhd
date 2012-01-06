@@ -489,7 +489,7 @@ begin
 
 --Mux implementation: read request to sc_fifo from dc_fifo
 	fifo_mux:	
-		sc_fifo_rd_req <= '1' when ((dc_fifo_full='0') )--or (dc_fifo_empty='1'))
+		sc_fifo_rd_req <= '1' when ((dc_fifo_full='0') and (sc_fifo_empty='0'))
 		else '0';
 	
 
@@ -737,9 +737,9 @@ sc_fifo_inst 	:	general_fifo generic map (
 							 dout 		        =>	sc_fifo_dout,
 							 dout_valid	        =>	sc_fifo_dout_val,
 							 --afull  	        =>	,
-							 full 		        =>	sc_fifo_full--Imgrotate deleted psik
+							 full 		        =>	sc_fifo_full,--Imgrotate deleted psik
 							 --aempty 	        =>	,
-							 --empty 		        =>	sc_fifo_empty--Imgrotate
+							 empty 		        =>	sc_fifo_empty--Imgrotate
 						 );
 
 vesa_gen_ctrl_inst 	:	vesa_gen_ctrl generic map(
