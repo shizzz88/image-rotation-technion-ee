@@ -447,7 +447,7 @@ colormap(gray);
 %Compress image
 tic;
 % CmpImg = compress_img(get(handles.edit1,'String'),1);%cmp ratio RAN URI
-CmpImg = OriginalImg;% don't compress image
+CmpImg = OriginalImg';% don't compress image
 set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);
 sbytescmp=whos('CmpImg'); %Compressed image size
 set(handles.text_cmp_byte, 'String', [num2str(sbytescmp.bytes) ' Bytes']);
@@ -467,7 +467,7 @@ clear('sbytesorig', 'sbytescmp');
 % end
 % serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 % fopen(serial_port); %Open serial port
-fid = fopen('exp.txt', 'w');  % open the file with write permission
+fid = fopen('h:\uart_tx_1.txt', 'w');  % open the file with write permission
 
 % Prepare data
 sof = hex2dec(get(handles.sof_edit, 'String'));
@@ -677,7 +677,7 @@ if numel(serial_port) ~= 0
 end
 serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 fopen(serial_port); %Open serial port
-%fid = fopen('exp.txt', 'w');  % open the file with write permission
+%fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
 
 % Prepare data
 sof = hex2dec(get(handles.sof_edit, 'String'));
@@ -821,7 +821,7 @@ if numel(serial_port) ~= 0
 end
 serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 fopen(serial_port); %Open serial port
-%fid = fopen('exp.txt', 'w');  % open the file with write permission
+%fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
 
 % Prepare data
 sof = hex2dec(get(handles.sof_edit, 'String'));
