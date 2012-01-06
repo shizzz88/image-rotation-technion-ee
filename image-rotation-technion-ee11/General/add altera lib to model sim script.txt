@@ -1,4 +1,0 @@
-vlib altera_mf 
-vmap altera_mf altera_mf 
-vcom -work altera_mf altera_mf_components.vhd 
-vcom -93 -work altera_mf altera_mf.vhd 
