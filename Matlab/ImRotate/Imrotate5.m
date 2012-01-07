@@ -4,18 +4,23 @@ function [ImOut] = Imrotate5(ImIn,angle,ZoomFactor,Xstart,Ystart,VerResOut,HorRe
     
    % input validation test
   if ZoomFactor<=0
+      msgbox('Aborting, ZoomFactor must be postive non-zero');
       error('Aborting, ZoomFactor must be postive non-zero');
   end;
   if Xstart<=0
+      msgbox('Aborting, Xstart must be postive non-zero');      
       error('Aborting, Xstart must be postive non-zero');
   end;
   if Ystart<=0
+      msgbox('Aborting, Ystart must be postive non-zero');
       error('Aborting, Ystart must be postive non-zero');
   end;
   if VerResOut<=0
+      msgbox('Aborting, VerResOut must be postive non-zero');
       error('Aborting, VerResOut must be postive non-zero');
   end;
   if HorResOut<=0
+       msgbox('Aborting, HozResOut must be postive non-zero');
       error('Aborting, HozResOut must be postive non-zero');
   end;
   
@@ -23,12 +28,12 @@ function [ImOut] = Imrotate5(ImIn,angle,ZoomFactor,Xstart,Ystart,VerResOut,HorRe
   [XSizeIn,YSizeIn,p]=size(ImIn);
   
   % Test Input for  Resolution
-  if Xstart+VerResOut>XSizeIn+1
-      error('Aborting, Output image resolution exceeds Input image Resolution');
-  end;
-    if Ystart+HorResOut>YSizeIn+1
-      error('Aborting, Output image resolution exceeds Input image Resolution');
-  end;
+%   if Xstart+VerResOut>XSizeIn+1
+%       error('Aborting, Output image resolution exceeds Input image Resolution');
+%   end;
+%     if Ystart+HorResOut>YSizeIn+1
+%       error('Aborting, Output image resolution exceeds Input image Resolution');
+%   end;
   
   
 % %clip Image according to Xstart, Ystart
@@ -62,7 +67,7 @@ for t=1:VerResOut
           % after [i,j] indexes are evaluated as if ROI  was relocated to left corner (as if top of ROI indexes is [1,1],
            % then  we move [i,j] to ROI by [Xstart,Ystat].
             i=i+Xstart; %move row index
-            j=j+Ystsrt; %move coloumn index
+            j=j+Ystart; %move coloumn index
           
  % Bilinear Interpolation Algorithm
  %
