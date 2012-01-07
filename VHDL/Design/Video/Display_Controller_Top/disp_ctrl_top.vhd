@@ -212,7 +212,6 @@ signal upper_frame		:	std_logic_vector(integer(ceil(log(real(ver_active_lines_g)
 signal right_frame		:	std_logic_vector(integer(ceil(log(real(hor_active_pixels_g)) / log(2.0))) - 1 downto 0);	--Right frame border
 signal lower_frame		:	std_logic_vector(integer(ceil(log(real(ver_active_lines_g)) / log(2.0))) - 1 downto 0);	--Lower frame border
 
-
 --###########################	Components	###################################--
 
 component vesa_gen_ctrl 
@@ -597,7 +596,7 @@ begin
 	wbs_reg_dout	<=	type_reg_dout when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c)) 
 						else left_frame (reg_width_c - 1 downto 0) 		when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = left_frame_reg_addr_c)) 
 						else right_frame (reg_width_c - 1 downto 0) 	when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = right_frame_reg_addr_c)) 
-						else upper_frame (reg_width_c - 1 downto 0) 	when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = upper_frame_reg_addr_c)) 
+						else upper_frame (reg_width_c - 1 downto 0) 	when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = upper_frame_reg_addr_c))
 						else lower_frame (reg_width_c - 1 downto 0) 	when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = lower_frame_reg_addr_c)) 
 						else (others => '0');
 
