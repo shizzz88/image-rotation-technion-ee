@@ -1,11 +1,11 @@
 clc
 clear all
 close all
- ImIn=imread('Lena.jpg'); %-------------DELETE
+ ImIn=imread('Lena8bit.bmp'); %-------------DELETE
      
  figure
   imshow(ImIn);
-Xstart=0;Ystart=1; %-------------DELETE
+Xstart=1;Ystart=1; %-------------DELETE
 % VerResOut=600+1-Xstart;
 % HorResOut=800+1-Ystart;  
  VerResOut=600;
