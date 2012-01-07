@@ -449,10 +449,10 @@ colormap(gray);
 tic;
 
 %display rotated image
-rotangle=str2double(get(handles.RotAngle,'String'));
-zoom=str2double(get(handles.ZoomFactor,'String'));
-xstart=str2double(get(handles.Xstart,'String'));
-ystart=str2double(get(handles.Ystart,'String'));
+rotangle=str2double(get(handles.RotAngle,'String'))
+zoom=str2double(get(handles.ZoomFactor,'String'))
+xstart=str2double(get(handles.Xstart,'String'))
+ystart=str2double(get(handles.Ystart,'String'))
 rotimg=Imrotate5(OriginalImg,rotangle,zoom,xstart,ystart,600,800);
 axes(handles.axes2);
 imshow(rotimg);
@@ -480,12 +480,12 @@ clear('sbytesorig', 'sbytescmp');
 % serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 % fopen(serial_port); %Open serial port
 
-fid = fopen('C:\Users\urizi\Desktop\uart_tx_1.txt', 'w');  % open the file with write permission
+fid = fopen('h:\uart_tx_1.txt', 'w');  % open the file with write permission
 %prepare user parameters 
-rotangle=str2double(get(handles.RotAngle,'String'));
-zoom=str2double(get(handles.ZoomFactor,'String'));
-xstart=str2double(get(handles.Xstart,'String'));
-ystart=str2double(get(handles.Ystart,'String'));
+% rotangle=str2double(get(handles.RotAngle,'String'));
+% zoom=str2double(get(handles.ZoomFactor,'String'));
+% xstart=str2double(get(handles.Xstart,'String'));
+% ystart=str2double(get(handles.Ystart,'String'));
 %write to file
 fprintf(fid, '#param\r\n'); %write user parameters chunk
 dataToSend1=[rotangle     zoom   xstart   ystart]; %prepare user param
