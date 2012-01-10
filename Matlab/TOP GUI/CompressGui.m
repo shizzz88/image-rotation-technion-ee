@@ -449,10 +449,10 @@ colormap(gray);
 tic;
 
 %display rotated image
-rotangle=str2double(get(handles.RotAngle,'String'))
-zoom=str2double(get(handles.ZoomFactor,'String'))
-xstart=str2double(get(handles.Xstart,'String'))
-ystart=str2double(get(handles.Ystart,'String'))
+rotangle=str2double(get(handles.RotAngle,'String'));
+zoom=str2double(get(handles.ZoomFactor,'String'));
+xstart=str2double(get(handles.Xstart,'String'));
+ystart=str2double(get(handles.Ystart,'String'));
 rotimg=Imrotate5(OriginalImg,rotangle,zoom,xstart,ystart,600,800);
 axes(handles.axes2);
 imshow(rotimg);
@@ -479,17 +479,85 @@ clear('sbytesorig', 'sbytescmp');
 % end
 % serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
 % fopen(serial_port); %Open serial port
-
+sof = hex2dec(get(handles.sof_edit, 'String'));
+eof = hex2dec(get(handles.eof_edit, 'String'));
 fid = fopen('h:\uart_tx_1.txt', 'w');  % open the file with write permission
-%prepare user parameters 
-% rotangle=str2double(get(handles.RotAngle,'String'));
-% zoom=str2double(get(handles.ZoomFactor,'String'));
-% xstart=str2double(get(handles.Xstart,'String'));
-% ystart=str2double(get(handles.Ystart,'String'));
-%write to file
-fprintf(fid, '#param\r\n'); %write user parameters chunk
-dataToSend1=[rotangle     zoom   xstart   ystart]; %prepare user param
-fprintf(fid, '%02X\r\n',dataToSend1 ); %write user parameters chunk
+
+%% write Angle to register file
+    fprintf(fid, '#Chunk\r\n'); 
+    fprintf(fid, '#SOF\r\n'); %write #SOF 
+    fprintf(fid, '%02X\r\n',sof ); %write SOF value
+    fprintf(fid, '#Type\r\n'); %write #Type
+    fprintf(fid, '%02X\r\n',128 ); %write Type value - type=0x80 -> write to register 
+    fprintf(fid, '#Address\r\n'); %write #Adress
+    fprintf(fid, '%02X\r\n',12 ); %write #Adress Value
+    fprintf(fid, '#Length\r\n'); %write #Length
+    fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
+    fprintf(fid, '#Payload\r\n'); %write #Payload
+    fprintf(fid, '%02X\r\n',floor( rotangle/256), mod( rotangle, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '#CRC\r\n'); %write color repetitions to file
+        crc = (mod((floor(rotangle/256))+(mod(rotangle, 256)) + 128 + 1 + 12 , 256)); % calcultae crc= (angle + type +length + address) mod 256
+    fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
+    fprintf(fid, '#EOF\r\n'); %write color repetitions to file
+    fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file 
+%% write X_start to register file
+    fprintf(fid, '#Chunk\r\n'); 
+    fprintf(fid, '#SOF\r\n'); %write #SOF 
+    fprintf(fid, '%02X\r\n',sof ); %write SOF value
+    fprintf(fid, '#Type\r\n'); %write #Type
+    fprintf(fid, '%02X\r\n',128 ); %write Type value - type=0x80 -> write to register 
+    fprintf(fid, '#Address\r\n'); %write #Adress
+    fprintf(fid, '%02X\r\n',14 ); %write #Adress Value
+    fprintf(fid, '#Length\r\n'); %write #Length
+    fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
+    fprintf(fid, '#Payload\r\n'); %write #Payload
+    fprintf(fid, '%02X\r\n',floor( xstart/256), mod( xstart, 256) ); %write xstart value to file in 2 bytes hex
+    fprintf(fid, '#CRC\r\n'); %write color repetitions to file
+        crc = (mod((floor(xstart/256))+(mod(xstart, 256)) + 128 + 1 + 14 , 256)); % calcultae crc= (xstart + type +length + address) mod 256
+    fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
+    fprintf(fid, '#EOF\r\n'); %write color repetitions to file
+    fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
+
+%% write Y_start to register file
+    fprintf(fid, '#Chunk\r\n'); 
+    fprintf(fid, '#SOF\r\n'); %write #SOF 
+    fprintf(fid, '%02X\r\n',sof ); %write SOF value
+    fprintf(fid, '#Type\r\n'); %write #Type
+    fprintf(fid, '%02X\r\n',128 ); %write Type value - type=0x80 -> write to register 
+    fprintf(fid, '#Address\r\n'); %write #Adress
+    fprintf(fid, '%02X\r\n',16 ); %write #Adress Value
+    fprintf(fid, '#Length\r\n'); %write #Length
+    fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
+    fprintf(fid, '#Payload\r\n'); %write #Payload
+    fprintf(fid, '%02X\r\n',floor( ystart/256), mod( ystart, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '#CRC\r\n'); %write color repetitions to file
+        crc = (mod((floor(ystart/256))+(mod(ystart, 256)) + 128 + 1 + 16 , 256)); % calcultae crc= (ystart + type +length + address) mod 256
+    fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
+    fprintf(fid, '#EOF\r\n'); %write color repetitions to file
+    fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
+
+ %% write zoom to register file
+    fprintf(fid, '#Chunk\r\n'); 
+    fprintf(fid, '#SOF\r\n'); %write #SOF 
+    fprintf(fid, '%02X\r\n',sof ); %write SOF value
+    fprintf(fid, '#Type\r\n'); %write #Type
+    fprintf(fid, '%02X\r\n',128 ); %write Type value - type=0x80 -> write to register 
+    fprintf(fid, '#Address\r\n'); %write #Adress
+    fprintf(fid, '%02X\r\n',18 ); %write #Adress Value
+    fprintf(fid, '#Length\r\n'); %write #Length
+    fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
+    fprintf(fid, '#Payload\r\n'); %write #Payload
+    fprintf(fid, '%02X\r\n',floor( zoom/256), mod( zoom, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '#CRC\r\n'); %write color repetitions to file
+        crc = (mod((floor(zoom/256))+(mod(zoom, 256)) + 128 + 1 + 18 , 256)); % calcultae crc= (\oom + type +length + address) mod 256
+    fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
+    fprintf(fid, '#EOF\r\n'); %write color repetitions to file
+    fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
+
+
+
+
+
 
 
 % Prepare data
