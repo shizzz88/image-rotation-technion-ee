@@ -557,12 +557,12 @@ begin
 	--Frames
 	--ZERO all unused bits
 	left_frame_zero_proc:
-	--left_frame_rg (left_frame_rg'left downto reg_width_c) <=	(others => '0');
-	left_frame_rg <= conv_std_logic_vector (336, left_frame_rg'high+1);
+	--left_frame_rg (left_frame_rg'left downto reg_width_c) <=	(others => '0');				--change to large resolution-************************************-
+	left_frame_rg <= conv_std_logic_vector (80, left_frame_rg'high+1);
 
 	right_frame_zero_proc:
-	--right_frame_rg (right_frame_rg'left downto reg_width_c) <=	(others => '0');
-	right_frame_rg <= conv_std_logic_vector (336, right_frame_rg'high+1);
+	--right_frame_rg (right_frame_rg'left downto reg_width_c) <=	(others => '0');				--change to large resolution
+	right_frame_rg <= conv_std_logic_vector (80, right_frame_rg'high+1);
 
 	upper_frame_zero_proc:
 	upper_frame_rg (upper_frame_rg'left downto reg_width_c) <=	(others => '0');

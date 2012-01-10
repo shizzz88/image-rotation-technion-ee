@@ -31,6 +31,12 @@
 --				| data |	-- FIFO Empty
 --				|------|
 --				
+-- Important Notes:
+-- ----------------
+--			(1) When FIFO is empty, if read and write are performed together - only WRITE will be 
+--				performed, and READ will be ignored.
+--			(2) When FIFO is full, if read and write are performed together - only READ will be
+--				performed, and WRITE will be ignored.
 --
 ------------------------------------------------------------------------------------------------
 -- Revision :
@@ -39,6 +45,9 @@
 --			1.1			21.12.2010	Beeri Schreiber		(1) Change of signals names
 --														(2) dout_valid has been added
 --														(3) Added description
+--			1.2			10.10.2011	Omer Shaked			(1) Fixed dout_valid bug: always low
+--															when the fifo is empty
+--														(2)	Added description
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --	(1)
@@ -107,7 +116,7 @@ begin
 		if (rst = reset_polarity_g) then
 			dout_valid		<= '0';
 		elsif rising_edge (clk) then
-			if (rd_en = '1') then
+			if (rd_en = '1') and (iempty = '0') then
 				dout_valid 	<= '1';
 			else
 				dout_valid 	<= '0';
@@ -230,7 +239,11 @@ begin
 				count 	<= 0;
 			else
 				if (wr_en = '1') and (rd_en = '1') and (ifull = '0') then 	--Both read and write
-					count <= count;
+					if (iempty	=	'1') then -- Only write is being performed
+						count	<=	count + 1;
+					else
+						count <= count;
+					end if;
 				elsif (wr_en = '1') and (ifull = '0') then					--Write
 					count <= count + 1;
 				elsif ((rd_en='1') and (iempty='0')) then					--Read
