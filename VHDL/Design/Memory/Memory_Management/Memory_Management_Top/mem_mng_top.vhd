@@ -10,7 +10,8 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		10.5.2011	Beeri Schreiber			Creation
---			1.01		07.01.2011	Uri & Ran			    Angle registers were added, note that angle_reg_dout displays the payload in reverse order
+--			1.01		10.01.2011	Uri & Ran			    4 registers were added. each register 2x8=16 bits. Registers address range: 12-19. 
+--															reg_addr_width_c was modified, now support up to 32 registers. 
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)add rest off parameters registers
