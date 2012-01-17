@@ -435,14 +435,27 @@ else
 end
 clear Files;
 OriginalImg=imread(get(handles.edit1,'String')); %read image
-
+% % %test image
+% a=[10 20 30 40 50]
+% b=[ 0 0 0 0 0]
+% c=[a b]
+% for i=1:64
+%     for j=1:10
+%     row(j+10*(i-1))=c(j);
+%     end
+% end
+% for i=1:480
+%     Imagetest(i,:)=row;
+% end;
+% OriginalImg=uint8(Imagetest);
+% %end of test image
 %Display image size:
 sbytesorig=whos('OriginalImg');
 set(handles.text_decmp_byte, 'String', [num2str(sbytesorig.bytes) ' Bytes']);
 
 %Show image:
 axes(handles.axes1);
-imshow(OriginalImg);
+imshow((OriginalImg));
 colormap(gray);
 
 %Compress image
