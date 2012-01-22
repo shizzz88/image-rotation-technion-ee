@@ -1,0 +1,12 @@
+mem_ctrl_wr  line 151 :
+	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g ;		--Summary chunk value
+	
+mds_top	
+ mem_mng_inst - generic map
+ disp_ctrl_inst - generic map
+ 
+disp_ctrl_top
+ frame calculations
+ line561 - left_frame_rg <= conv_std_logic_vector (80, left_frame_rg'high+1);
+ line 565 - right_frame_rg <= conv_std_logic_vector (80, right_frame_rg'high+1);
+ for 128x96 change 80->336
