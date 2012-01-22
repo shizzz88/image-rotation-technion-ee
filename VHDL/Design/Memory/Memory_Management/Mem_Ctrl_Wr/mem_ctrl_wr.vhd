@@ -148,7 +148,7 @@ architecture rtl_mem_ctrl_wr of mem_ctrl_wr is
 	signal wbm_stb_internal	:	std_logic;							--Internal WBS_STB_O
 	signal cur_wr_addr		:	std_logic_vector(21 downto 0);		--Current write address to SDRAM
 	signal wr_cnt 			:	natural range 0 to img_hor_pixels_g*img_ver_lines_g - 1;	--Number of written words (16 bits) to the SDRAM 
-	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g - 1;		--Summary chunk value----uri ran 17.1 added -1, 128x96 work without -1
+	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g ;		--Summary chunk value----uri ran 17.1 added -1, 128x96 work without -1
 	signal addr_pipe		:	std_logic_vector(7 downto 0);		--For pipeline
 	signal sum_pipe_bool	:	boolean;							--For pipeline
 	signal ram_cnt_zero_bool:	boolean;							--Indicates ram_words_cnt = x"01" (next is zero)

@@ -518,10 +518,10 @@ intercon_z_inst		:	intercon generic map
 
 mem_mng_inst 	:	 mem_mng_top generic map
 				(
-					--img_hor_pixels_g	 => 128,                                          -************************************-
-				    --img_ver_lines_g	     => 96                                        -************************************-
-					img_hor_pixels_g	 => 640,
-				    img_ver_lines_g	     => 480
+					img_hor_pixels_g	 => 128,                                         --************************************-
+				    img_ver_lines_g	     => 96                                        --************************************-
+					--img_hor_pixels_g	 => 640,
+				    --img_ver_lines_g	     => 480
 				)
 				port map
 				(
@@ -565,10 +565,10 @@ disp_ctrl_inst :	 disp_ctrl_top
 			generic map
 			(
 				rep_size_g			=>	rep_size_g,
-				--hor_pres_pixels_g	=>	128,										-************************************-
-				--ver_pres_lines_g	=>	96											-************************************-
-				hor_pres_pixels_g	=>	640,	
-				ver_pres_lines_g	=>	480					
+				hor_pres_pixels_g	=>	128,										--************************************-
+				ver_pres_lines_g	=>	96											--************************************-
+				--hor_pres_pixels_g	=>	640,	
+				--ver_pres_lines_g	=>	480					
 			)
 			port map
 			(
