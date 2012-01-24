@@ -12,7 +12,9 @@
 ------------------------------------------------------------------------------------------------
 -- Revision:
 --			Number		Date		Name							Description			
---			1.00		18.5.2011	Beeri Schreiber					Creation			
+--			1.00		18.5.2011	Beeri Schreiber					Creation
+--			1.01		24.1.2012	Ran&Uri							Update pixel counters processes to support non-compressed images
+--																	Removal rep_size_g and associated signals
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
@@ -31,8 +33,8 @@ entity pixel_mng is
 			screen_hor_pix_g	:	positive	:= 800;		--800X600 = Actual screen resolution
 			hor_pixels_g		:	positive	:= 640;		--640X480
 			ver_lines_g			:	positive	:= 480;		--640X480
-			req_lines_g			:	positive	:= 3;		--Number of lines to request from image transmitter, to hold in its FIFO
-			rep_size_g			:	positive	:= 7		--2^7=128 => Maximum of 128 repetitions for pixel / line
+			req_lines_g			:	positive	:= 3		--Number of lines to request from image transmitter, to hold in its FIFO
+--			rep_size_g			:	positive	:= 7		--2^7=128 => Maximum of 128 repetitions for pixel / line
            );
    port
    	   (
@@ -64,7 +66,7 @@ end entity pixel_mng;
 architecture rtl_pixel_mng of pixel_mng is
 	------------------------------	Constants	--------------------------------
 	constant num_pixels_c	:	positive 	:= hor_pixels_g * ver_lines_g;	--Number of pixels
-	constant rep_kind_pos_c	: 	natural 	:= 8 - rep_size_g;				--MSB bit of repetition kind
+--	constant rep_kind_pos_c	: 	natural 	:= 8 - rep_size_g;				--MSB bit of repetition kind
 	
 	------------------------------	Types	------------------------------------
 	type wbm_states is (
@@ -81,7 +83,7 @@ architecture rtl_pixel_mng of pixel_mng is
 	--Pixels
 	signal pix_cnt			:	natural range 0 to num_pixels_c + 256;	--Total received pixels for specific frame
 	signal tot_req_pix		:	natural range 0 to num_pixels_c + req_lines_g*hor_pixels_g;	--Total number of requested pixels from VESA generator
-	alias  reps_in			: 	std_logic_vector (rep_size_g - 1 downto 0) is wbm_dat_i (7 downto rep_kind_pos_c);--Repetitions
+--	alias  reps_in			: 	std_logic_vector (rep_size_g - 1 downto 0) is wbm_dat_i (7 downto rep_kind_pos_c);--Repetitions
 	
 	--General
 	signal rd_adr			:	std_logic_vector (9 downto 0);		--Read address from Wishbone Slave
