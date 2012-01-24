@@ -369,7 +369,7 @@ component pixel_mng
 			screen_hor_pix_g	:	positive	:= 800;		--800X600 = Actual screen resolution
 			hor_pixels_g		:	positive	:= 640;		--640X480
 			ver_lines_g			:	positive	:= 480;		--640X480
-			req_lines_g			:	positive	:= 3;		--Number of lines to request from image transmitter, to hold in its FIFO
+			req_lines_g			:	positive	:= 3		--Number of lines to request from image transmitter, to hold in its FIFO
 --			rep_size_g			:	positive	:= 7		--2^7=128 => Maximum of 128 repetitions for pixel / line
            );
    port
@@ -649,7 +649,7 @@ pixel_mng_inst: pixel_mng generic map
 							screen_hor_pix_g	=>	hor_active_pixels_g,
 							hor_pixels_g		=>	hor_pres_pixels_g,
 							ver_lines_g			=>	ver_pres_lines_g,
-							req_lines_g			=>	req_lines_g,
+							req_lines_g			=>	req_lines_g
 --							rep_size_g			=>	rep_size_g
 						)
 						port map
