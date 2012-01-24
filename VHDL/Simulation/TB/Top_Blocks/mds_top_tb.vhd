@@ -10,6 +10,7 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		25.5.2011	Beeri Schreiber			Creation
+--			1.01		24.1.2012	Ran&Uri					removal of rep_size_g
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -29,7 +30,7 @@ end entity mds_top_tb;
 
 architecture sim_mds_top_tb of mds_top_tb is
 
-constant rep_size_c		:	positive	:= 8;				--2^8=256 => Maximum of 267 repetitions for pixel / line
+--constant rep_size_c		:	positive	:= 8;				--2^8=256 => Maximum of 267 repetitions for pixel / line
 constant baudrate_c		:	positive := 115200*40;
 constant uart_period_c	:	time := 217.014 ns;
 
@@ -37,7 +38,7 @@ constant uart_period_c	:	time := 217.014 ns;
 
 component mds_top
 	generic (
-				rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
+				--rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
 			);
 	port	(
@@ -239,7 +240,7 @@ uart_gen_inst :  uart_tx_gen_model generic map (
 mds_top_inst	: mds_top
 	generic map
 	(
-				rep_size_g			=>	rep_size_c,
+				--rep_size_g			=>	rep_size_c,
 				baudrate_g			=>	baudrate_c
 	)
 	port map	(
