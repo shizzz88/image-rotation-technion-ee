@@ -10,6 +10,7 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		25.5.2011	Beeri Schreiber			Creation
+--			1.01		24.1.2012	Ran&Uri					crrating generics map in mem_mng_top, disp_ctrl_top
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) Change hidden processes after implementing INTERCON
@@ -22,7 +23,7 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top is
 	generic (
-				rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
+--				rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
 			);
 	port	(
@@ -263,7 +264,7 @@ component disp_ctrl_top is
 			synth_bit_g				:	natural range 0 to 7 := 2;		--Relevant bit in type register, which represent Image from SDRAM ('0') or from Synthetic Pattern Generator ('1') 
 			
 			--Pixel Manager & RunLen-Exctractor generics
-			rep_size_g				:	positive	:= 7;				--2^7=128 => Maximum of 128 repetitions for pixel / line
+--			rep_size_g				:	positive	:= 7;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 			
 			--General FIFO Generics
 			fifo_depth_g 			: positive		:= 4864;			-- Maximum elements in FIFO
@@ -564,7 +565,7 @@ mem_mng_inst 	:	 mem_mng_top generic map
 disp_ctrl_inst :	 disp_ctrl_top	
 			generic map
 			(
-				rep_size_g			=>	rep_size_g,
+--				rep_size_g			=>	rep_size_g,
 				hor_pres_pixels_g	=>	128,										--************************************-
 				ver_pres_lines_g	=>	96											--************************************-
 				--hor_pres_pixels_g	=>	640,	
