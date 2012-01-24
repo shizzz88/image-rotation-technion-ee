@@ -57,6 +57,7 @@
 --			Number		Date		Name				Description
 --			1.00		13.01.2011	Beeri Schreiber		Creation
 --			1.01		29.05.2011	Beeri Schreiber		req_pixels is valid until next change
+--			1.02		07.01.2012	Beeri Schreiber		req_pixels bug fixed (right frame was not considered)
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
