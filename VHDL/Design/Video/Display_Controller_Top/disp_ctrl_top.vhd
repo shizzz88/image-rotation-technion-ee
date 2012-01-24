@@ -10,9 +10,10 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		10.5.2011	Beeri Schreiber			Creation
+--			1.01		24.1.2012	Ran&Uri					fifo_mux was added, removal runlen extractor, signal sc_fifo_rd_req was added
 ------------------------------------------------------------------------------------------------
 --	Todo:
---			(1)
+--			(1) 		left_frame_rg & right_frame_rg need to be updated
 ------------------------------------------------------------------------------------------------
 
 library ieee;
@@ -60,7 +61,7 @@ entity disp_ctrl_top is
 			synth_bit_g				:	natural range 0 to 7 := 2;		--Relevant bit in type register, which represent Image from SDRAM ('0') or from Synthetic Pattern Generator ('1') 
 			
 			--Pixel Manager & RunLen-Exctractor generics
-			rep_size_g				:	positive	:= 7;				--2^7=128 => Maximum of 128 repetitions for pixel / line
+--			rep_size_g				:	positive	:= 7;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 			
 			--General FIFO Generics
 			fifo_depth_g 			: positive		:= 3840;			-- Maximum elements in FIFO
@@ -369,7 +370,7 @@ component pixel_mng
 			hor_pixels_g		:	positive	:= 640;		--640X480
 			ver_lines_g			:	positive	:= 480;		--640X480
 			req_lines_g			:	positive	:= 3;		--Number of lines to request from image transmitter, to hold in its FIFO
-			rep_size_g			:	positive	:= 7		--2^7=128 => Maximum of 128 repetitions for pixel / line
+--			rep_size_g			:	positive	:= 7		--2^7=128 => Maximum of 128 repetitions for pixel / line
            );
    port
    	   (
@@ -649,7 +650,7 @@ pixel_mng_inst: pixel_mng generic map
 							hor_pixels_g		=>	hor_pres_pixels_g,
 							ver_lines_g			=>	ver_pres_lines_g,
 							req_lines_g			=>	req_lines_g,
-							rep_size_g			=>	rep_size_g
+--							rep_size_g			=>	rep_size_g
 						)
 						port map
 						(
