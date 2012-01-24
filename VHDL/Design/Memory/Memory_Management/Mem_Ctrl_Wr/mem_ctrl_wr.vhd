@@ -22,6 +22,7 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		19.4.2011	Beeri Schreiber			Creation
+--			1.01		24.1.2012	Ran&Uri					sum_wr_cnt signal was modified, to support 128*96 res input
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
