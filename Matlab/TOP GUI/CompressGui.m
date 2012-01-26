@@ -24,7 +24,7 @@ function varargout = CompressGui(varargin)
 
 % Edit the above text to modify the response to help CompressGui
 
-% Last Modified by GUIDE v2.5 06-Jan-2012 20:02:42
+% Last Modified by GUIDE v2.5 26-Jan-2012 14:22:42
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -775,12 +775,12 @@ function pushbutton_update_regs_Callback(hObject, eventdata, handles)
 clc;
 %% Transmit Data
 % Prepare serial port
-serial_port= instrfind('Port','COM1'); %Close any COM1 serial connection
-if numel(serial_port) ~= 0
-    fclose(serial_port);
-end
-serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
-fopen(serial_port); %Open serial port
+% serial_port= instrfind('Port','COM1'); %Close any COM1 serial connection
+% if numel(serial_port) ~= 0
+%     fclose(serial_port);
+% end
+% serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
+% fopen(serial_port); %Open serial port
 %fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
 
 % Prepare data
@@ -803,7 +803,7 @@ end
 %fprintf(fid, '#Debug Register\r\n'); 
 dataToSend=[sof     type    addr   0      len       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+% fwrite(serial_port, dataToSend);
 
 % Transmit Frames Register data
 clear payload;
@@ -831,7 +831,7 @@ end
 %fprintf(fid, '#Right Frame Register\r\n'); 
 dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+% fwrite(serial_port, dataToSend);
 
 addr = 7;
 len = 0; %0 = 1 address data
@@ -844,7 +844,7 @@ end
 %fprintf(fid, '#Upper Frame Register\r\n'); 
 dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+% fwrite(serial_port, dataToSend);
 
 addr = 8;
 len = 0; %0 = 1 address data
@@ -857,7 +857,7 @@ end
 %fprintf(fid, '#Lower Frame Register\r\n'); 
 dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+% fwrite(serial_port, dataToSend);
 
 %% End of transaction
 uiwait(msgbox('Registers Transmission is DONE!!!','Status'));
@@ -911,21 +911,21 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-%%TX Debug
+%% TX Debug
 
-%  Executes on button press in pushbutton_tx_dbg.
+% Executes on button press in pushbutton_tx_dbg.
 function pushbutton_tx_dbg_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_tx_dbg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Prepare serial port
 clc;
-serial_port= instrfind('Port','COM1'); %Close any COM1 serial connection
-if numel(serial_port) ~= 0
-    fclose(serial_port);
-end
-serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
-fopen(serial_port); %Open serial port
+% serial_port= instrfind('Port','COM1'); %Close any COM1 serial connection
+% if numel(serial_port) ~= 0
+%     fclose(serial_port);
+% end
+%serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
+%fopen(serial_port); %Open serial port
 %fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
 
 % Prepare data
@@ -950,7 +950,7 @@ end
 %fprintf(fid, '#Debug Chunk\r\n'); 
 dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+%fwrite(serial_port, dataToSend);
 %% End of transaction
 uiwait(msgbox('Debug Transmission is DONE!!!','Status'));
 %fclose (fid);
@@ -1106,3 +1106,14 @@ function crc_checkbox_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to crc_checkbox (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes during object creation, after setting all properties.
+function background_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to background (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: place code in OpeningFcn to populate background
+axes(hObject)
+imshow('background.jpg');
