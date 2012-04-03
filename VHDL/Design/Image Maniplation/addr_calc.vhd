@@ -12,7 +12,7 @@
 --			1.00		27.3.2012	Ran&Uri					creation
 ------------------------------------------------------------------------------------------------
 --	Todo:
---			(1) 		
+--			(1) 		update inv zoom factor reset
 ------------------------------------------------------------------------------------------------
 
 library ieee;
@@ -20,25 +20,33 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 use ieee.math_real.all;
-use ieee.float_pkg.all;
+use ieee.fixed_pkg.all;
 
 library work ;
 --use work.ram_generic_pkg.all;
 
-entity addr_conv is
+entity addr_calc is
 	generic (
+			reset_polarity_g		:	std_logic	:= '0';			--Reset active low
 			x_size_in				:	positive 	:= 96;				-- number of rows  in the input image
 			y_size_in				:	positive 	:= 128;				-- number of columns  in the input image
 			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
-			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
+			y_size_out				:	positive 	:= 800				-- number of columns  in the output image
 			);
 	port	(
-				zoom_factor			:	in std_logic_vector (4 downto 0);		--zoom facotr given by user - x2,x4,x8
-				sin_teta			:	in float (8 downto –23);	
-				x_in				:	in std_logic_vector (9 downto 0);		--row index input
-				y_in				:	in std_logic_vector (9 downto 0);		--column index input
-				ram_start_add_in	:	in std_logic_vector (21 downto 0);		--SDram beginning address
-				addr_out			:	out std_logic_vector(21 downto 0);		--address in SDRAM form
+				zoom_factor			:	in std_logic_vector (3 downto 0);		--zoom facotr given by user - x2,x4,x8
+				sin_teta			:	in sfixed (0 downto -4);				--sine of rotation angle - calculated by software
+				cos_teta			:	in sfixed (0 downto -4);				--cosine of rotation angle - calculated by software
+				row_idx_in			:	in std_logic_vector (9 downto 0);		--the current row index of the output image
+				col_idx_in			:	in std_logic_vector (9 downto 0);		--the current column index of the output image
+				x_start				:	in std_logic_vector (9 downto 0);		--crop start index : the top left pixel for crop		
+				y_start				:	in std_logic_vector (9 downto 0);		--crop start index : the top left pixel for crop
+				
+				tl_out				:	in std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
+				tr_out				:	in std_logic_vector (22 downto 0);		--top right pixel address in SDRAM
+				bl_out				:	in std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
+				br_out				:	in std_logic_vector (22 downto 0);		--bottom right pixel address in SDRAM
+				
 				--Clock and Reset
 				clk_133				:	in std_logic;							--SDRAM clock
 				clk_40				:	in std_logic;							--VESA Clock
@@ -56,16 +64,29 @@ entity addr_conv is
 				wbm_stb_o			:	out std_logic;							--Strobe command from WBM
 				wbm_tgc_o			:	out std_logic							--Cycle Tag
 			);
-end entity addr_conv;
+end entity addr_calc;
 
-architecture arc_addr_conv of addr_conv is
+architecture arc_addr_calc of addr_calc is
 
 --	###########################		Costants		##############################	--
 --constant reg_width_c			:	positive 	:= 8;	--Width of registers
 
 --###########################	Signals		###################################--
---40MHz Clock Domain Signals
---signal pixels_req		:	std_logic_vector(integer(ceil(log(real(hor_active_pixels_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from FIFO
+
+signal new_frame_x_size 		:	integer range 0 to x_size_out; 		--size of row after crop 
+signal new_frame_y_size 		:	integer range 0 to y_size_out; 		--size of column after crop 
+signal zoom_factor_int			:	integer range 0 to 8;				-- size of zoom factor
+signal inv_zoom_factor			:	ufixed (1 downto -4);				-- inverse of zoom factor
+--Output Signals
+signal tl_x				:	std_logic_vector (9 downto 0);		--top left row coordinate pixel in input image
+signal tl_y				:	std_logic_vector (9 downto 0);		--top left column coordinate pixel in input image
+signal tr_x				:	std_logic_vector (9 downto 0);		--top right row coordinate pixel in input image
+signal tr_y				:	std_logic_vector (9 downto 0);		--top right column coordinate pixel in input image
+signal bl_x				:	std_logic_vector (9 downto 0);		--bottom left row coordinate pixel in input image
+signal bl_y				:	std_logic_vector (9 downto 0);		--bottom left column coordinate pixel in input image
+signal br_x				:	std_logic_vector (9 downto 0);		--bottom right row coordinate pixel in input image
+signal br_y				:	std_logic_vector (9 downto 0);		--bottom right column coordinate pixel in input image
+
 --###########################	Components	###################################--
 
 
@@ -84,10 +105,25 @@ architecture arc_addr_conv of addr_conv is
 
 
 begin
-
-addr_out	<=	ram_start_add_in+x_in*conv_std_logic_vector(y_size_in,10) + y_in;
---addr_out	<=	ram_start_add_in+x_in + y_in;
-
+----------------------------------------------------------------------------------------
+	----------------------------		calc_out_img_size_proc Process			------------------------
+	----------------------------------------------------------------------------------------
+	-- The process calculates output image size after crop
+	----------------------------------------------------------------------------------------
+	calc_out_img_size_proc: process (clk_133, rst_133)
+	begin
+		if (rst_133 = reset_polarity_g) then
+			new_frame_x_size			<=	0;
+			new_frame_y_size			<=	0;
+			zoom_factor_int				<=	0;
+		--	inv_zoom_factor				<=	'0'; 
+		elsif rising_edge (clk_133) then
+			new_frame_x_size			<= x_size_in + 1 - conv_integer(std_logic_vector(x_start));
+			new_frame_y_size			<= y_size_in + 1 - conv_integer(std_logic_vector(y_start));
+			zoom_factor_int				<=conv_integer(std_logic_vector(zoom_factor));
+			inv_zoom_factor				<=to_ufixed(1,1,0) / to_ufixed( zoom_factor_int ,3,0); 								--zoom_factor^-1
+		end if;
+	end process calc_out_img_size_proc;
 								
 -- --###########################	Instatiation	###################################--
 
@@ -123,4 +159,4 @@ addr_out	<=	ram_start_add_in+x_in*conv_std_logic_vector(y_size_in,10) + y_in;
 
 
 	
-end architecture arc_addr_conv;
+end architecture arc_addr_calc;
