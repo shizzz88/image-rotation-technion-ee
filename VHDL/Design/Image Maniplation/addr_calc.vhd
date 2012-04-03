@@ -20,7 +20,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 use ieee.math_real.all;
-
+use ieee.float_pkg.all;
 
 library work ;
 --use work.ram_generic_pkg.all;
@@ -28,9 +28,13 @@ library work ;
 entity addr_conv is
 	generic (
 			x_size_in				:	positive 	:= 96;				-- number of rows  in the input image
-			y_size_in				:	positive 	:= 128			-- number of columns  in the input image
+			y_size_in				:	positive 	:= 128;				-- number of columns  in the input image
+			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
+			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
 			);
 	port	(
+				zoom_factor			:	in std_logic_vector (4 downto 0);		--zoom facotr given by user - x2,x4,x8
+				sin_teta			:	in float (8 downto –23);	
 				x_in				:	in std_logic_vector (9 downto 0);		--row index input
 				y_in				:	in std_logic_vector (9 downto 0);		--column index input
 				ram_start_add_in	:	in std_logic_vector (21 downto 0);		--SDram beginning address
