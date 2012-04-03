@@ -62,7 +62,7 @@ for t=1:VerResOut
    for s=1:HorResOut 
       i =(  ZoomFactor*(t-VerResOut/2)*cos(teta) +  ZoomFactor*(s-HorResOut/2)*sin(teta)+m/2);% evaluate row index in original image
       j =(  -ZoomFactor*(t-VerResOut/2)*sin(teta) +ZoomFactor* (s-HorResOut/2)*cos(teta)+n/2);% evaluate coloumn index in original image
-      if i>1 && j>1 && i<=m-1 && j<=n-1           %check if evaluated [i,j] index exits outside of image
+      if i>1 && j>1 && i<=m-1 && j<=n-1           %check if evaluated [i,j] index exits outside of image else Imout=0 as previously defined
 %crop image
           % after [i,j] indexes are evaluated as if ROI  was relocated to left corner (as if top of ROI indexes is [1,1],
            % then  we move [i,j] to ROI by [Xstart,Ystat].
