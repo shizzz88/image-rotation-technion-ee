@@ -87,7 +87,7 @@ component uart_tx_gen_model
 			--file_max_idx_g is the maximum index for files. For example: suppose this
 			--parameter is 2, then transmission file order will be:
 			-- (1)uart_tx_1.txt (2)uart_tx_2.txt (3) uart_tx_1.txt (4) uart_tx_2.txt ...
-			file_name_g			:		string 		:= "h:/uart_tx"; 		--File name to be transmitted
+			file_name_g			:		string 		:= "p:/uart_tx"; 		--File name to be transmitted
 			file_extension_g	:		string		:= "txt";			--File extension
 			file_max_idx_g		:		positive	:= 2;				--Maximum file index.
 			delay_g				:		positive	:= 10;				--Number of clock cycles delay between two files transmission
@@ -131,7 +131,7 @@ component vesa_pic_col
 			ver_front_porch_g		:	integer		:= 1;				--Vertical Front Porch (Lines)
 			ver_sync_time_g			:	integer		:= 4;				--Vertical Sync Time (Lines)
 			
-			file_dir_g				:	string		:= "H:\output_files\";
+			file_dir_g				:	string		:= "P:\output_files\";
 			file_prefix_g			:	string		:= "out_img"			--Image Prefix
 			);
 	port	(
@@ -225,7 +225,7 @@ rst_40	<=	'0', '1' after 20 ns;
 
 
 uart_gen_inst :  uart_tx_gen_model generic map (
-			file_name_g			=> "h:/uart_tx", 		--File name to be transmitted
+			file_name_g			=> "p:/uart_tx", 		--File name to be transmitted
 			file_extension_g	=> "txt",			--File extension
 			file_max_idx_g		=> file_max_idx_g,--Maximum file index.
 			clock_period_g		=> uart_period_c,	--Uart clock
@@ -270,7 +270,7 @@ mds_top_inst	: mds_top
 		
 vesa_pic_col_inst : vesa_pic_col	generic map
 			(
-				file_dir_g				=> "H:\output_files\",
+				file_dir_g				=> "P:\output_files\",
 				file_prefix_g			=> "out_img"			--Image Prefix
 			)
 		port map
