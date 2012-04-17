@@ -1,4 +1,6 @@
-
+transcript off 
+onerror abort 
+echo "------- START OF SCRIPT -------" 
 # signed
 vsim -t ps -voptargs=+acc work.addr_calc  
 add wave -r /*
@@ -24,6 +26,12 @@ run 7518 ps
 run 7518 ps
 run 7518 ps
 run 7518 ps
-
+run 7518 ps
+run 7518 ps
+run 7518 ps
+run 7518 ps
+;# ======= end of stimulus section ======= 
+echo "------- END OF SCRIPT -------" 
+echo "The time now is $now [string trim $resolution 01]" 
 
 

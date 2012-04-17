@@ -132,6 +132,14 @@ begin
 			inv_zoom_factor				<=	 ( others => '0') ;
 			row_fraction_calc			<=	 ( others => '0') ;
 			tl_x   						<=	 ( others => '0') ;
+			tl_y   	                    <=	 ( others => '0') ;
+			tr_x   	                    <=	 ( others => '0') ;
+			tr_y   	                    <=	 ( others => '0') ;
+			bl_x   	                    <=	 ( others => '0') ;
+			bl_y   	                    <=	 ( others => '0') ;
+			br_x   	                    <=	 ( others => '0') ;
+			br_y   	                    <=	 ( others => '0') ;
+			out_of_range 				<= 	'0' ;
 		elsif rising_edge (clk_133) then
 			new_frame_x_size			<= 	x_size_in + 1 - conv_integer(std_logic_vector(x_crop_start));
 			new_frame_y_size			<= 	y_size_in + 1 - conv_integer(std_logic_vector(y_crop_start));
@@ -144,27 +152,30 @@ begin
 											+ (inv_zoom_factor*( to_sfixed(col_idx_in,10,0)- to_sfixed(y_size_out,10,0)/to_sfixed(2,3,0))*cos_teta)    
 											+ (to_sfixed(new_frame_y_size,10,0)/to_sfixed(2,3,0));
 			
-	--		if    ((row_fraction_calc'left =0) and  (col_fraction_calc'left =0) and 									-- test if indexes are in range
-	--			  (row_fraction_calc < to_sfixed(new_frame_x_size,row_fraction_calc)-to_sfixed(1,row_fraction_calc)) and
-	--			  (col_fraction_calc < to_sfixed(new_frame_y_size,col_fraction_calc)-to_sfixed(1,col_fraction_calc)) ) then
-	--			  
-	--			  row_fraction_calc		<= row_fraction_calc+to_sfixed(new_frame_x_size,row_fraction_calc);		--move [i,j] to ROI by [Xstart,Ystat].
-	--			  col_fraction_calc		<= col_fraction_calc+to_sfixed(new_frame_y_size,col_fraction_calc);
-	--			  
-	--			  -- round up and down
-	--			-- tl_x   <=  		conv_std_logic_vector(row_fraction_calc (x_vector_size downto 0) , x_vector_size)	;
-	--			tl_x  <=  to_slv (row_fraction_calc) (x_vector_size downto 0)	;
-	--			-- tl_x   <=  		row_fraction_calc (x_vector_size downto 0)	;
-	--			-- tl_y   <=		
-	--			-- tr_x   <=		
-	--			-- tr_y   <=		
-	--			-- bl_x   <=		
-	--			-- bl_y   <=		
-	--			-- br_x   <=		
-	--			-- br_y   <=		
-	--		else
-	--			out_of_range <= '1';
-	--		end if	 ; 
+			if    ((row_fraction_calc(row_fraction_calc'left) = '0')  and (col_fraction_calc(col_fraction_calc'left) = '0' ) and									-- test if indexes are in range
+				  (row_fraction_calc < to_sfixed(new_frame_x_size,row_fraction_calc)-to_sfixed(1,row_fraction_calc)) and
+				  (col_fraction_calc < to_sfixed(new_frame_y_size,col_fraction_calc)-to_sfixed(1,col_fraction_calc)) ) then
+				  
+			--needs fixing with size	 
+				 --row_fraction_calc		<= row_fraction_calc+to_sfixed(new_frame_x_size,row_fraction_calc);		--move [i,j] to ROI by [Xstart,Ystat].
+				 -- col_fraction_calc		<= col_fraction_calc+to_sfixed(new_frame_y_size,col_fraction_calc);
+				
+				out_of_range 				<= '0' ; -- if is taken if in range  
+				  -- round up and down
+				-- tl_x   <=  		conv_std_logic_vector(row_fraction_calc (x_vector_size downto 0) , x_vector_size)	;
+				tl_x  <=  to_slv (row_fraction_calc) (x_vector_size-row_fraction_calc'right downto -row_fraction_calc'right)	; --take the 10 bottom bits of the integer part of row_fraction_calc
+				-- tl_x   <=  		row_fraction_calc (x_vector_size downto 0)	;
+				-- tl_y   <=		
+				-- tr_x   <=		
+				-- tr_y   <=		
+				-- bl_x   <=		
+				-- bl_y   <=		
+				-- br_x   <=		
+				-- br_y   <=		
+			else
+				tl_x   <=	 ( others => '0') ;--!!!!!!!!!!!!! DELETE? , not neccesery? !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				out_of_range <= '1';
+			end if	 ; 
 		
 		end if;
 	end process calc_out_img_size_proc;
