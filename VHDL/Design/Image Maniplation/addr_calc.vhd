@@ -177,6 +177,32 @@ begin
 		elsif rising_edge (clk_133) then
 			new_frame_x_size			<= 	x_size_in + 1 - conv_integer(std_logic_vector(x_crop_start));
 			new_frame_y_size			<= 	y_size_in + 1 - conv_integer(std_logic_vector(y_crop_start));
+---------------------			
+			a1 	<=	to_sfixed(row_idx_in_2s,local_high_size,0)- to_sfixed(x_size_out,local_high_size,0);
+			b1	<=	a1/to_sfixed(2,3,0);
+			c1	<=	b1*zoom_factor;
+			d1	<=	c1*cos_teta;
+			
+			a2 	<=	to_sfixed(col_idx_in_2s, local_high_size,0)- to_sfixed(y_size_out,local_high_size,0);
+			b2	<=	a2/to_sfixed(2,3,0);
+			c2	<=	b2*zoom_factor;
+			d2	<=	c2*sin_teta;
+			
+			a3	<=	to_sfixed(new_frame_x_size,local_high_size,0)/to_sfixed(2,3,0);
+			b3	<=	a3;
+			c3	<=	b3;
+			d3	<=	c3;
+			
+			calc1		<=	d1+d2;
+			calc_final	<=	calc1 + d3;
+			
+			row_fraction_calc			<=	resize(calc_final, ,local_high_size,-trig_frac_size);	
+			--Equals to:
+			--d1==>		(zoom_factor*( to_sfixed(row_idx_in_2s,local_high_size,0)- to_sfixed(x_size_out,local_high_size,0)/to_sfixed(2,3,0))*cos_teta) --temp row indx calc, before rounding
+			--d2==>		+ (zoom_factor*( to_sfixed(col_idx_in_2s, local_high_size,0)- to_sfixed(y_size_out,local_high_size,0)/to_sfixed(2,3,0))*sin_teta)    
+			--d3==>		+ (to_sfixed(new_frame_x_size,local_high_size,0)/to_sfixed(2,3,0))
+-------------------
+			
 			
 	row_fraction_calc			<=	resize(	  
 											  (zoom_factor*( to_sfixed(row_idx_in_2s,local_high_size,0)- to_sfixed(x_size_out,local_high_size,0)/to_sfixed(2,3,0))*cos_teta) --temp row indx calc, before rounding
