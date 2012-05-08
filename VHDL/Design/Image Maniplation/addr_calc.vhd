@@ -38,15 +38,15 @@ entity addr_calc is
 			y_size_in				:	positive 	:= 128;				-- number of columns  in the input image
 			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
-			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture
+			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture (binary)
 			);
 	port	(
-				zoom_factor			:	in signed (trig_frac_size+1 downto 0);	--zoom facotr given by user - x2,x4,x8
-				sin_teta			:	in signed (trig_frac_size+1 downto 0);	--sine of rotation angle - calculated by software. format- xx.xxxx
-				cos_teta			:	in signed (trig_frac_size+1 downto 0);	--cosine of rotation angle - calculated by software. format- xx.xxxx
+				zoom_factor			:	in signed (trig_frac_size+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
+				sin_teta			:	in signed (trig_frac_size+1 downto 0);	--sine of rotation angle - calculated by software. 7 bits of sin + 1 bit of signed
+				cos_teta			:	in signed (trig_frac_size+1 downto 0);	--cosine of rotation angle - calculated by software. 
 				
 				
-				row_idx_in			:	in signed (10 downto 0);		--the current row index of the output image
+				row_idx_in			:	in signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
 				col_idx_in			:	in signed (10 downto 0);		--the current column index of the output image
 				x_crop_start	    :	in signed (10 downto 0);		--crop start index : the top left pixel for crop		
 				y_crop_start		:	in signed (10 downto 0);		--crop start index : the top left pixel for crop
@@ -85,10 +85,11 @@ end entity addr_calc;
 architecture arc_addr_calc of addr_calc is
 
 --	###########################		Costants		##############################	--
-constant x_vector_size			:	positive 	:= integer (ceil(log(real(x_size_out)) / log(2.0))) -1 ;	--Width of vector for rows :=9
-constant y_vector_size			:	positive 	:= integer (ceil(log(real(y_size_out)) / log(2.0))) -1 ;	--Width of vector for columns :=9
-constant TWO					: 	positive	:=11;
-constant local_high_size		:	positive 	:= row_idx_in'left;
+constant x_vector_size					:	positive 	:= integer (ceil(log(real(x_size_out)) / log(2.0))) -1 ;	--Width of vector for rows :=9
+constant y_vector_size					:	positive 	:= integer (ceil(log(real(y_size_out)) / log(2.0))) -1 ;	--Width of vector for columns :=9
+constant coordinate_size_shifted_7		:	positive	:= x_vector_size+1+7;										--original size + signed +shift_7 = 17
+constant coordinate_size_shifted_21		:	positive	:= x_vector_size+1+21	;									--original size + signed +shift_21 = 31
+constant result_size					:	positive	:= coordinate_size_shifted_7 + zoom_factor'left + sin_teta'left + 2  ;  	--cos_teta_size + zoom_factor_size + x_size_out_shift + 2  = 8+17+8+2 = 35
 
 --###########################	Signals		###################################--
 
@@ -96,16 +97,16 @@ signal new_frame_x_size 		:	integer range 0 to x_size_out; 		--size of row after
 signal new_frame_y_size 		:	integer range 0 to y_size_out; 		--size of column after crop 
 
 
-signal row_fraction_calc		: 	signed (36 downto 0);	-- holds a temp calc of row index in the origin image
-signal col_fraction_calc		: 	signed (36 downto 0);		
+signal row_fraction_calc		: 	signed (result_size downto 0);	-- holds a temp calc of row index in the origin image
+signal col_fraction_calc		: 	signed (result_size downto 0);		
 
 --signals shifted left by 7, 21 accordingly
-signal x_size_out_shift			:	signed (17 downto 0);	
-signal y_size_out_shift			:	signed (17 downto 0);	
-signal new_frame_x_size_shift	:	signed (31 downto 0 );
-signal new_frame_y_size_shift	:	signed (31 downto 0 );
+signal x_size_out_shift			:	signed (coordinate_size_shifted_7 downto 0);	
+signal y_size_out_shift			:	signed (coordinate_size_shifted_7 downto 0);	
+signal new_frame_x_size_shift	:	signed (coordinate_size_shifted_21 downto 0 );
+signal new_frame_y_size_shift	:	signed (coordinate_size_shifted_21 downto 0 );
 
---Output Signals
+--Signals
 signal tl_x				:	std_logic_vector (row_idx_in'left - 1 downto 0);		--top left row coordinate pixel in input image(9 downto 0)
 signal tl_y				:	std_logic_vector (row_idx_in'left - 1 downto 0);		--top left column coordinate pixel in input image
 signal tr_x				:	std_logic_vector (row_idx_in'left - 1 downto 0);		--top right row coordinate pixel in input image
@@ -116,15 +117,18 @@ signal br_x				:	std_logic_vector (row_idx_in'left - 1 downto 0);		--bottom righ
 signal br_y				:	std_logic_vector (row_idx_in'left - 1 downto 0);		--bottom right column coordinate pixel in input image
                                                     
 
-signal uri: std_logic_vector (4 downto 0);
+--signal		row_idx_in_shift			: signed (local_high_size+trig_frac_size+1 downto 0);		--the current row index of the output image with shift left by 7
+--signal		col_idx_in_shift		    : signed (local_high_size+trig_frac_size+1 downto 0);		--the current column index of the output image	with shift left by 7
+--signal		x_crop_start_shift			: signed (local_high_size+trig_frac_size+1 downto 0);		--x_crop in in with shift left by 7
+--signal	    y_crop_start_shift          : signed (local_high_size+trig_frac_size+1 downto 0);		--y_crop in in with shift left by 7
 
-signal		row_idx_in_shift			: signed (local_high_size+trig_frac_size+1 downto 0);		--the current row index of the output image with shift left by 7
-signal		col_idx_in_shift		    : signed (local_high_size+trig_frac_size+1 downto 0);		--the current column index of the output image	with shift left by 7
-signal		x_crop_start_shift			: signed (local_high_size+trig_frac_size+1 downto 0);		--x_crop in in with shift left by 7
-signal	    y_crop_start_shift          : signed (local_high_size+trig_frac_size+1 downto 0);		--y_crop in in with shift left by 7
+signal		row_idx_in_shift			: signed (coordinate_size_shifted_7 downto 0);		--the current row index of the output image with shift left by 7
+signal		col_idx_in_shift		    : signed (coordinate_size_shifted_7 downto 0);		--the current column index of the output image	with shift left by 7
+signal		x_crop_start_shift			: signed (coordinate_size_shifted_7 downto 0);		--x_crop in in with shift left by 7
+signal	    y_crop_start_shift          : signed (coordinate_size_shifted_7 downto 0);		--y_crop in in with shift left by 7
 
-signal 		row_fraction_calc_after_crop	: 	signed (36 downto 0); -- holds a temp calc of row index in the origin image + with crop command
-signal		col_fraction_calc_after_crop    : 	signed (36 downto 0); -- holds a temp calc of col index in the origin image + with crop command
+signal 		row_fraction_calc_after_crop	: 	signed (result_size downto 0); -- holds a temp calc of row index in the origin image + with crop command
+signal		col_fraction_calc_after_crop    : 	signed (result_size downto 0); -- holds a temp calc of col index in the origin image + with crop command
 --###########################	Components	###################################--
 
 
@@ -188,32 +192,42 @@ begin
 			new_frame_x_size			<= 	x_size_in + 1 - conv_integer(std_logic_vector(x_crop_start));
 			new_frame_y_size			<= 	y_size_in + 1 - conv_integer(std_logic_vector(y_crop_start));
 			
-			--divide by 2 and shift left by 14
+			--divide by 2 and shift left by 14 (shift_left_by_7 ==> multiply by 128^2)
 									
-			new_frame_x_size_shift(31 downto 30 )<=( others => '0') ;
-			new_frame_x_size_shift(29 downto 20) <= to_signed(new_frame_x_size,10) ;
-			new_frame_x_size_shift(19 downto 0 ) <=( others => '0') ;
-			new_frame_y_size_shift(31 downto 30 )<=( others => '0') ;
-			new_frame_y_size_shift(29 downto 20) <= to_signed(new_frame_y_size,10) ;
-			new_frame_y_size_shift(19 downto 0 ) <=( others => '0') ;
+			new_frame_x_size_shift(new_frame_x_size_shift'left downto new_frame_x_size_shift'left-1 )					<=( others => '0') ;
+			new_frame_x_size_shift(new_frame_x_size_shift'left-2 downto new_frame_x_size_shift'left-2-x_vector_size)	<= to_signed(new_frame_x_size,10) ;
+			new_frame_x_size_shift(new_frame_x_size_shift'left-2-x_vector_size-1 downto 0 ) 							<=( others => '0') ;
 			
-			row_idx_in_shift(row_idx_in_shift'left)	<='0';
-			row_idx_in_shift(row_idx_in_shift'left-1 downto trig_frac_size )	<= row_idx_in	;
+			new_frame_y_size_shift(new_frame_y_size_shift'left downto new_frame_y_size_shift'left-1 )					<=( others => '0') ;
+			new_frame_y_size_shift(new_frame_y_size_shift'left-2 downto new_frame_y_size_shift'left-2-y_vector_size) 	<= to_signed(new_frame_y_size,10) ;
+			new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size downto 0 )							    <=( others => '0') ;
+			
+			
+			row_idx_in_shift(row_idx_in_shift'left downto trig_frac_size )	<= row_idx_in	;
 			row_idx_in_shift(trig_frac_size -1 downto 0)	<=( others => '0') ;
 			
-			col_idx_in_shift(col_idx_in_shift'left)	<='0';
-			col_idx_in_shift(col_idx_in_shift'left-1 downto trig_frac_size )	<= col_idx_in	;
+			col_idx_in_shift(col_idx_in_shift'left downto trig_frac_size )	<= col_idx_in	;
 			col_idx_in_shift(trig_frac_size -1 downto 0)	<=( others => '0') ;
 			
-			--divide by 2 and shift left by 7
-			x_size_out_shift(17 downto 16) <=( others => '0') ;
-			x_size_out_shift(15 downto 6) <= to_signed(x_size_out,10);
-			x_size_out_shift(5 downto 0) <= ( others => '0') ;
+			--divide by 2 and shift left by 7 (shift_left_by_7 ==> multiply by 128)
+			x_size_out_shift(x_size_out_shift'left downto x_size_out_shift'left-1)					<=( others => '0') ;		-- =shift_left_by_7(x_size_out/2)
+			x_size_out_shift(x_size_out_shift'left-2 downto x_size_out_shift'left-2-x_vector_size)  <= to_signed(x_size_out,10);
+			x_size_out_shift(x_size_out_shift'left-2-x_vector_size-1 downto 0) 						<= ( others => '0') ;
 			
-			y_size_out_shift(17 downto 16) <=( others => '0') ;
-			y_size_out_shift(15 downto 6) <= to_signed(y_size_out,10);
-			y_size_out_shift(5 downto 0) <= ( others => '0') ;
+			y_size_out_shift(y_size_out_shift'left downto y_size_out_shift'left-1) 					<=( others => '0') ;--=shift_left_by_7(y_size_out/2)
+			y_size_out_shift(y_size_out_shift'left-2 downto y_size_out_shift'left-2-y_vector_size)  <= to_signed(y_size_out,10);
+			y_size_out_shift(y_size_out_shift'left-2-y_vector_size-1 downto 0) 						<= ( others => '0') ;
 
+			
+			--shift X,Y crop by 7
+		--	x_crop_start_shift
+		--	x_crop_start_shift(x_crop_start_shift'left downto x_crop_start_shift'left-1)			  <=( others => '0') ;		-- =shift_left_by_7(x_size_out/2)
+		--	x_crop_start_shift(x_size_out_shift'left-2 downto x_size_out_shift'left-2-x_vector_size)  <= to_signed(x_crop_start,10);
+		--	x_crop_start_shift(x_crop_start_shift'left-2-x_vector_size-1 downto 0) 						 <= ( others => '0') ;
+		--	
+		--	y_crop_start_shift
+			
+			
 			---------------------			
 --			a1 	<=	to_sfixed(row_idx_in_2s,local_high_size,0)- to_sfixed(x_size_out,local_high_size,0);
 --			b1	<=	a1/to_sfixed(2,3,0);
@@ -252,29 +266,37 @@ begin
 											 + new_frame_y_size_shift
 											 );
 	
-		
+--	row_fraction_calc			<=	(	    (zoom_factor*( (col_idx_in_shift)- y_size_out_shift) *sin_teta));
+--	col_fraction_calc			<= 	(  - (zoom_factor*( (row_idx_in_shift)- x_size_out_shift) *sin_teta) );	
 		--fix later	
 		if  (
-				(row_fraction_calc(row_fraction_calc'left) = '0') and (row_fraction_calc ( 36 - 6 downto 21) >  "0000000001") and 		-- if row_fraction_calc > 0
-				(col_fraction_calc(col_fraction_calc'left) = '0') and (col_fraction_calc ( 36 - 6 downto 21) >  "0000000001") and		-- test if indexes are in range
+				(row_fraction_calc(row_fraction_calc'left) = '0') and (row_fraction_calc ( result_size - 5 downto 21) >  "0000000001") and 		-- if row_fraction_calc > 0
+				(col_fraction_calc(col_fraction_calc'left) = '0') and (col_fraction_calc ( result_size - 5 downto 21) >  "0000000001") and		-- test if indexes are in range
 			    (row_fraction_calc(row_fraction_calc'left downto 1) < new_frame_x_size_shift) and
 			    (col_fraction_calc(col_fraction_calc'left downto 1) < new_frame_y_size_shift) 
 			) then
 			  
-			 --???
-			 row_fraction_calc_after_crop		<= row_fraction_calc + x_crop_start;		--move [i,j] to ROI by [Xstart,Ystat].
-			 col_fraction_calc_after_crop		<= col_fraction_calc + y_crop_start;
+			  
+			 out_of_range 				<= '0' ; -- if is taken if in range (FLAG) 
+			  
+			 --Crop final calc
+			 
+			 row_fraction_calc_after_crop( result_size - 5 downto 21)	<= row_fraction_calc( result_size - 5 downto 21) + x_crop_start(x_crop_start'left-1 downto 0);		--move [i,j] to ROI by [Xstart,Ystat].
+			 col_fraction_calc_after_crop( result_size - 5 downto 21)	<= col_fraction_calc( result_size - 5 downto 21) + y_crop_start(x_crop_start'left-1 downto 0);
+			 row_fraction_calc_after_crop( 20 downto 0)	<= row_fraction_calc( 20 downto 0) ;		--move [i,j] to ROI by [Xstart,Ystat].
+			 col_fraction_calc_after_crop( 20 downto 0)	<= col_fraction_calc( 20 downto 0) ;
 			
-			out_of_range 				<= '0' ; -- if is taken if in range (FLAG)  
+			
+			 
 			  -- round up and down
-			tl_x	<=	std_logic_vector ( row_fraction_calc_after_crop (36 - 6 downto 21)); 	--take the 10 relevant bits of the integer part of row_fraction_calc (30 downto 21)
-			tl_y	<=	std_logic_vector ( col_fraction_calc_after_crop (36 - 6 downto 21));		
-			tr_x	<=	std_logic_vector ( row_fraction_calc_after_crop (36 - 6 downto 21));	
-			tr_y	<=	std_logic_vector ( col_fraction_calc_after_crop (36 - 6 downto 21)) + '1';	
-			bl_x	<=	std_logic_vector ( row_fraction_calc_after_crop (36 - 6 downto 21)) + '1';	
-			bl_y	<=	std_logic_vector ( col_fraction_calc_after_crop (36 - 6 downto 21));	
-			br_x	<=	std_logic_vector ( row_fraction_calc_after_crop (36 - 6 downto 21)) + '1';	
-			br_y	<=	std_logic_vector ( col_fraction_calc_after_crop (36 - 6 downto 21)) + '1';		
+			tl_x	<=	std_logic_vector ( row_fraction_calc_after_crop (result_size - 5 downto 21)); 	--take the 10 relevant bits of the integer part of row_fraction_calc (30 downto 21)
+			tl_y	<=	std_logic_vector ( col_fraction_calc_after_crop (result_size - 5 downto 21));		
+			tr_x	<=	std_logic_vector ( row_fraction_calc_after_crop (result_size - 5 downto 21));	
+			tr_y	<=	std_logic_vector ( col_fraction_calc_after_crop (result_size - 5 downto 21)) + '1';	
+			bl_x	<=	std_logic_vector ( row_fraction_calc_after_crop (result_size - 5 downto 21)) + '1';	
+			bl_y	<=	std_logic_vector ( col_fraction_calc_after_crop (result_size - 5 downto 21));	
+			br_x	<=	std_logic_vector ( row_fraction_calc_after_crop (result_size - 5 downto 21)) + '1';	
+			br_y	<=	std_logic_vector ( col_fraction_calc_after_crop (result_size - 5 downto 21)) + '1';		
 			
 --		-- calculate delta row/col- necessary for bilinear interpolation
 --		
