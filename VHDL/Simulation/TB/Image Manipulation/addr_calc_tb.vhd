@@ -136,8 +136,11 @@ rst_133	<=	'0', '1' after 100 ns;
 --assign constant signal values
 
 zoom_factor_sig			<=	"000100000";				--zoom factor=0.25
-sin_teta_sig		    <=  "001101110";				--teta=60 deg
-cos_teta_sig		    <=  "001000000";
+-- sin_teta_sig		    <=  "001101110";				--teta=60 deg
+-- cos_teta_sig		    <=  "001000000";
+sin_teta_sig		    <=  "000000000";				--teta=0 deg
+cos_teta_sig		    <=  "010000000";
+
 x_crop_start_sig	    <=  "00000011110"; 				--x_crop=30
 y_crop_start_sig	    <=  "00000011101";  			--y_crop=29                
 ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0                           
@@ -181,53 +184,52 @@ addr_calc_inst :	 addr_calc
 				              		
 			);
 
-wait20_proc : process (clk_133)
-	variable cnt : natural := 1;
+-- wait20_proc : process (clk_133)
+	-- variable cnt : natural := 1;
 	
-	begin
+	-- begin
 		
-		if  (rst_133='1') then
-		start_moving<='0';	
+		-- if  (rst_133='1') then
+		-- start_moving<='0';	
 		
-		elsif  rising_edge(clk_133) then	
+		-- elsif  rising_edge(clk_133) then	
 			
-			cnt:=cnt+1;
+			-- cnt:=cnt+1;
 			
-			if (cnt=20) then
-			start_moving<='1';
-			end if;
+			-- if (cnt=20) then
+			-- start_moving<='1';
+			-- end if;
 		
 		
 		
-		end if;
+		-- end if;
 		
 		
-	end process wait20_proc;
+	-- end process wait20_proc;
 						
 			
-row_col_proc : process (clk_133)
-	variable row_cnt : natural := 1;
-	variable col_cnt : natural := 1;
-	variable flag	 : natural := 0;
-	begin
-		if rising_edge(clk_133) then
+-- row_col_proc : process (clk_133)
+	-- variable row_cnt : natural := 0;
+	-- variable col_cnt : natural := 1;
+	-- variable flag	 : natural := 0;
+	-- begin
+		-- if rising_edge(clk_133) then
 			
-			if (row_cnt <=x_size_out) and  (col_cnt <=y_size_out)  then
+			-- if (col_cnt<y_size_out) and (rst_133='1') then
 				
-				if (flag =1) then
-					row_cnt:=row_cnt+1;
-					flag:=0;
-				else
-					col_cnt:=col_cnt+1;
-					flag:=1;
-				end if; 
+				-- if (row_cnt=x_size_out) then
+					-- row_cnt:=0;
+					-- col_cnt:=col_cnt+1;
+				-- end if;
+				-- row_cnt:=row_cnt+1;
+			-- end if;
+				
 			
-			row_idx_sig <= to_signed(row_cnt,11);
-			col_idx_sig <= to_signed(col_cnt,11);
-			
-			end if;	
-		end if;
-	end process row_col_proc;
+			-- row_idx_sig <= to_signed(row_cnt,11);
+			-- col_idx_sig <= to_signed(col_cnt,11);
+				
+		-- end if;
+	-- end process row_col_proc;
 			
 
 			

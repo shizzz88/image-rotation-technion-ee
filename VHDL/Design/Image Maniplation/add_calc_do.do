@@ -3,7 +3,7 @@ onerror abort
 echo "------- START OF SCRIPT -------" 
 # signed
 
-vsim -t ps -voptargs=+acc work.addr_calc
+vsim -t ps -voptargs=+acc work.addr_calc_tb
 add wave -r /*
 
 ##########################		start RESET

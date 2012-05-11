@@ -26,7 +26,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
-use ieee.fixed_pkg.all;
+
 
 library work ;
 --use work.ram_generic_pkg.all;
@@ -174,19 +174,48 @@ begin
 		if (rst_133 = reset_polarity_g) then
 			new_frame_x_size				<=	0;
 			new_frame_y_size				<=	0;
-			col_fraction_calc				<=	 ( others => '0') ;
-			row_fraction_calc				<=	 ( others => '0') ;
-			row_fraction_calc_after_crop	<=	 ( others => '0') ;
-			col_fraction_calc_after_crop	<=	 ( others => '0') ;
-			tl_x   							<=	 ( others => '0') ;
-			tl_y   	                    	<=	 ( others => '0') ;
-			tr_x   	                    	<=	 ( others => '0') ;
-			tr_y   	                    	<=	 ( others => '0') ;
-			bl_x   	                    	<=	 ( others => '0') ;
-			bl_y   	                    	<=	 ( others => '0') ;
-			br_x   	                    	<=	 ( others => '0') ;
-			br_y   	                    	<=	 ( others => '0') ;
 			out_of_range 					<= 	'0' ;
+			row_fraction_calc		        <= (others =>'0');
+			col_fraction_calc		        <= (others =>'0');
+			a1						        <= (others =>'0');
+			a2						        <= (others =>'0');
+			a3						        <= (others =>'0');
+			b1						        <= (others =>'0');
+			b2						        <= (others =>'0');
+			b3						        <= (others =>'0');
+			c1						        <= (others =>'0');
+			c2						        <= (others =>'0');
+			c3						        <= (others =>'0');
+			calc1					        <= (others =>'0');
+			x1						        <= (others =>'0');
+			x2						        <= (others =>'0');
+			x3						        <= (others =>'0');
+			y1						        <= (others =>'0');
+			y2						        <= (others =>'0');
+			y3						        <= (others =>'0');
+			z1						        <= (others =>'0');
+			z2						        <= (others =>'0');
+			z3						        <= (others =>'0');
+			calc2					        <= (others =>'0');
+			x_size_out_shift		        <= (others =>'0');
+			y_size_out_shift		        <= (others =>'0');
+			new_frame_x_size_shift	        <= (others =>'0');
+			new_frame_y_size_shift          <= (others =>'0');
+			tl_x					        <= (others =>'0');
+			tl_y					        <= (others =>'0');
+			tr_x					        <= (others =>'0');
+			tr_y					        <= (others =>'0');
+			bl_x					        <= (others =>'0');
+			bl_y					        <= (others =>'0');
+			br_x					        <= (others =>'0');
+			br_y					        <= (others =>'0');             
+			row_idx_in_shift		        <= (others =>'0');
+			col_idx_in_shift		        <= (others =>'0');
+			x_crop_start_shift		        <= (others =>'0');
+			y_crop_start_shift              <= (others =>'0');
+			row_fraction_calc_after_crop    <= (others =>'0');
+			col_fraction_calc_after_crop    <= (others =>'0');
+		
 		elsif rising_edge (clk_133) then
 			
 			--calc new frame size = frame size after crop
@@ -233,8 +262,8 @@ begin
 			b3					<=	a3;
 			c3					<=	b3;
 			
-			calc1				<=	c1+c2;
-			row_fraction_calc	<=	calc1 + c3;
+			--calc1				<=	c1+c2;
+			row_fraction_calc	<=	c1+c2 + c3;
 --------------------------------------------------------------------------------------------------------------------------------------------------------------			
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -252,8 +281,8 @@ begin
 			y3					<=	x3;
 			z3					<=	y3;
 			
-			calc2				<=	z1-z2;
-			col_fraction_calc	<=	calc2 + z3;
+			--calc2				<=	z1-z2;
+			col_fraction_calc	<=	z1-z2 + z3;
 --------------------------------------------------------------------------------------------------------------------------------------------------------------			
 ------------------------------------------------------------------------------------------------------------------------------------------------------------		
 	
