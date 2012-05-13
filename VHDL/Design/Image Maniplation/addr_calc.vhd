@@ -305,6 +305,31 @@ begin
 			    (row_fraction_calc(row_fraction_calc'left downto 1) < new_frame_x_size_shift) and
 			    (col_fraction_calc(col_fraction_calc'left downto 1) < new_frame_y_size_shift) 
 			) then
+-----------###############------------- Comment - pipe the if into 2 or 3 clocks
+arith1_proc: process (clk_133, rst_133)
+begin
+	if (rst_133 = reset_polarity_g) then
+		a1	<=	false;	--a1--6 are boolean;
+		a2	<=	false;
+		a3	<=	false;
+		a4	<=	false;
+		a5	<=	false;
+		a6	<=	false;
+	elsif rising_edge (clk_133) then
+		a1	<= row_fraction_calc(row_fraction_calc'left) = '0';
+		a2	<= row_fraction_calc ( result_size - 5 downto shift_3_times) >  "0000000001";
+		a3	<= col_fraction_calc(col_fraction_calc'left) = '0';
+		a4	<= col_fraction_calc ( result_size - 5 downto shift_3_times) >  "0000000001";
+		a5	<= row_fraction_calc(row_fraction_calc'left downto 1) < new_frame_x_size_shift;
+		a6	<= col_fraction_calc(col_fraction_calc'left downto 1) < new_frame_y_size_shift;
+		arith1_b	<=	a1 and a2 and a3 and a4 and a5 and a6;
+		--ar_s1_b	<=	a1 and a2 and a3;
+		--ar_s2_b	<=	a4 and a5 and a6;
+		--ar_f_b	<=	ar_s1_b and ar_s2_b;
+	end if;
+end process arith1_proc;
+		
+-----------###############------------- End Comment
 			  
 			  
 			 out_of_range 				<= '0' ; -- if is taken if in range (FLAG) 
@@ -335,11 +360,13 @@ begin
 
 
 --		-- convert [i,j] matrix form addreses to SDRAM address
+
+--      saperate calculations     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		tl_out	<=	ram_start_add_in + (tl_x - '1') *std_logic_vector( to_signed(y_size_in,10)) + tl_y;
 		tr_out	<=	ram_start_add_in + (tr_x - '1') *std_logic_vector( to_signed(y_size_in,10)) + tr_y;
 		bl_out	<=	ram_start_add_in + (bl_x - '1') *std_logic_vector( to_signed(y_size_in,10)) + bl_y;
 		br_out	<=	ram_start_add_in + (br_x - '1') *std_logic_vector( to_signed(y_size_in,10)) + br_y;
---			
+--		+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++	
 
 
 		else -- pixel is out of range
