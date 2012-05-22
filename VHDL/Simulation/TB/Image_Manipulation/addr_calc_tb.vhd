@@ -150,8 +150,8 @@ ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0
 --col_idx_sig <= to_signed(301,11);
 
 test_proc : process (clk_133)
-	variable row_cnt : natural := 301;
-	variable col_cnt : natural := 300;
+	variable row_cnt : natural := 300;
+	variable col_cnt : natural := 301;
 	variable flag	 : natural := 0;
 	begin
 		if (rst_133 ='1') then	
