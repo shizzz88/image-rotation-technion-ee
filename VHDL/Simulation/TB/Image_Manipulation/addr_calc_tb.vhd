@@ -42,7 +42,8 @@ component addr_calc
 			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size			:	positive 	:= 7	;			-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth				:	positive	:= 12
+			pipe_depth				:	positive	:= 12;
+			valid_setup				:	positive	:= 5
 			);
 
 	port	(
@@ -137,35 +138,36 @@ rst_133	<=	'0', '1' after 100 ns;
 --assign constant signal values
 
 zoom_factor_sig			<=	"000100000";				--zoom factor=0.25
--- sin_teta_sig		    <=  "001101110";				--teta=60 deg
--- cos_teta_sig		    <=  "001000000";
-sin_teta_sig		    <=  "000000000";				--teta=0 deg
-cos_teta_sig		    <=  "010000000";
+ sin_teta_sig		    <=  "001101111";				--teta=60 deg
+ cos_teta_sig		    <=  "001000000";
+--sin_teta_sig		    <=  "000000000";				--teta=0 deg
+--cos_teta_sig		    <=  "010000000";
 
 x_crop_start_sig	    <=  "00000011110"; 				--x_crop=30
 y_crop_start_sig	    <=  "00000011101";  			--y_crop=29                
 ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0                           
 
---row_idx_sig <= to_signed(301,11);		--row,col =301
---col_idx_sig <= to_signed(301,11);
+-- row_idx_sig <= to_signed(301,11);		--row,col =301
+-- col_idx_sig <= to_signed(301,11);
 
 test_proc : process (clk_133)
-	variable row_cnt : natural := 300;
-	variable col_cnt : natural := 301;
-	variable flag	 : natural := 0;
+	variable row_cnt : natural := 301;
+	variable col_cnt : natural := 300;
+	variable flag	 : natural := 1;
 	begin
 		if (rst_133 ='1') then	
 		if rising_edge(clk_133) then
-			if (col_cnt<y_size_out)  then
-				row_cnt:=row_cnt+1;
+			--if (col_cnt<y_size_out)   then
+			flag:=flag+4;
+			if (col_cnt<500) and (flag mod 5 =0)   then	
+				col_cnt:=col_cnt+1;
 			end if;
 			row_idx_sig <= to_signed(row_cnt,11);
 			col_idx_sig <= to_signed(col_cnt,11);
 		end if;
 		end if;
 	end process test_proc;
-                  
-
+    
 addr_calc_inst :	 addr_calc				
 			generic map(
 			reset_polarity_g		=> '0',		--Reset active low
@@ -174,7 +176,8 @@ addr_calc_inst :	 addr_calc
 			x_size_out				=> 600,				-- number of rows  in theoutput image
 			y_size_out				=> 800,				-- number of columns  in the output image
 			trig_frac_size			=> 7,			-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth				=> 12
+			pipe_depth				=> 12,
+			valid_setup				=> 5
 			)                     
 			
 			port map

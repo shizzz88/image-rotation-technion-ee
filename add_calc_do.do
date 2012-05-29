@@ -4,7 +4,7 @@ transcript off  		; # We don't want that do file commands
 echo "START OF MACRO" 	; # Print this massage on screen. 
 
 -- Compiling our units from lowest to highest level:
-
+quit -sim
 vcom VHDL/Design/Image_Maniplation/addr_calc.vhd
 vcom VHDL/Simulation/TB/Image_Manipulation/addr_calc_tb.vhd
 

@@ -39,7 +39,8 @@ entity addr_calc is
 			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size			:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth				:	positive	:= 12
+			pipe_depth				:	positive	:= 12;
+			valid_setup				:	positive	:= 5
 			);
 	port	(
 				zoom_factor			:	in signed (trig_frac_size+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
@@ -165,7 +166,7 @@ signal br_out_phase_1 : std_logic_vector (19 downto 0);				--pipeline signals fo
 --valid proc signals
 signal pipe_counter		: integer range 0 to pipe_depth+1;		--pipe counter
 signal first_time_count	: boolean ; 							-- indicates if this is the first time we count to pipe length
-
+signal valid_counter	: integer range 0 to valid_setup;		--valid counter
 --###########################	Components	###################################--
 --example from beeri
 -- component synthetic_frame_generator 
@@ -189,23 +190,33 @@ begin
 	----------------------------------------------------------------------------------------
 valid_proc: process (clk_133, rst_133)
 begin
+	
 	if (rst_133 = reset_polarity_g) then
 		data_valid_out <= '0';
 		first_time_count<= true;
-		
+		valid_counter<=0;
 	elsif rising_edge (clk_133) then
 		
 		if (pipe_counter < pipe_depth-1) then
 			pipe_counter <= pipe_counter+1;
 			data_valid_out <= '0';
 		
-		elsif (pipe_counter > pipe_depth) then
-			first_time_count <= false;
-			data_valid_out <= '1';
-		elsif (pipe_counter = pipe_depth-1) then
-			data_valid_out <= '1';
-		end if;
+		elsif (first_time_count=false) then
+			
+			if (valid_counter =valid_setup-1) then 
+				data_valid_out <= '1';
+				valid_counter<=0;
+			else 
+				valid_counter<=valid_counter+1;
+				data_valid_out <= '0';
+			end if;
 	
+		elsif (pipe_counter = pipe_depth-1) then --first time count - latency=pipe_depth-1=13
+			data_valid_out <= '1';
+			first_time_count<=false;
+		end if;
+	else
+		data_valid_out <= '0';
 	end if;	
 end process valid_proc;
 			
