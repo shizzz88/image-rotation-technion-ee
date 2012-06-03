@@ -22,9 +22,13 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
+use std.textio.all;
+use work.txt_util.all;
+
 entity addr_calc_tb is
 	generic
-		(
+		(	
+			file_name_g				:	string  	:= "david.txt";		--out file name
 			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture (binary)
@@ -37,16 +41,17 @@ architecture sim_addr_calc_tb of addr_calc_tb is
 component addr_calc 
 		generic (
 			reset_polarity_g		:	std_logic	:= '0';			--Reset active low
-			x_size_in				:	positive 	:= 96;				-- number of rows  in the input image
-			y_size_in				:	positive 	:= 128;				-- number of columns  in the input image
-			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
-			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
-			trig_frac_size			:	positive 	:= 7	;			-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth				:	positive	:= 12;
-			valid_setup				:	positive	:= 5
+			x_size_in_g				:	positive 	:= 96;				-- number of rows  in the input image
+			y_size_in_g				:	positive 	:= 128;				-- number of columns  in the input image
+			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
+			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image
+			trig_frac_size_g			:	positive 	:= 7	;			-- number of digits after dot = resolution of fracture (binary)
+			pipe_depth_g				:	positive	:= 12;
+			valid_setup_g				:	positive	:= 5
 			);
 
 	port	(
+				enable_unit			:	in std_logic;
 				zoom_factor			:	in signed (trig_frac_size+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
 				sin_teta			:	in signed (trig_frac_size+1 downto 0);	--sine of rotation angle - calculated by software. 7 bits of sin + 1 bit of signed
 				cos_teta			:	in signed (trig_frac_size+1 downto 0);	--cosine of rotation angle - calculated by software. 
@@ -62,19 +67,17 @@ component addr_calc
 				tr_out				:	out std_logic_vector (22 downto 0);		--top right pixel address in SDRAM
 				bl_out				:	out std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
 				br_out				:	out std_logic_vector (22 downto 0);		--bottom right pixel address in SDRAM
-				
-				out_of_range		:	out std_logic;							--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
-				data_valid_out			:	out std_logic;		--data valid indicator
-				
+		
 				delta_row_out		:	out	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
 				delta_col_out		:	out	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
 				
+				unit_finish			:	out std_logic;
+				out_of_range		:	out std_logic;							--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				data_valid_out			:	out std_logic;		--data valid indicator
 				--Clock and Reset
-				clk_133				:	in std_logic;							--SDRAM clock
-				clk_40				:	in std_logic;							--VESA Clock
-				rst_133				:	in std_logic;							--Reset (133MHz)
-				rst_40				:	in std_logic							--Reset (40MHz)
-
+				system_clk				:	in std_logic;							--SDRAM clock
+				system_rst				:	in std_logic							--Reset (133MHz)
+				
 				-- -- Wishbone Master to Memory Management block
 				-- wbm_dat_i			:	in std_logic_vector (7 downto 0);		--Data in (8 bits)
 				-- wbm_stall_i			:	in std_logic;							--Slave is not ready to receive new data 
@@ -91,10 +94,9 @@ end component addr_calc;
 --###############################################################################
 -----------------------------	Signals		-----------------------------------
 --Clock and Reset
-signal clk_133			:	std_logic := '0';
-signal rst_133			:	std_logic;
-signal clk_40			:	std_logic := '0';
-signal rst_40			:	std_logic;
+signal system_clk			:	std_logic := '0';
+signal system_rst			:	std_logic;
+
 
 --input signals for address calc component
 signal				zoom_factor_sig			:	signed (trig_frac_size+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
@@ -113,33 +115,40 @@ signal				tr_out_sig				:	 std_logic_vector (22 downto 0);		--top right pixel ad
 signal				bl_out_sig				:	 std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
 signal				br_out_sig				:	 std_logic_vector (22 downto 0);		--bottom right pixel address in SDRAM
 				
-signal				out_of_range_sig		:	 std_logic;							--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
-signal				data_valid_out_sig			:	 std_logic;					
-signal				delta_row_out_sig		:	 std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
-signal				delta_col_out_sig		:	 std_logic_vector		(trig_frac_size-1 downto 0);
+signal				out_of_range_sig		:	std_logic;							--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+signal				data_valid_out_sig		:	std_logic;					
+signal				delta_row_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
+signal				delta_col_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);
+                                                                     
+signal 				enable					:	std_logic;	                                                                        
 
-signal				start_moving			:	 std_logic;	                                                                        
+----------------------------------------------------------------------  READ PROCESS	-------------------------------------------------------------------------
+ SIGNAL    newValueRead     : BOOLEAN := FALSE;
+ SIGNAL    newValueToSave   : BOOLEAN := FALSE;
+ SIGNAL    dataReadFromFile : REAL;
+ SIGNAL    dataToSaveToFile : REAL;
+ SIGNAL    lineNumber       : INTEGER:=1;  -- add line number to output file
+ 
+ file out_file				: TEXT open write_mode is file_name_g;
 --####################################################################################
 ---------------------------		process + inst	-----------------------------------------
 begin
-
+enable<='1';
 clk_133_proc:
-clk_133	<=	not clk_133 after 3.75 ns;
+system_clk	<=	not system_clk after 3.75 ns;
 
---clk_40_proc:
---clk_40	<=	not clk_40 after 12.5 ns;
+
 
 rst_133_proc:
-rst_133	<=	'0', '1' after 100 ns;
+system_rst	<=	'0', '1' after 100 ns;
 
---rst_40_proc:
---rst_40	<=	'0', '1' after 100 ns;
+
 
 --assign constant signal values
 
 zoom_factor_sig			<=	"000100000";				--zoom factor=0.25
- sin_teta_sig		    <=  "001101111";				--teta=60 deg
- cos_teta_sig		    <=  "001000000";
+sin_teta_sig		    <=  "001101111";				--teta=60 deg
+cos_teta_sig		    <=  "001000000";
 --sin_teta_sig		    <=  "000000000";				--teta=0 deg
 --cos_teta_sig		    <=  "010000000";
 
@@ -150,13 +159,13 @@ ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0
 -- row_idx_sig <= to_signed(301,11);		--row,col =301
 -- col_idx_sig <= to_signed(301,11);
 
-test_proc : process (clk_133)
+test_proc : process (system_clk)
 	variable row_cnt : natural := 301;
 	variable col_cnt : natural := 300;
 	variable flag	 : natural := 1;
 	begin
-		if (rst_133 ='1') then	
-		if rising_edge(clk_133) then
+		if (system_rst ='1') then	
+		if rising_edge(system_clk) then
 			--if (col_cnt<y_size_out)   then
 			flag:=flag+4;
 			if (col_cnt<500) and (flag mod 5 =0)   then	
@@ -171,21 +180,20 @@ test_proc : process (clk_133)
 addr_calc_inst :	 addr_calc				
 			generic map(
 			reset_polarity_g		=> '0',		--Reset active low
-			x_size_in				=> 96,			-- number of rows  in the input image
-			y_size_in				=> 128,				-- number of columns  in the input image
-			x_size_out				=> 600,				-- number of rows  in theoutput image
-			y_size_out				=> 800,				-- number of columns  in the output image
-			trig_frac_size			=> 7,			-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth				=> 12,
-			valid_setup				=> 5
+			x_size_in_g				=> 96,			-- number of rows  in the input image
+			y_size_in_g				=> 128,				-- number of columns  in the input image
+			x_size_out_g				=> 600,				-- number of rows  in theoutput image
+			y_size_out_g				=> 800,				-- number of columns  in the output image
+			trig_frac_size_g			=> 7,			-- number of digits after dot = resolution of fracture (binary)
+			pipe_depth_g				=> 12,
+			valid_setup_g				=> 5
 			)                     
 			
 			port map
 			(
-				clk_133			=>	clk_133	,			
-				clk_40			=>	clk_40	,		
-				rst_133			=>	rst_133	,		
-				rst_40			=>	rst_40	,		
+				system_clk			=>	system_clk	,			
+				system_rst			=>	system_rst	,		
+					
 				
 				zoom_factor		=>	zoom_factor_sig,	
 				sin_teta		=>	sin_teta_sig,	
@@ -204,18 +212,35 @@ addr_calc_inst :	 addr_calc
 				out_of_range    =>	out_of_range_sig,
 				delta_row_out   =>	delta_row_out_sig,
 				delta_col_out   =>	delta_col_out_sig,			
-				data_valid_out => data_valid_out_sig             		
+				data_valid_out 	=> data_valid_out_sig,
+				enable_unit		=> enable				
 			);
+--print(out_file, "#	tl_out_sig   tr_out_sig   bl_out_sig   br_out_sig   delta_row_out_sig   delta_col_out_sig   out_of_range_sig ");
+print(out_file, "#  tl       tr       bl       br     d_row   d_col   oor ");
 
--- wait20_proc : process (clk_133)
+writeProcess : PROCESS(system_clk)
+
+  BEGIN
+
+    if rising_edge(system_clk) then
+
+		IF (data_valid_out_sig = '1') THEN
+			
+			print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
+		END IF;
+		
+	end if;
+
+  END PROCESS writeProcess;
+-- wait20_proc : process (system_clk)
 	-- variable cnt : natural := 1;
 	
 	-- begin
 		
-		-- if  (rst_133='1') then
+		-- if  (system_rst='1') then
 		-- start_moving<='0';	
 		
-		-- elsif  rising_edge(clk_133) then	
+		-- elsif  rising_edge(system_clk) then	
 			
 			-- cnt:=cnt+1;
 			
@@ -231,14 +256,14 @@ addr_calc_inst :	 addr_calc
 	-- end process wait20_proc;
 						
 			
--- row_col_proc : process (clk_133)
+-- row_col_proc : process (system_clk)
 	-- variable row_cnt : natural := 0;
 	-- variable col_cnt : natural := 1;
 	-- variable flag	 : natural := 0;
 	-- begin
-		-- if rising_edge(clk_133) then
+		-- if rising_edge(system_clk) then
 			
-			-- if (col_cnt<y_size_out) and (rst_133='1') then
+			-- if (col_cnt<y_size_out) and (system_rst='1') then
 				
 				-- if (row_cnt=x_size_out) then
 					-- row_cnt:=0;
