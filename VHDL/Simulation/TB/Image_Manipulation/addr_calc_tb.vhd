@@ -28,7 +28,7 @@ use work.txt_util.all;
 entity addr_calc_tb is
 	generic
 		(	
-			file_name_g				:	string  	:= "david.txt";		--out file name
+			file_name_g				:	string  	:= "test_modelsim.txt";		--out file name
 			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture (binary)
@@ -51,7 +51,7 @@ component addr_calc
 			);
 
 	port	(
-				enable_unit			:	in std_logic;
+				trigger_unit			:	in std_logic;
 				zoom_factor			:	in signed (trig_frac_size+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
 				sin_teta			:	in signed (trig_frac_size+1 downto 0);	--sine of rotation angle - calculated by software. 7 bits of sin + 1 bit of signed
 				cos_teta			:	in signed (trig_frac_size+1 downto 0);	--cosine of rotation angle - calculated by software. 
@@ -120,7 +120,7 @@ signal				data_valid_out_sig		:	std_logic;
 signal				delta_row_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
 signal				delta_col_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);
                                                                      
-signal 				enable					:	std_logic;	                                                                        
+signal 				trigger					:	std_logic;	                                                                        
 
 ----------------------------------------------------------------------  READ PROCESS	-------------------------------------------------------------------------
  SIGNAL    newValueRead     : BOOLEAN := FALSE;
@@ -133,7 +133,7 @@ signal 				enable					:	std_logic;
 --####################################################################################
 ---------------------------		process + inst	-----------------------------------------
 begin
-enable<='1';
+
 clk_133_proc:
 system_clk	<=	not system_clk after 3.75 ns;
 
@@ -142,7 +142,8 @@ system_clk	<=	not system_clk after 3.75 ns;
 rst_133_proc:
 system_rst	<=	'0', '1' after 100 ns;
 
-
+trigger_proc:
+trigger <=	'0', '1' after 100 ns, '0' after 107.5 ns;
 
 --assign constant signal values
 
@@ -159,23 +160,46 @@ ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0
 -- row_idx_sig <= to_signed(301,11);		--row,col =301
 -- col_idx_sig <= to_signed(301,11);
 
-test_proc : process (system_clk)
+-- test_proc : process (system_clk)
+	-- variable row_cnt : natural := 1;
+	-- variable col_cnt : natural := 0;
+	-- variable flag	 : natural := 1;
+	-- begin
+		-- if (system_rst ='1') then	
+		-- if rising_edge(system_clk) then
+			-- flag:=flag+4;
+			-- if (col_cnt<800) and (flag mod 5 =0)   then	
+				-- col_cnt:=col_cnt+1;
+			-- elsif (col_cnt=800) then
+				-- col_cnt:=0;
+				-- row_cnt:=row_cnt+1;
+			-- end if;
+			
+			-- row_idx_sig <= to_signed(row_cnt,11);
+			-- col_idx_sig <= to_signed(col_cnt,11);
+		-- end if;
+		-- end if;
+	-- end process test_proc;
+	-- variable row_cnt : natural := 1;
+	test_proc : process (system_clk)
 	variable row_cnt : natural := 301;
-	variable col_cnt : natural := 300;
+	variable col_cnt : natural :=0;
 	variable flag	 : natural := 1;
 	begin
 		if (system_rst ='1') then	
 		if rising_edge(system_clk) then
-			--if (col_cnt<y_size_out)   then
+
 			flag:=flag+4;
-			if (col_cnt<500) and (flag mod 5 =0)   then	
+			if (col_cnt<800) and (flag mod 5 =0)   then	
 				col_cnt:=col_cnt+1;
 			end if;
+			
 			row_idx_sig <= to_signed(row_cnt,11);
 			col_idx_sig <= to_signed(col_cnt,11);
 		end if;
 		end if;
 	end process test_proc;
+    
     
 addr_calc_inst :	 addr_calc				
 			generic map(
@@ -213,10 +237,10 @@ addr_calc_inst :	 addr_calc
 				delta_row_out   =>	delta_row_out_sig,
 				delta_col_out   =>	delta_col_out_sig,			
 				data_valid_out 	=> data_valid_out_sig,
-				enable_unit		=> enable				
+				trigger_unit		=> trigger				
 			);
---print(out_file, "#	tl_out_sig   tr_out_sig   bl_out_sig   br_out_sig   delta_row_out_sig   delta_col_out_sig   out_of_range_sig ");
-print(out_file, "#  tl       tr       bl       br     d_row   d_col   oor ");
+
+print(out_file, "col row tl tr bl br d_row d_col oor");
 
 writeProcess : PROCESS(system_clk)
 
@@ -225,60 +249,14 @@ writeProcess : PROCESS(system_clk)
     if rising_edge(system_clk) then
 
 		IF (data_valid_out_sig = '1') THEN
-			
-			print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
+			--print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
+			--print tl,tr,bl,br,delta_row,delta_col (decimal) , out_of_range //str((row_idx_sig))& " "&str((col_idx_sig))& 
+			print(out_file, str(to_integer(col_idx_sig)-2)&" "&str(to_integer(row_idx_sig))&" "&str(CONV_INTEGER(tl_out_sig))& " "&str(CONV_INTEGER(tr_out_sig))& " "&str(CONV_INTEGER(bl_out_sig))& " "&str(CONV_INTEGER(br_out_sig))& " "&str(CONV_INTEGER(delta_row_out_sig))& " "&str(CONV_INTEGER(delta_col_out_sig))& " " &str(out_of_range_sig));
 		END IF;
 		
 	end if;
 
   END PROCESS writeProcess;
--- wait20_proc : process (system_clk)
-	-- variable cnt : natural := 1;
-	
-	-- begin
-		
-		-- if  (system_rst='1') then
-		-- start_moving<='0';	
-		
-		-- elsif  rising_edge(system_clk) then	
-			
-			-- cnt:=cnt+1;
-			
-			-- if (cnt=20) then
-			-- start_moving<='1';
-			-- end if;
-		
-		
-		
-		-- end if;
-		
-		
-	-- end process wait20_proc;
-						
-			
--- row_col_proc : process (system_clk)
-	-- variable row_cnt : natural := 0;
-	-- variable col_cnt : natural := 1;
-	-- variable flag	 : natural := 0;
-	-- begin
-		-- if rising_edge(system_clk) then
-			
-			-- if (col_cnt<y_size_out) and (system_rst='1') then
-				
-				-- if (row_cnt=x_size_out) then
-					-- row_cnt:=0;
-					-- col_cnt:=col_cnt+1;
-				-- end if;
-				-- row_cnt:=row_cnt+1;
-			-- end if;
-				
-			
-			-- row_idx_sig <= to_signed(row_cnt,11);
-			-- col_idx_sig <= to_signed(col_cnt,11);
-				
-		-- end if;
-	-- end process row_col_proc;
-			
 
 			
 end architecture sim_addr_calc_tb;
