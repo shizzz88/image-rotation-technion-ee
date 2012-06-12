@@ -10,7 +10,7 @@ vcom VHDL/Simulation/TB/Image_Manipulation/addr_calc_tb.vhd
 
 vsim -t ps -voptargs=+acc work.addr_calc_tb
 add wave -r /*
-run 1000 ns
+run 31 us
 
 ###########################		start RESET
 #force -freeze sim:/addr_calc/clk_133 1 0, 0 {3759 ps} -r 7518
