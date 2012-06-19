@@ -21,7 +21,7 @@ ZoomFactor=0.25;
 %create a file named input.txt in current dir, with write permission
 fid = fopen('..\..\test_matlab.txt', 'w');  
 fprintf(fid,'#tl\t#tr\t#bl\t#br\t#d_row\t#d_col\t#out_of_range\r\n');
-for t=301:1:301
+for t=1:1:600
     for s=1:1:800
 
 %for t=1:1:VerResOut
