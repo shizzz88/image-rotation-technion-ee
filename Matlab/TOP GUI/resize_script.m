@@ -22,9 +22,9 @@ if ainfo.Format=='bmp'
 		%resize image and colormap
 		[b,bmap]=imresize(a,amap,newres);
 		%imshow(b,bmap)
-		filename=strcat(answer{3},'.jpg');
+		filename=strcat(answer{3},'.bmp');
 		%write new image to file
-		imwrite(b,bmap,filename,'jpg');
+		imwrite(b,bmap,filename,'bmp');
 else %input file is jpeg
     a=rgb2gray(a);
     prompt = {'Enter number of rows:','Enter number of coloums:','Enter Name for new fie'};
