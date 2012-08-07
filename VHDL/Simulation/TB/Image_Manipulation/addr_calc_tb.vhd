@@ -160,38 +160,19 @@ ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0
 -- row_idx_sig <= to_signed(301,11);		--row,col =301
 -- col_idx_sig <= to_signed(301,11);
 
--- test_proc : process (system_clk)
-	-- variable row_cnt : natural := 1;
-	-- variable col_cnt : natural := 0;
-	-- variable flag	 : natural := 1;
-	-- begin
-		-- if (system_rst ='1') then	
-		-- if rising_edge(system_clk) then
-			-- flag:=flag+4;
-			-- if (col_cnt<800) and (flag mod 5 =0)   then	
-				-- col_cnt:=col_cnt+1;
-			-- elsif (col_cnt=800) then
-				-- col_cnt:=0;
-				-- row_cnt:=row_cnt+1;
-			-- end if;
-			
-			-- row_idx_sig <= to_signed(row_cnt,11);
-			-- col_idx_sig <= to_signed(col_cnt,11);
-		-- end if;
-		-- end if;
-	-- end process test_proc;
-	-- variable row_cnt : natural := 1;
-	test_proc : process (system_clk)
-	variable row_cnt : natural := 301;
-	variable col_cnt : natural :=0;
+test_proc : process (system_clk)			--test 800*600
+	variable row_cnt : natural := 1;
+	variable col_cnt : natural := 0;
 	variable flag	 : natural := 1;
 	begin
 		if (system_rst ='1') then	
 		if rising_edge(system_clk) then
-
 			flag:=flag+4;
 			if (col_cnt<800) and (flag mod 5 =0)   then	
 				col_cnt:=col_cnt+1;
+			elsif (col_cnt=800) then
+				col_cnt:=0;
+				row_cnt:=row_cnt+1;
 			end if;
 			
 			row_idx_sig <= to_signed(row_cnt,11);
@@ -199,6 +180,26 @@ ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0
 		end if;
 		end if;
 	end process test_proc;
+	
+	
+	-- test_proc : process (system_clk)			--test one row
+	-- variable row_cnt : natural := 301;
+	-- variable col_cnt : natural :=0;
+	-- variable flag	 : natural := 1;
+	-- begin
+		-- if (system_rst ='1') then	
+		-- if rising_edge(system_clk) then
+
+			-- flag:=flag+4;
+			-- if (col_cnt<800) and (flag mod 5 =0)   then	
+				-- col_cnt:=col_cnt+1;
+			-- end if;
+			
+			-- row_idx_sig <= to_signed(row_cnt,11);
+			-- col_idx_sig <= to_signed(col_cnt,11);
+		-- end if;
+		-- end if;
+	-- end process test_proc;
     
     
 addr_calc_inst :	 addr_calc				
