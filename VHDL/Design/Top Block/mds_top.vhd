@@ -228,6 +228,56 @@ component mem_mng_top
 			);
 end component mem_mng_top;	
 
+
+component top_img_man is
+	generic (
+				reset_polarity_g 	: 	std_logic 					:= '0';
+				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
+				img_ver_lines_g		:	positive					:= 480	--480 active lines
+			);
+	port	(
+				--Clock and Reset
+				clk_i				:	in std_logic;							--Wishbone clock
+				rst					:	in std_logic;							--Reset
+
+				-- Wishbone Slave (mem_ctrl_wr)
+				wr_wbs_adr_i		:	in std_logic_vector (9 downto 0);		--Address in internal RAM
+				wr_wbs_tga_i		:	in std_logic_vector (9 downto 0);		--Burst Length
+				wr_wbs_dat_i		:	in std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wr_wbs_cyc_i		:	in std_logic;							--Cycle command from WBM
+				wr_wbs_stb_i		:	in std_logic;							--Strobe command from WBM
+				wr_wbs_we_i			:	in std_logic;							--Write Enable
+				wr_wbs_tgc_i		:	in std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wr_wbs_dat_o		:	out std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wr_wbs_stall_o		:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wr_wbs_ack_o		:	out std_logic;							--Input data has been successfuly acknowledged
+				wr_wbs_err_o		:	out std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+
+				-- Wishbone Slave (mem_ctrl_rd)
+			--	rd_wbs_adr_i 		:	in std_logic_vector (9 downto 0);		--Address in internal RAM
+			--	rd_wbs_tga_i 		:   in std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
+			--	rd_wbs_cyc_i		:   in std_logic;							--Cycle command from WBM
+			--	rd_wbs_tgc_i 		:   in std_logic;							--Cycle tag. '1' indicates start of transaction
+			--	rd_wbs_stb_i		:   in std_logic;							--Strobe command from WBM
+			--	rd_wbs_dat_o 		:  	out std_logic_vector (7 downto 0);		--Data Out (8 bits)
+			--	rd_wbs_stall_o		:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+			--	rd_wbs_ack_o		:   out std_logic;							--Input data has been successfuly acknowledged
+			--	rd_wbs_err_o		:   out std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				
+				-- Wishbone Master to SDRAM Controller from Arbiter
+				wbm_dat_i			:	in std_logic_vector (15 downto 0);		--Data in (16 bits)
+				wbm_stall_i			:	in std_logic;							--Slave is not ready to receive new data
+				wbm_err_i			:	in std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
+				wbm_ack_i			:	in std_logic;							--When Read Burst: DATA bus must be valid in this cycle
+				wbm_adr_o			:	out std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
+				wbm_dat_o			:	out std_logic_vector (15 downto 0);		--Data Out (16 bits)
+				wbm_we_o			:	out std_logic;							--Write Enable
+				wbm_tga_o			:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
+				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
+				wbm_stb_o			:	out std_logic							--Strobe Command to interface
+			);
+end component top_img_man;
+
 component disp_ctrl_top is
 	generic (
 			reset_polarity_g		:	std_logic 	:= '0';				--Reset Polarity. '0' = Reset
@@ -561,7 +611,45 @@ mem_mng_inst 	:	 mem_mng_top generic map
 				wbm_cyc_o		=>	wbm_cyc_o		,	
 				wbm_stb_o		=>	wbm_stb_o			
 			);
-	
+
+---------------------------- Image Manipulation---------------------------
+top_img_man_inst 	:	 top_img_man generic map
+				(	
+					reset_polarity_g	 => '0',
+					img_hor_pixels_g	 => 128,                                         --************************************-
+				    img_ver_lines_g	     => 96                                        --************************************-
+					--img_hor_pixels_g	 => 640,
+				    --img_ver_lines_g	     => 480
+				)
+				port map
+				(
+				clk_i			=>	clk_133,				
+				rst				=>	rst_133,	
+				wr_wbs_adr_i	=>	ic_wbs_adr_i (9 downto 0)		,	
+				wr_wbs_tga_i	=>	ic_wbs_tga_i (9 downto 0)		,	
+				wr_wbs_dat_i	=>	ic_wbs_dat_i (7 downto 0)		,	
+				wr_wbs_cyc_i	=>	ic_wbs_cyc_i (0)		,	
+				wr_wbs_stb_i	=>	ic_wbs_stb_i (0)		,	
+				wr_wbs_we_i		=>	ic_wbs_we_i  (0)		,	
+				wr_wbs_tgc_i	=>	ic_wbs_tgc_i (0)		,	
+				wr_wbs_dat_o	=>	mem_rx_wbm_dat_i		,	
+				wr_wbs_stall_o	=>	mem_rx_wbm_stall_i	,	
+				wr_wbs_ack_o	=>	mem_rx_wbm_ack_i		,	
+				wr_wbs_err_o	=>	mem_rx_wbm_err_i		,	
+				
+				
+				wbm_dat_i		=>	wbm_dat_i		,	
+				wbm_stall_i		=>	wbm_stall_i		,	
+				wbm_err_i		=>	wbm_err_i		,	
+				wbm_ack_i		=>	wbm_ack_i		,	
+				wbm_adr_o		=>	wbm_adr_o		,	
+				wbm_dat_o		=>	wbm_dat_o		,	
+				wbm_we_o		=>	wbm_we_o		,	
+				wbm_tga_o		=>	wbm_tga_o		,	
+				wbm_cyc_o		=>	wbm_cyc_o		,	
+				wbm_stb_o		=>	wbm_stb_o			
+			);
+---------------------------- END Image Manipulation---------------------------
 disp_ctrl_inst :	 disp_ctrl_top	
 			generic map
 			(

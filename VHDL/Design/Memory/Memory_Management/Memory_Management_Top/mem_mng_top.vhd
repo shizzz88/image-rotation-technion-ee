@@ -14,7 +14,7 @@
 --															reg_addr_width_c was modified, now support up to 32 registers. 
 ------------------------------------------------------------------------------------------------
 --	Todo:
---			(1)add rest off parameters registers
+--			(1)remove image manipulation registers
 ------------------------------------------------------------------------------------------------
 
 library ieee;
