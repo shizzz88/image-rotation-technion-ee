@@ -77,10 +77,10 @@ architecture rtl_img_man_top of img_man_top is
 component gen_reg
 	generic	(
 			reset_polarity_g	:	std_logic	:= '0';					--When reset = reset_polarity_g, system is in RESET mode
-			width_g				:	positive	:= 8;					--Width: Number of bits
+			width_g				:	positive	:= reg_width_c;					--Width: Number of bits
 			addr_en_g			:	boolean		:= true;				--TRUE: Address enabled  - responde by register will occur only when specific address has been specified
 			addr_val_g			:	natural		:= 0;					--Default register address
-			addr_width_g		:	positive	:= 5;					--2^5 = 32 register address is supported
+			addr_width_g		:	positive	:= reg_addr_width_c;	--2^5 = 32 register address is supported
 			read_en_g			:	boolean		:= true;				--Enabling read
 			write_en_g			:	boolean		:= true;				--Enabling write
 			clear_on_read_g		:	boolean		:= false;				--TRUE: Clear on read (set to default value), FALSE otherwise
@@ -110,8 +110,8 @@ end component gen_reg;
 component wbs_reg
 	generic	(
 			reset_polarity_g	:	std_logic	:= '0';							--'0' = reset active
-			width_g				:	positive	:= 8;							--Width: Registers width
-			addr_width_g		:	positive	:= 4							--2^4 = 16 register address is supported
+			width_g				:	positive	:= reg_width_c;							--Width: Registers width
+			addr_width_g		:	positive	:= reg_addr_width_c 			--2^reg_addr_width_c =  register address is supported
 			);
 	port	(
 			rst			:	in	std_logic;										--Reset
