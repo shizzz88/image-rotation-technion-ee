@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------------------------
 -- Model Name 	:	Top Block - Image Manipulation
--- File Name	:	top_img_man.vhd
+-- File Name	:	img_man_top.vhd
 -- Generated	:	07.08.2012
 -- Author		:	Ran Mizrahi&Uri Tzipin
 -- Project		:	Im_rotate Project
@@ -21,7 +21,7 @@ use ieee.math_real.all;
 
 library work ;
 
-entity top_img_man is
+entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
@@ -57,9 +57,9 @@ entity top_img_man is
 				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
 				wbm_stb_o			:	out std_logic							--Strobe Command to interface
 			);
-end entity top_img_man;
+end entity img_man_top;
 
-architecture rtl_top_img_man of top_img_man is
+architecture rtl_img_man_top of img_man_top is
 
 --	###########################		Costants		##############################	--
 	constant reg_width_c		:	positive 	:= 8;	--Width of registers
@@ -257,8 +257,6 @@ begin
 						else cos_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c))											--buttom 8 bits 
 						else sin_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c + 1))      		--top 8 bits
 						else sin_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c))											--buttom 8 bits 
-						
-						
 						else x_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c + 1))		--top 8 bits
 						else x_start_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c))                                     --buttom 8 bits 
 						else y_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c + 1))		--top 8 bits
@@ -526,4 +524,4 @@ begin
 										wr_en		    =>	reg_wr_en
 									);
 	
-end architecture rtl_top_img_man;
+end architecture rtl_img_man_top;
