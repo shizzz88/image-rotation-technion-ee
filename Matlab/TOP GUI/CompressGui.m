@@ -463,8 +463,8 @@ tic;
 
 %display rotated image
 rotangle=str2double(get(handles.RotAngle,'String'));
-sinangle=int8(sind(rotangle)*128);
-cosangle=int8(cosd(rotangle)*128);
+sinangle=int16(sind(rotangle)*128);
+cosangle=int16(cosd(rotangle)*128);
 zoom=str2double(get(handles.ZoomFactor,'String'));
 xstart=str2double(get(handles.Xstart,'String'));
 ystart=str2double(get(handles.Ystart,'String'));
@@ -511,8 +511,8 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n',floor( sinangle/256), mod( sinangle, 256) ); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
-        crc = (mod((floor(sinangle/256))+(mod(sinangle, 256)) + 128 + 1 + 22 , 256)); % calcultae crc= (angle + type +length + address) mod 256
-         %crc = mod(111 + 128 + 1 + 22 , 256);
+        %old version -> crc = (mod((floor(sinangle/256))+(mod(sinangle, 256)) + 128 + 1 + 22 , 256)); % calcultae crc= (angle + type +length + address) mod 256
+        crc = mod(sinangle + 128 + 1 + 22 , 256) % calcultae crc= (angle + type +length + address) mod 256
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
     fprintf(fid, '#EOF\r\n'); %write color repetitions to file
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file 
@@ -529,7 +529,7 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n',floor( cosangle/256), mod( cosangle, 256) ); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
-        crc = mod( floor(cosangle/256)+ mod(cosangle, 256) + 128 + 1 + 20 , 256); % calcultae crc= (angle + type +length + address) mod 256
+        crc = mod(cosangle + 128 + 1 + 20 , 256); % calcultae crc= (angle + type +length + address) mod 256
     %crc = mod(64 + 128 + 1 + 20 , 256);
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
     fprintf(fid, '#EOF\r\n'); %write color repetitions to file

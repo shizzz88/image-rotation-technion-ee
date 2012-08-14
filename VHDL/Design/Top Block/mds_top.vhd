@@ -229,7 +229,7 @@ component mem_mng_top
 end component mem_mng_top;	
 
 
-component top_img_man is
+component img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
@@ -276,7 +276,7 @@ component top_img_man is
 				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
 				wbm_stb_o			:	out std_logic							--Strobe Command to interface
 			);
-end component top_img_man;
+end component img_man_top;
 
 component disp_ctrl_top is
 	generic (
@@ -613,7 +613,7 @@ mem_mng_inst 	:	 mem_mng_top generic map
 			);
 
 ---------------------------- Image Manipulation---------------------------
-top_img_man_inst 	:	 top_img_man generic map
+img_man_inst 	:	 img_man_top generic map
 				(	
 					reset_polarity_g	 => '0',
 					img_hor_pixels_g	 => 128,                                         --************************************-
