@@ -32,30 +32,19 @@ entity img_man_top is
 				clk_i				:	in std_logic;							--Wishbone clock
 				rst					:	in std_logic;							--Reset
 
-				-- Wishbone Slave 
-				wr_wbs_adr_i		:	in std_logic_vector (9 downto 0);		--Address in internal RAM
-				wr_wbs_tga_i		:	in std_logic_vector (9 downto 0);		--Burst Length
-				wr_wbs_dat_i		:	in std_logic_vector (7 downto 0);		--Data In (8 bits)
-				wr_wbs_cyc_i		:	in std_logic;							--Cycle command from WBM
-				wr_wbs_stb_i		:	in std_logic;							--Strobe command from WBM
-				wr_wbs_we_i			:	in std_logic;							--Write Enable
-				wr_wbs_tgc_i		:	in std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
-				wr_wbs_dat_o		:	out std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
-				wr_wbs_stall_o		:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
-				wr_wbs_ack_o		:	out std_logic;							--Input data has been successfuly acknowledged
-				wr_wbs_err_o		:	out std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
-				
-				-- Wishbone Master 
-				wbm_dat_i			:	in std_logic_vector (15 downto 0);		--Data in (16 bits)
-				wbm_stall_i			:	in std_logic;							--Slave is not ready to receive new data
-				wbm_err_i			:	in std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-				wbm_ack_i			:	in std_logic;							--When Read Burst: DATA bus must be valid in this cycle
-				wbm_adr_o			:	out std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
-				wbm_dat_o			:	out std_logic_vector (15 downto 0);		--Data Out (16 bits)
-				wbm_we_o			:	out std_logic;							--Write Enable
-				wbm_tga_o			:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
-				wbm_stb_o			:	out std_logic							--Strobe Command to interface
+				-- Wishbone Slave (For Registers)
+				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
+				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
+				wbs_dat_i			:	in std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wbs_cyc_i			:	in std_logic;							--Cycle command from WBM
+				wbs_stb_i			:	in std_logic;							--Strobe command from WBM
+				wbs_we_i			:	in std_logic;							--Write Enable
+				wbs_tgc_i			:	in std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wbs_dat_o			:	out std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wbs_stall_o			:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wbs_ack_o			:	out std_logic;							--Input data has been successfuly acknowledged
+				wbs_err_o			:	out std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+			
 			);
 end entity img_man_top;
 
@@ -145,8 +134,8 @@ end component wbs_reg;
 --	###########################		Signals		##############################	--
 
 -- Logic signals, derived from Wishbone Slave (mem_ctrl_wr)
-signal wr_wbs_reg_cyc		:	std_logic;						--'1': Cycle to register is active
-signal wr_wbs_cmp_cyc		:	std_logic;						--'1': Cycle to component is active
+signal wbs_reg_cyc		:	std_logic;						--'1': Cycle to register is active
+signal wbs_cmp_cyc		:	std_logic;						--'1': Cycle to component is active
 signal wbs_reg_dout			:	std_logic_vector (7 downto 0);	--Output data from Registers
 signal wbs_reg_dout_valid	:	std_logic;						--Dout valid for registers
 signal wbs_reg_din_ack    	:   std_logic;						--Din has been acknowledeged by registers
@@ -154,8 +143,8 @@ signal wbs_cmp_ack_o		:	std_logic;						--WBS_ACK_O from component
 signal wbs_reg_ack_o		:	std_logic;						--WBS_ACK_O from registers
 signal wbs_cmp_stall_o		:	std_logic;						--WBS_STALL_O from component
 signal wbs_reg_stall_o		:	std_logic;						--WBS_STALL_O from registers
-signal wr_wbs_cmp_stb		:	std_logic;						--WBS_STB_O to component
-signal wr_wbs_reg_stb		:	std_logic;						--WBS_STB_O to registers
+signal wbs_cmp_stb		:	std_logic;						--WBS_STB_O to component
+signal wbs_reg_stb		:	std_logic;						--WBS_STB_O to registers
 
 -- Wishbone Master signals from Mem_Ctrl_Rd to Arbiter
 signal rd_wbm_adr_o	:	std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)	
@@ -225,44 +214,44 @@ signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);
 begin	
 	
 	--Cycle is active for registers
-	wr_wbs_reg_cyc_proc:
-	wr_wbs_reg_cyc	<=	wr_wbs_cyc_i and wr_wbs_tgc_i;
+	wbs_reg_cyc_proc:
+	wbs_reg_cyc	<=	wbs_cyc_i and wbs_tgc_i;
 	
 	--Cycle is active for components
-	wr_wbs_cmp_cyc_proc:
-	wr_wbs_cmp_cyc	<=	wr_wbs_cyc_i and (not wr_wbs_tgc_i);
+	wbs_cmp_cyc_proc:
+	wbs_cmp_cyc	<=	wbs_cyc_i and (not wbs_tgc_i);
 	
 	--Strobe is active for registers
-	wr_wbs_reg_stb_proc:
-	wr_wbs_reg_stb	<=	wr_wbs_stb_i and wr_wbs_tgc_i;
+	wbs_reg_stb_proc:
+	wbs_reg_stb	<=	wbs_stb_i and wbs_tgc_i;
 	
 	--Strobe is active for components
-	wr_wbs_cmp_stb_proc:
-	wr_wbs_cmp_stb	<=	wr_wbs_stb_i and (not wr_wbs_tgc_i);
+	wbs_cmp_stb_proc:
+	wbs_cmp_stb	<=	wbs_stb_i and (not wbs_tgc_i);
 	
 	--WBS_ACK_O
-	wr_wbs_ack_o_proc:
-	wr_wbs_ack_o	<= 	wbs_reg_ack_o when (wr_wbs_reg_cyc = '1')
+	wbs_ack_o_proc:
+	wbs_ack_o	<= 	wbs_reg_ack_o when (wbs_reg_cyc = '1')
 						else wbs_cmp_ack_o;
 	
 	--WBS_STALL_O
-	wr_wbs_stall_o_proc:
-	wr_wbs_stall_o	<=	wbs_reg_stall_o when (wr_wbs_reg_cyc = '1')
+	wbs_stall_o_proc:
+	wbs_stall_o	<=	wbs_reg_stall_o when (wbs_reg_cyc = '1')
 						else wbs_cmp_stall_o;
 	
 	--MUX, to route addressed register data to the WBS
 	wbs_reg_dout_proc:
-	wbs_reg_dout	<=	type_reg_dout when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c)) 
-						else cos_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c + 1))      		--top 8 bits
-						else cos_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c))											--buttom 8 bits 
-						else sin_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c + 1))      		--top 8 bits
-						else sin_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c))											--buttom 8 bits 
-						else x_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c + 1))		--top 8 bits
-						else x_start_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c))                                     --buttom 8 bits 
-						else y_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c + 1))		--top 8 bits
-						else y_start_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c))                                     --buttom 8 bits 
-						else zoom_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c + 1))		--top 8 bits
-						else zoom_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c))                                     --buttom 8 bits 
+	wbs_reg_dout	<=	type_reg_dout when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c)) 
+						else cos_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c + 1))      		--top 8 bits
+						else cos_reg_dout(reg_width_c - 1 downto 0) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c))											--buttom 8 bits 
+						else sin_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c + 1))      		--top 8 bits
+						else sin_reg_dout(reg_width_c - 1 downto 0) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c))											--buttom 8 bits 
+						else x_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c + 1))		--top 8 bits
+						else x_start_reg_dout(reg_width_c - 1 downto 0) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c))                                     --buttom 8 bits 
+						else y_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c + 1))		--top 8 bits
+						else y_start_reg_dout(reg_width_c - 1 downto 0) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c))                                     --buttom 8 bits 
+						else zoom_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c + 1))		--top 8 bits
+						else zoom_reg_dout(reg_width_c - 1 downto 0) when ((wbs_reg_cyc = '1') and (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c))                                     --buttom 8 bits 
 						else (others => '0');
 
 	--MUX, to route addressed register dout_valid to the WBS
@@ -275,40 +264,40 @@ begin
 	
 	--Read Enables processes:
 	type_reg_rd_en_proc:
-	type_reg_rd_en	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c) and (reg_rd_en = '1')
+	type_reg_rd_en	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	zoom_reg_rd_en_1proc:
-	zoom_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c +1) and (reg_rd_en = '1')
+	zoom_reg_rd_en(1)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c +1) and (reg_rd_en = '1')
 						else '0';
 	zoom_reg_rd_en_proc:
-	zoom_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c) and (reg_rd_en = '1')
+	zoom_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	
 	cos_reg_rd_en_1proc:
-	cos_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c +1) and (reg_rd_en = '1')
+	cos_reg_rd_en(1)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c +1) and (reg_rd_en = '1')
 						else '0';
 	cos_reg_rd_en_proc:
-	cos_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c) and (reg_rd_en = '1')
+	cos_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	sin_reg_rd_en_1proc:
-	sin_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c +1) and (reg_rd_en = '1')
+	sin_reg_rd_en(1)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c +1) and (reg_rd_en = '1')
 						else '0';
 	sin_reg_rd_en_proc:
-	sin_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c) and (reg_rd_en = '1')
+	sin_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c) and (reg_rd_en = '1')
 						else '0';					
 	
 	x_start_reg_rd_en_1proc:
-	x_start_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c +1) and (reg_rd_en = '1')
+	x_start_reg_rd_en(1)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c +1) and (reg_rd_en = '1')
 						else '0';
 	x_start_reg_rd_en_proc:
-	x_start_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c) and (reg_rd_en = '1')
+	x_start_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	
 	y_start_reg_rd_en_1proc:
-	y_start_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c +1) and (reg_rd_en = '1')
+	y_start_reg_rd_en(1)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c +1) and (reg_rd_en = '1')
 						else '0';
 	y_start_reg_rd_en_proc:
-	y_start_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c) and (reg_rd_en = '1')
+	y_start_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	
 
@@ -321,14 +310,14 @@ begin
 --	bank_val_proc: process (clk_i, rst)
 --	begin
 --		if (rst = reset_polarity_g) then
---			wr_bank_val <= '0';
+--			bank_val <= '0';
 --			rd_bank_val <= '1';
 --		elsif rising_edge (clk_i) then
 --			if (bank_switch = '1') then
---				wr_bank_val <= not wr_bank_val;
+--				bank_val <= not bank_val;
 --				rd_bank_val <= not rd_bank_val;
 --			else
---				wr_bank_val <= wr_bank_val;
+--				bank_val <= bank_val;
 --				rd_bank_val <= rd_bank_val;
 --			end if;
 --		end if;
@@ -506,12 +495,12 @@ begin
 									port map (
 										rst				=>	rst,
 										clk_i			=> 	clk_i,
-									    wbs_cyc_i	    =>	wr_wbs_reg_cyc,
-									    wbs_stb_i	    => 	wr_wbs_reg_stb,
-									    wbs_adr_i	    =>	wr_wbs_adr_i (reg_addr_width_c - 1 downto 0), 
-									    wbs_we_i	    => 	wr_wbs_we_i,
-									    wbs_dat_i	    => 	wr_wbs_dat_i,
-									    wbs_dat_o	    => 	wr_wbs_dat_o,
+									    wbs_cyc_i	    =>	wbs_reg_cyc,
+									    wbs_stb_i	    => 	wbs_reg_stb,
+									    wbs_adr_i	    =>	wbs_adr_i (reg_addr_width_c - 1 downto 0), 
+									    wbs_we_i	    => 	wbs_we_i,
+									    wbs_dat_i	    => 	wbs_dat_i,
+									    wbs_dat_o	    => 	wbs_dat_o,
 									    wbs_ack_o	    => 	wbs_reg_ack_o,
 										wbs_stall_o		=>	wbs_reg_stall_o,
 										
