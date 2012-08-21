@@ -77,7 +77,7 @@ manager_inst : img_man_manager
 				reset_polarity_g 	=> '0', 
 				img_hor_pixels_g	=> 640,	--640 pixel in a coloum
 				img_ver_pixels_g	=> 480	--480 pixels in a row
-				);                     
+				)                   
 	port map (                      
 				sys_clk				=>	system_clk,				-- clock
 				sys_rst				=>	system_rst,				-- Reset            
