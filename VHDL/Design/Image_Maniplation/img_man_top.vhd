@@ -65,77 +65,117 @@ architecture rtl_img_man_top of img_man_top is
 
 component gen_reg
 	generic	(
-			reset_polarity_g	:	std_logic	:= '0';					--When reset = reset_polarity_g, system is in RESET mode
-			width_g				:	positive	:= reg_width_c;					--Width: Number of bits
-			addr_en_g			:	boolean		:= true;				--TRUE: Address enabled  - responde by register will occur only when specific address has been specified
-			addr_val_g			:	natural		:= 0;					--Default register address
-			addr_width_g		:	positive	:= reg_addr_width_c;	--2^5 = 32 register address is supported
-			read_en_g			:	boolean		:= true;				--Enabling read
-			write_en_g			:	boolean		:= true;				--Enabling write
-			clear_on_read_g		:	boolean		:= false;				--TRUE: Clear on read (set to default value), FALSE otherwise
-			default_value_g		:	natural		:= 0					--Default value of register
+				reset_polarity_g	:	std_logic	:= '0';					--When reset = reset_polarity_g, system is in RESET mode
+				width_g				:	positive	:= reg_width_c;					--Width: Number of bits
+				addr_en_g			:	boolean		:= true;				--TRUE: Address enabled  - responde by register will occur only when specific address has been specified
+				addr_val_g			:	natural		:= 0;					--Default register address
+				addr_width_g		:	positive	:= reg_addr_width_c;	--2^5 = 32 register address is supported
+				read_en_g			:	boolean		:= true;				--Enabling read
+				write_en_g			:	boolean		:= true;				--Enabling write
+				clear_on_read_g		:	boolean		:= false;				--TRUE: Clear on read (set to default value), FALSE otherwise
+				default_value_g		:	natural		:= 0					--Default value of register
 			);
 	port	(
-			--Clock and Reset
-			clk				:	in std_logic;									--Clock
-			reset			:	in std_logic;									--Reset
-
-			--Address
-			addr			:	in std_logic_vector (addr_width_g - 1 downto 0);--Address to register. Relevant only when addr_en_g = true
-			
-			--Input data handshake
-			din				:	in std_logic_vector (width_g - 1 downto 0);		--Input data
-			wr_en			:	in std_logic;									--Input data is valid
-			clear			:	in std_logic;									--Set register value to its default value.
-			din_ack			:	out std_logic;									--Data has been acknowledged
-			
-			--Output data handshake
-			rd_en			:	in std_logic;									--Output data request
-			dout			:	out std_logic_vector (width_g - 1 downto 0);	--Output data
-			dout_valid		:	out std_logic									--Output data is valid
+				--Clock and Reset
+				clk				:	in std_logic;									--Clock
+				reset			:	in std_logic;									--Reset
+	
+				--Address
+				addr			:	in std_logic_vector (addr_width_g - 1 downto 0);--Address to register. Relevant only when addr_en_g = true
+				
+				--Input data handshake
+				din				:	in std_logic_vector (width_g - 1 downto 0);		--Input data
+				wr_en			:	in std_logic;									--Input data is valid
+				clear			:	in std_logic;									--Set register value to its default value.
+				din_ack			:	out std_logic;									--Data has been acknowledged
+				
+				--Output data handshake
+				rd_en			:	in std_logic;									--Output data request
+				dout			:	out std_logic_vector (width_g - 1 downto 0);	--Output data
+				dout_valid		:	out std_logic									--Output data is valid
 			);
 end component gen_reg;
 
 component wbs_reg
 	generic	(
-			reset_polarity_g	:	std_logic	:= '0';							--'0' = reset active
-			width_g				:	positive	:= reg_width_c;							--Width: Registers width
-			addr_width_g		:	positive	:= reg_addr_width_c 			--2^reg_addr_width_c =  register address is supported
+				reset_polarity_g	:	std_logic	:= '0';							--'0' = reset active
+				width_g				:	positive	:= reg_width_c;							--Width: Registers width
+				addr_width_g		:	positive	:= reg_addr_width_c 			--2^reg_addr_width_c =  register address is supported
 			);
 	port	(
-			rst			:	in	std_logic;										--Reset
-			
-			--Wishbone Slave Signals
-			clk_i		:	in std_logic;										--Wishbone Clock
-			wbs_cyc_i	:	in std_logic;										--Cycle command from WBM
-			wbs_stb_i	:	in std_logic;										--Strobe command from WBM
-			wbs_adr_i	:	in std_logic_vector (addr_width_g - 1 downto 0);	--Register's address
-			wbs_we_i	:	in std_logic;										--Write enable
-			wbs_dat_i	:	in std_logic_vector (width_g - 1 downto 0);			--Data In
-			wbs_dat_o	:	out std_logic_vector (width_g - 1 downto 0);		--Data Out
-			wbs_ack_o	:	out std_logic;										--Input data has been successfuly acknowledged
-			wbs_stall_o	:	out std_logic;										--Not ready to receive data
-			
-			--Signals to Registers
-			din_ack		:	in std_logic;										--Write command has been received
-			dout		:	in std_logic_vector (width_g - 1 downto 0);			--Output data
-			dout_valid	:	in std_logic;										--Output data is valid
-			addr		:	out std_logic_vector (addr_width_g - 1 downto 0);	--Address to register.
-			din			:	out std_logic_vector (width_g - 1 downto 0);		--Input data
-			rd_en		:	out std_logic;										--Request for data
-			wr_en		:	out std_logic										--Write data
+				rst			:	in	std_logic;										--Reset
+				
+				--Wishbone Slave Signals
+				clk_i		:	in std_logic;										--Wishbone Clock
+				wbs_cyc_i	:	in std_logic;										--Cycle command from WBM
+				wbs_stb_i	:	in std_logic;										--Strobe command from WBM
+				wbs_adr_i	:	in std_logic_vector (addr_width_g - 1 downto 0);	--Register's address
+				wbs_we_i	:	in std_logic;										--Write enable
+				wbs_dat_i	:	in std_logic_vector (width_g - 1 downto 0);			--Data In
+				wbs_dat_o	:	out std_logic_vector (width_g - 1 downto 0);		--Data Out
+				wbs_ack_o	:	out std_logic;										--Input data has been successfuly acknowledged
+				wbs_stall_o	:	out std_logic;										--Not ready to receive data
+				
+				--Signals to Registers
+				din_ack		:	in std_logic;										--Write command has been received
+				dout		:	in std_logic_vector (width_g - 1 downto 0);			--Output data
+				dout_valid	:	in std_logic;										--Output data is valid
+				addr		:	out std_logic_vector (addr_width_g - 1 downto 0);	--Address to register.
+				din			:	out std_logic_vector (width_g - 1 downto 0);		--Input data
+				rd_en		:	out std_logic;										--Request for data
+				wr_en		:	out std_logic										--Write data
 			);
 end component wbs_reg;
 
 
-
+component addr_calc is
+	generic (
+				reset_polarity_g		:	std_logic	:= '0';			--Reset active low
+				x_size_in_g				:	positive 	:= 96;				-- number of rows  in the input image
+				y_size_in_g				:	positive 	:= 128;				-- number of columns  in the input image
+				x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
+				y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image
+				trig_frac_size_g			:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
+				pipe_depth_g				:	positive	:= 12;				-- 
+				valid_setup_g				:	positive	:= 5
+			);
+	port	(
+				
+				zoom_factor			:	in signed (trig_frac_size_g+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
+				sin_teta			:	in signed (trig_frac_size_g+1 downto 0);	--sine of rotation angle - calculated by software. 7 bits of sin + 1 bit of signed
+				cos_teta			:	in signed (trig_frac_size_g+1 downto 0);	--cosine of rotation angle - calculated by software. 
+				
+				
+				row_idx_in			:	in signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
+				col_idx_in			:	in signed (10 downto 0);		--the current column index of the output image
+				x_crop_start	    :	in signed (10 downto 0);		--crop start index : the top left pixel for crop		
+				y_crop_start		:	in signed (10 downto 0);		--crop start index : the top left pixel for crop
+				ram_start_add_in	:	in std_logic_vector  (22 downto 0);		--SDram beginning address
+				
+                tl_out				:	out std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
+				tr_out				:	out std_logic_vector (22 downto 0);		--top right pixel address in SDRAM
+				bl_out				:	out std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
+				br_out				:	out std_logic_vector (22 downto 0);		--bottom right pixel address in SDRAM
+				delta_row_out		:	out	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				delta_col_out		:	out	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				
+				out_of_range		:	out std_logic;		--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				data_valid_out		:	out std_logic;		--data valid indicator
+				
+				--CLK, RESET, ENABLE
+				unit_finish			:	out std_logic;                              --signal indicating addr_calc is finished
+				trigger_unit			:	in std_logic;                               --enable signal for addr_calc
+				system_clk				:	in std_logic;							--SDRAM clock
+				system_rst				:	in std_logic							--Reset (133MHz)
+			);
+end component addr_calc;
 
 
 --	###########################		Signals		##############################	--
 
 -- Logic signals, derived from Wishbone Slave (mem_ctrl_wr)
-signal wbs_reg_cyc		:	std_logic;						--'1': Cycle to register is active
-signal wbs_cmp_cyc		:	std_logic;						--'1': Cycle to component is active
+signal wbs_reg_cyc			:	std_logic;						--'1': Cycle to register is active
+signal wbs_cmp_cyc			:	std_logic;						--'1': Cycle to component is active
 signal wbs_reg_dout			:	std_logic_vector (7 downto 0);	--Output data from Registers
 signal wbs_reg_dout_valid	:	std_logic;						--Dout valid for registers
 signal wbs_reg_din_ack    	:   std_logic;						--Din has been acknowledeged by registers
@@ -143,28 +183,19 @@ signal wbs_cmp_ack_o		:	std_logic;						--WBS_ACK_O from component
 signal wbs_reg_ack_o		:	std_logic;						--WBS_ACK_O from registers
 signal wbs_cmp_stall_o		:	std_logic;						--WBS_STALL_O from component
 signal wbs_reg_stall_o		:	std_logic;						--WBS_STALL_O from registers
-signal wbs_cmp_stb		:	std_logic;						--WBS_STB_O to component
-signal wbs_reg_stb		:	std_logic;						--WBS_STB_O to registers
+signal wbs_cmp_stb			:	std_logic;						--WBS_STB_O to component
+signal wbs_reg_stb			:	std_logic;						--WBS_STB_O to registers
 
 -- Wishbone Master signals from Mem_Ctrl_Rd to Arbiter
-signal rd_wbm_adr_o	:	std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)	
-signal rd_wbm_dat_i	:   std_logic_vector (15 downto 0);		--Data In (16 bits)
-signal rd_wbm_we_o	:	std_logic;							--Write Enable
-signal rd_wbm_tga_o	:   std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-signal rd_wbm_cyc_o	:   std_logic;							--Cycle Command to interface
-signal rd_wbm_stb_o	:   std_logic;							--Strobe Command to interface
-signal rd_wbm_stall_i:	std_logic;							--Slave is not ready to receive new data
-signal rd_wbm_err_i	:   std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-signal rd_wbm_ack_i	:   std_logic;							--When Read Burst: DATA bus must be valid in this cycle
-
----- Wr_Rd_Bank signals
---signal wr_bank_val	:	std_logic; 							--Wr_Bank value
---signal rd_bank_val	:	std_logic;					 		--Rd_Bank value
---signal bank_switch	:	std_logic;							--Signals the Wr_Rd_Bank to switch between banks
-
----- Mem_Ctrl_Read signals
---signal wr_cnt_val	:	std_logic_vector(integer(ceil(log(real(img_hor_pixels_g*img_ver_lines_g)) / log(2.0))) - 1 downto 0);	--wr_cnt value
---signal wr_cnt_en	:	std_logic;							--wr_cnt write enable flag (Active for 1 clock)
+signal rd_wbm_adr_o			:	std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)	
+signal rd_wbm_dat_i			:   std_logic_vector (15 downto 0);		--Data In (16 bits)
+signal rd_wbm_we_o			:	std_logic;							--Write Enable
+signal rd_wbm_tga_o			:   std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
+signal rd_wbm_cyc_o			:   std_logic;							--Cycle Command to interface
+signal rd_wbm_stb_o			:   std_logic;							--Strobe Command to interface
+signal rd_wbm_stall_i		:	std_logic;							--Slave is not ready to receive new data
+signal rd_wbm_err_i			:   std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
+signal rd_wbm_ack_i			:   std_logic;							--When Read Burst: DATA bus must be valid in this cycle
 
 --Signals to registers
 signal reg_addr				:	std_logic_vector (reg_addr_width_c - 1 downto 0);	--Address to register. Relevant only when addr_en_g = true
@@ -209,6 +240,17 @@ signal zoom_reg_rd_en			:	std_logic_vector (param_reg_depth_c - 1 downto 0);				
 signal zoom_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);	--Output data
 signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
 
+----------------------------------FSM-------------------------------------
+------------------------------	Types	------------------------------------
+	type fsm_states is (
+							fsm_idle_st,			-- Idle - wait to start 
+							fsm_create_crd_st, 		-- initialize coordinate registers to (0,0) or (1,1)??
+							fsm_advance_crd_st,		-- advance cordinate by 1, if line is over move to next line
+							fsm_address_calc_st,	-- send coordinates to Address Calc, if out of range WB BLACK_PIXEL(0) else continue
+							fsm_READ_from_SDRAM_st, -- read 4 pixels from SDRAM according to result of addr_calc
+							fsm_bilinear_st,		-- do a bilinear interpolation between the 4 pixels
+							fsm_WB_to_SDRAM_st,		-- Write Back result to SDRAM
+						);
 
 --	###########################		Implementation		##############################	--
 begin	
