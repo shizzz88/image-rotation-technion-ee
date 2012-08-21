@@ -173,7 +173,7 @@ end component addr_calc;
 
 --	###########################		Signals		##############################	--
 
--- Logic signals, derived from Wishbone Slave (mem_ctrl_wr)
+-- Logic signals, derived from Wishbone Slave
 signal wbs_reg_cyc			:	std_logic;						--'1': Cycle to register is active
 signal wbs_cmp_cyc			:	std_logic;						--'1': Cycle to component is active
 signal wbs_reg_dout			:	std_logic_vector (7 downto 0);	--Output data from Registers
@@ -186,16 +186,16 @@ signal wbs_reg_stall_o		:	std_logic;						--WBS_STALL_O from registers
 signal wbs_cmp_stb			:	std_logic;						--WBS_STB_O to component
 signal wbs_reg_stb			:	std_logic;						--WBS_STB_O to registers
 
--- Wishbone Master signals from Mem_Ctrl_Rd to Arbiter
-signal rd_wbm_adr_o			:	std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)	
-signal rd_wbm_dat_i			:   std_logic_vector (15 downto 0);		--Data In (16 bits)
-signal rd_wbm_we_o			:	std_logic;							--Write Enable
-signal rd_wbm_tga_o			:   std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-signal rd_wbm_cyc_o			:   std_logic;							--Cycle Command to interface
-signal rd_wbm_stb_o			:   std_logic;							--Strobe Command to interface
-signal rd_wbm_stall_i		:	std_logic;							--Slave is not ready to receive new data
-signal rd_wbm_err_i			:   std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-signal rd_wbm_ack_i			:   std_logic;							--When Read Burst: DATA bus must be valid in this cycle
+---- Wishbone Master signals from Mem_Ctrl_Rd to Arbiter
+--signal rd_wbm_adr_o			:	std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)	
+--signal rd_wbm_dat_i			:   std_logic_vector (15 downto 0);		--Data In (16 bits)
+--signal rd_wbm_we_o			:	std_logic;							--Write Enable
+--signal rd_wbm_tga_o			:   std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
+--signal rd_wbm_cyc_o			:   std_logic;							--Cycle Command to interface
+--signal rd_wbm_stb_o			:   std_logic;							--Strobe Command to interface
+--signal rd_wbm_stall_i			:	std_logic;							--Slave is not ready to receive new data
+--signal rd_wbm_err_i			:   std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
+--signal rd_wbm_ack_i			:   std_logic;							--When Read Burst: DATA bus must be valid in this cycle
 
 --Signals to registers
 signal reg_addr				:	std_logic_vector (reg_addr_width_c - 1 downto 0);	--Address to register. Relevant only when addr_en_g = true
@@ -240,17 +240,6 @@ signal zoom_reg_rd_en			:	std_logic_vector (param_reg_depth_c - 1 downto 0);				
 signal zoom_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);	--Output data
 signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
 
-----------------------------------FSM-------------------------------------
-------------------------------	Types	------------------------------------
-	type fsm_states is (
-							fsm_idle_st,			-- Idle - wait to start 
-							fsm_create_crd_st, 		-- initialize coordinate registers to (0,0) or (1,1)??
-							fsm_advance_crd_st,		-- advance cordinate by 1, if line is over move to next line
-							fsm_address_calc_st,	-- send coordinates to Address Calc, if out of range WB BLACK_PIXEL(0) else continue
-							fsm_READ_from_SDRAM_st, -- read 4 pixels from SDRAM according to result of addr_calc
-							fsm_bilinear_st,		-- do a bilinear interpolation between the 4 pixels
-							fsm_WB_to_SDRAM_st,		-- Write Back result to SDRAM
-						);
 
 --	###########################		Implementation		##############################	--
 begin	
