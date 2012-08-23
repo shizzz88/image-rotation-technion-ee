@@ -36,7 +36,7 @@ component img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 640;	--640 pixel in a coloum
-				img_ver_pixels_g		:	positive					:= 480	--480 pixels in a row
+				img_ver_pixels_g		:	positive				:= 480	--480 pixels in a row
 			);
 	port	(
 				--Clock and Reset 
@@ -44,7 +44,8 @@ component img_man_manager is
 				sys_rst				:	in std_logic;				-- Reset
 				
 				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
-				
+				row_idx_valid		:	out std_logic;				--valid signal for row index
+				col_idx_valid		:	out std_logic;				--valid signal for col index
 				row_idx_out			:	out signed (10 downto 0); 	--current row index
 				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index
 				
@@ -60,7 +61,9 @@ signal system_rst			:	std_logic;
 signal trigger				:	std_logic;
 signal row_idx_out_sig			:	 signed (10 downto 0); 	--current row index
 signal col_idx_out_sig			:	 signed (10 downto 0); 	--corrent coloumn index
-
+signal row_idx_valid_sig		:	 std_logic;				--valid signal for row index
+signal col_idx_valid_sig		:	 std_logic;				--valid signal for col index
+				
 begin
 ---------------------------		process + inst	-----------------------------------------
 clk_133_proc:
@@ -75,13 +78,15 @@ trigger <=	'0', '1' after 100 ns, '0' after 107.5 ns;
 manager_inst : img_man_manager
 	generic map(
 				reset_polarity_g 	=> '0', 
-				img_hor_pixels_g	=> 640,	--640 pixel in a coloum
-				img_ver_pixels_g	=> 480	--480 pixels in a row
+				img_hor_pixels_g	=> 60,	--640 pixel in a coloum
+				img_ver_pixels_g	=> 40	--480 pixels in a row
 				)                   
 	port map (                      
 				sys_clk				=>	system_clk,				-- clock
 				sys_rst				=>	system_rst,				-- Reset            
 				req_trig			=>	trigger,				--trigger for image manipulation to begin,       
+				row_idx_valid       =>  row_idx_valid_sig,
+				col_idx_valid       =>  col_idx_valid_sig,
 				row_idx_out			=>	row_idx_out_sig, 	--current row index
 				col_idx_out			=>	col_idx_out_sig 	--corrent coloumn index
 				
