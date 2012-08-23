@@ -70,7 +70,7 @@ rst_133_proc:
 system_rst	<=	'0', '1' after 100 ns;
 
 trigger_proc:
-trigger <=	'1', '0' after 100 ns, '1' after 107.5 ns;
+trigger <=	'0', '1' after 100 ns, '0' after 107.5 ns;
 
 manager_inst : img_man_manager
 	generic map(
