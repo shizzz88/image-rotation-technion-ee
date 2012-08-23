@@ -64,8 +64,9 @@ architecture rtl_img_man_manager of img_man_manager is
 	signal cur_st			:	fsm_states;			-- Current State
 	
 	-------------------------Coordinate Procces
-	signal finish_init_coord : std_logic;				-- flag indicating when initilze coordinate is complete
-	signal img_complete : std_logic;				-- flag indicating when image is complete botom left corner
+	signal finish_init_coord	: std_logic;				-- flag indicating when initilze coordinate is complete
+	signal img_complete 		: std_logic;				-- flag indicating when image is complete botom left corner
+	signal one_inc_compelte 	: std_logic;				-- flag indicating when one incrament was done
 
 	signal row_idx_sig		 :  signed (10 downto 0);	
 	signal col_idx_sig       :  signed (10 downto 0);
@@ -89,25 +90,31 @@ begin
 					else
 						cur_st 	<= 	cur_st;	
 					end if;				
+				
 				when fsm_init_coord_st =>
 					if (finish_init_coord='1') then
 						cur_st	<=	fsm_increment_coord_st;
 					else
 						cur_st 	<= 	cur_st;
 					end if;	
-				--when fsm_increment_coord_st	=>
-				--	
-				--when fsm_address_calc_st =>
-				--	
-				--when fsm_READ_from_SDRAM_st =>
-                --
-				--when fsm_bilinear_st =>
-                --
-				--when fsm_WB_to_SDRAM_st =>					
-
+				
+				when fsm_increment_coord_st	=>				
+					if (img_complete = '1') then  			-- image is complete, back to idle
+						cur_st		<=	fsm_idle_st;
+					elsif  (one_inc_compelte='1') then 		-- continue incrementing/building picture 
+						cur_st 	<= 	fsm_address_calc_st;			
+					end if;
+				when fsm_address_calc_st =>
+						cur_st 	<= 	fsm_READ_from_SDRAM_st;		--for tb of coordinate process
+				when fsm_READ_from_SDRAM_st =>		
+						cur_st 	<= 	fsm_bilinear_st;			--for tb of coordinate process
+				when fsm_bilinear_st =>		
+						cur_st 	<= 	fsm_WB_to_SDRAM_st;			--for tb of coordinate process
+				when fsm_WB_to_SDRAM_st =>							
+						cur_st 	<= 	fsm_increment_coord_st;		--for tb of coordinate process
 				when others =>
 					cur_st	<=	fsm_idle_st;
-					report "Time: " & time'image(now) & "Pixel Manager : Unimplemented state has been detected" severity error;
+					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected" severity error;
 				end case;
 		end if;
 	end process fsm_proc;
@@ -130,20 +137,26 @@ coord_proc : process (sys_clk,sys_rst)
 			col_cnt:=0;
 			finish_init_coord <= '0';
 			img_complete <='0';
+			one_inc_compelte <='0';
+			row_idx_sig <=(others => '0');
+			col_idx_sig <=(others => '0');
 		elsif rising_edge(sys_clk) then
-			if (cur_st=fsm_init_coord_st) then 		--initialize row and col counter
+			if (cur_st=fsm_init_coord_st) then 			--initialize row and col counter
 				row_cnt:=1;	
 				col_cnt:=1;
 				finish_init_coord <= '1';
 			elsif (cur_st=fsm_increment_coord_st) then	--increment col if possible, else move to new row
 				if (row_cnt< img_ver_pixels_g) then
 					row_cnt:=row_cnt+1;
+					one_inc_compelte<='1';
 				else  --(row_cnt == img_ver_pixels_g)
 					if (col_cnt<img_hor_pixels_g) then
 						row_cnt:=1;
 						col_cnt:=col_cnt+1;
+						one_inc_compelte<='1';
 					else --(col_cnt == img_hor_pixels_g)
 						img_complete <='1';
+						one_inc_compelte<='0';
 					end if;
 				end if;	
 				
