@@ -26,7 +26,7 @@ entity img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 640;	--640 pixel in a coloum
-				img_ver_pixels_g		:	positive					:= 480	--480 pixels in a row
+				img_ver_pixels_g	:	positive					:= 480	--480 pixels in a row
 			);
 	port	(
 				--Clock and Reset 
@@ -35,6 +35,8 @@ entity img_man_manager is
 				
 				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
 				
+				row_idx_valid		:	out std_logic;				--valid signal for row index
+				col_idx_valid		:	out std_logic;				--valid signal for col index
 				row_idx_out			:	out signed (10 downto 0); 	--current row index
 				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index
 				
@@ -44,7 +46,6 @@ end entity img_man_manager;
 architecture rtl_img_man_manager of img_man_manager is
 
 	------------------------------	Constants	------------------------------------
-	constant num_pixels_c		:	positive 	:= img_hor_pixels_g * img_ver_pixels_g;	--Number of pixels
 	constant col_bits_c			:	positive 	:= 11;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
 	constant row_bits_c			:	positive 	:= 11;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
 
@@ -63,21 +64,28 @@ architecture rtl_img_man_manager of img_man_manager is
 	-------------------------FSM
 	signal cur_st			:	fsm_states;			-- Current State
 	
-	-------------------------Coordinate Procces
+	-------------------------Coordinate Counter Procces
 	signal finish_init_coord	: std_logic;				-- flag indicating when initilze coordinate is complete
-	signal img_complete 		: std_logic;				-- flag indicating when image is complete botom left corner
-	signal one_inc_compelte 	: std_logic;				-- flag indicating when one incrament was done
+	signal finish_image 		: std_logic;				-- flag indicating when image is complete botom left corner
+	signal finish_increment 	: std_logic;				-- flag indicating when one incrament was done
 
 	signal row_idx_sig		 :  signed (10 downto 0);	
 	signal col_idx_sig       :  signed (10 downto 0);
 --	###########################		Implementation		##############################	--
 begin	
-
 ----------------------------------------------------------------------------------------
-	----------------------------		fsm_proc Process			------------------------
-	----------------------------------------------------------------------------------------
-	-- This is the main FSM Process
-	----------------------------------------------------------------------------------------
+----------------------------		index valid  Processes			------------------------
+----------------------------------------------------------------------------------------
+row_valid_proc:
+row_idx_valid		<= '1' when (cur_st=fsm_address_calc_st and finish_image='0') else '0';
+col_valid_proc:
+col_idx_valid		<= '1' when (cur_st=fsm_address_calc_st and finish_image='0') else '0';
+
+------------------------------------------------------------------------------------
+----------------------------		fsm_proc Process			------------------------
+----------------------------------------------------------------------------------------
+----------------------------    This is the main FSM Process    ------------------
+----------------------------------------------------------------------------------------
 	fsm_proc: process (sys_clk, sys_rst)
 	begin
 		if (sys_rst = reset_polarity_g) then
@@ -93,19 +101,20 @@ begin
 				
 				when fsm_init_coord_st =>
 					if (finish_init_coord='1') then
-						cur_st	<=	fsm_increment_coord_st;
+						cur_st	<=	fsm_address_calc_st;
 					else
 						cur_st 	<= 	cur_st;
 					end if;	
 				
 				when fsm_increment_coord_st	=>				
-					if (img_complete = '1') then  			-- image is complete, back to idle
-						cur_st		<=	fsm_idle_st;
-					elsif  (one_inc_compelte='1') then 		-- continue incrementing/building picture 
-						cur_st 	<= 	fsm_address_calc_st;			
-					end if;
+						cur_st 	<= 	fsm_address_calc_st;
+						
 				when fsm_address_calc_st =>
+					if (finish_image = '1') then  			-- image is complete, back to idle
+						cur_st		<=	fsm_idle_st;
+					else
 						cur_st 	<= 	fsm_READ_from_SDRAM_st;		--for tb of coordinate process
+					end if;	
 				when fsm_READ_from_SDRAM_st =>		
 						cur_st 	<= 	fsm_bilinear_st;			--for tb of coordinate process
 				when fsm_bilinear_st =>		
@@ -119,49 +128,51 @@ begin
 		end if;
 	end process fsm_proc;
 
-	---------------------------------------------------------------------------------------
-	----------------------------	coordinate process	-----------------------------------
-	---------------------------------------------------------------------------------------
-	-- THE process will advance the row/col indexes until end of image
-	-- when image is over a flag will rise - img_complete
-	-- reset will set the coordinates at (0,0)
-	-- init will set the coordinates at (1,1)
-	---------------------------------------------------------------------------------------	
+---------------------------------------------------------------------------------------
+----------------------------	coordinate process	-----------------------------------
+---------------------------------------------------------------------------------------
+-- THE process will advance the row/col indexes until end of image
+-- when image is over a flag will rise - finish_image
+-- reset will set the coordinates at (0,0)
+-- init will set the coordinates at (1,1)
+---------------------------------------------------------------------------------------	
 coord_proc : process (sys_clk,sys_rst)			
-	variable row_cnt : integer range 0 to img_ver_pixels_g	:=0;
-	variable col_cnt : integer range 0 to img_hor_pixels_g	:=0;
-	
 	begin
 		if (sys_rst =reset_polarity_g) then	
-			row_cnt:=0;
-			col_cnt:=0;
 			finish_init_coord <= '0';
-			img_complete <='0';
-			one_inc_compelte <='0';
+			finish_image <='0';
+			finish_increment <='0';
 			row_idx_sig <=(others => '0');
 			col_idx_sig <=(others => '0');
 		elsif rising_edge(sys_clk) then
 			if (cur_st=fsm_init_coord_st) then 			--initialize row and col counter
-				row_cnt:=1;	
-				col_cnt:=1;
+				row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --row starts with 0d1 
+				row_idx_sig(0)<='1';
+				col_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --col starts with 0d1 
+				col_idx_sig(0)<='1';	
 				finish_init_coord <= '1';
-			elsif (cur_st=fsm_increment_coord_st) then	--increment col if possible, else move to new row
-				if (row_cnt< img_ver_pixels_g) then
-					row_cnt:=row_cnt+1;
-					one_inc_compelte<='1';
-				else  --(row_cnt == img_ver_pixels_g)
-					if (col_cnt<img_hor_pixels_g) then
-						row_cnt:=1;
-						col_cnt:=col_cnt+1;
-						one_inc_compelte<='1';
-					else --(col_cnt == img_hor_pixels_g)
-						img_complete <='1';
-						one_inc_compelte<='0';
-					end if;
-				end if;	
-				
-			row_idx_sig <= to_signed(row_cnt,row_bits_c);
-			col_idx_sig <= to_signed(col_cnt,col_bits_c);
+				finish_image <='0';
+			elsif (cur_st=fsm_increment_coord_st) then	--increment row if possible, else move to new col
+				finish_init_coord<='0';
+				if (row_idx_sig< img_ver_pixels_g) then --increment row
+					row_idx_sig<=row_idx_sig+1;
+					finish_increment<='1';
+					finish_image <='0';
+				else  	--(row_idx_sig == img_ver_pixels_g) -> co is over, move to new col
+					if (col_idx_sig<img_hor_pixels_g) then
+						row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
+						row_idx_sig(0)<='1';
+						col_idx_sig<=col_idx_sig+1;
+						finish_increment<='1';
+					else --(col_idx_sig == img_hor_pixels_g)&(row_idx_sig == img_ver_pixels_g) -> image is complete
+						finish_image <='1';
+						finish_increment<='0';
+					end if;	
+				end if;
+			else --(other state)
+				finish_increment<='0';
+				finish_init_coord<='0';
+				finish_image <='0';
 			end if;
 		end if;	
 	end process coord_proc;
