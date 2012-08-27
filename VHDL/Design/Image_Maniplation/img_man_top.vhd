@@ -25,12 +25,12 @@ entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
-				img_ver_lines_g		:	positive					:= 480	--480 active lines
+				img_ver_pixels_g	:	positive					:= 480	--480 active lines
 			);
 	port	(
 				--Clock and Reset
-				clk_i				:	in std_logic;							--Wishbone clock
-				rst					:	in std_logic;							--Reset
+				system_clk				:	in std_logic;							--Clock
+				system_rst				:	in std_logic;							--Reset
 
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -338,12 +338,12 @@ begin
 --	---------------------------------------------------------------------------------------
 --	-- The process switches between the two double banks when fine image has been received.
 --	---------------------------------------------------------------------------------------
---	bank_val_proc: process (clk_i, rst)
+--	bank_val_proc: process (system_clk, system_rst)
 --	begin
---		if (rst = reset_polarity_g) then
+--		if (system_rst = reset_polarity_g) then
 --			bank_val <= '0';
 --			rd_bank_val <= '1';
---		elsif rising_edge (clk_i) then
+--		elsif rising_edge (system_clk) then
 --			if (bank_switch = '1') then
 --				bank_val <= not bank_val;
 --				rd_bank_val <= not rd_bank_val;
@@ -368,8 +368,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	system_clk,
+									    reset		        =>	system_rst,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -395,8 +395,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	system_clk,
+									    reset		        =>	system_rst,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -422,8 +422,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	system_clk,
+									    reset		        =>	system_rst,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -449,8 +449,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	system_clk,
+									    reset		        =>	system_rst,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -476,8 +476,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	system_clk,
+									    reset		        =>	system_rst,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -503,8 +503,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	system_clk,
+									    reset		        =>	system_rst,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -524,8 +524,8 @@ begin
 										addr_width_g	=>	reg_addr_width_c
 									)
 									port map (
-										rst				=>	rst,
-										clk_i			=> 	clk_i,
+										rst				=>	system_rst,
+										clk_i			=> 	system_clk,
 									    wbs_cyc_i	    =>	wbs_reg_cyc,
 									    wbs_stb_i	    => 	wbs_reg_stb,
 									    wbs_adr_i	    =>	wbs_adr_i (reg_addr_width_c - 1 downto 0), 
