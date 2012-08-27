@@ -44,8 +44,7 @@ component img_man_manager is
 				sys_rst				:	in std_logic;				-- Reset
 				
 				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
-				row_idx_valid		:	out std_logic;				--valid signal for row index
-				col_idx_valid		:	out std_logic;				--valid signal for col index
+				index_valid		:	out std_logic;				--valid signal for row index
 				row_idx_out			:	out signed (10 downto 0); 	--current row index
 				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index
 				
@@ -61,8 +60,7 @@ signal system_rst			:	std_logic;
 signal trigger				:	std_logic;
 signal row_idx_out_sig			:	 signed (10 downto 0); 	--current row index
 signal col_idx_out_sig			:	 signed (10 downto 0); 	--corrent coloumn index
-signal row_idx_valid_sig		:	 std_logic;				--valid signal for row index
-signal col_idx_valid_sig		:	 std_logic;				--valid signal for col index
+signal idx_valid_sig		:	 std_logic;				--valid signal for row index
 				
 begin
 ---------------------------		process + inst	-----------------------------------------
@@ -85,8 +83,7 @@ manager_inst : img_man_manager
 				sys_clk				=>	system_clk,				-- clock
 				sys_rst				=>	system_rst,				-- Reset            
 				req_trig			=>	trigger,				--trigger for image manipulation to begin,       
-				row_idx_valid       =>  row_idx_valid_sig,
-				col_idx_valid       =>  col_idx_valid_sig,
+				index_valid     	=>  idx_valid_sig,
 				row_idx_out			=>	row_idx_out_sig, 	--current row index
 				col_idx_out			=>	col_idx_out_sig 	--corrent coloumn index
 				
