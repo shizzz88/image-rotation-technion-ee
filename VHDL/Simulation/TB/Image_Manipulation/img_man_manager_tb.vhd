@@ -42,9 +42,13 @@ component img_man_manager is
 				--Clock and Reset 
 				sys_clk				:	in std_logic;				-- clock
 				sys_rst				:	in std_logic;				-- Reset
-				
 				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
-				index_valid		:	out std_logic;				--valid signal for row index
+				
+				--from addr calc
+				addr_calc_oor		:	in std_logic;				--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				addr_calc_valid		:	in std_logic;				--data valid indicator
+				--index outputs
+				index_valid			:	out std_logic;				--valid signal for row index
 				row_idx_out			:	out signed (10 downto 0); 	--current row index
 				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index
 				
@@ -83,6 +87,8 @@ manager_inst : img_man_manager
 				sys_clk				=>	system_clk,				-- clock
 				sys_rst				=>	system_rst,				-- Reset            
 				req_trig			=>	trigger,				--trigger for image manipulation to begin,       
+				addr_calc_oor		=> '0',
+				addr_calc_valid		=> '1',
 				index_valid     	=>  idx_valid_sig,
 				row_idx_out			=>	row_idx_out_sig, 	--current row index
 				col_idx_out			=>	col_idx_out_sig 	--corrent coloumn index
