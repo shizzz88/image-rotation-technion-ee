@@ -12,15 +12,18 @@
 --			Number		Date		Name					Description			
 --			1.00		21.08.2012	Uri					creation
 --					
+------------------------------------------------------------------------------------------------
+-- TO DO:
+--			fix constants to be derived from generics, don't forget addr_calc.vhd
+--			fix	row/col_idx_out	to be generic length
+--			
+--					
 
 ------------------------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
-use ieee.math_real.all;
 
-library work ;
 
 entity img_man_manager is
 	generic (
@@ -34,6 +37,10 @@ entity img_man_manager is
 				sys_rst				:	in std_logic;				-- Reset
 				
 				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
+				--from addr_calc
+				addr_calc_oor		:	in std_logic;				--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				addr_calc_valid		:	in std_logic;				--data valid indicator
+				
 				
 				index_valid			:	out std_logic;				--valid signal for index
 				row_idx_out			:	out signed (10 downto 0); 	--current row index           --fix to generic
@@ -45,9 +52,9 @@ end entity img_man_manager;
 architecture rtl_img_man_manager of img_man_manager is
 
 	------------------------------	Constants	------------------------------------
-	  --fix to generic
-	constant col_bits_c			:	positive 	:= 11;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
-	constant row_bits_c			:	positive 	:= 11;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
+	 ----fix to generic
+	constant col_bits_c			:	positive 	:= 10;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
+	constant row_bits_c			:	positive 	:= 10;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
 
 	------------------------------	Types	------------------------------------
 	type fsm_states is (
@@ -65,13 +72,25 @@ architecture rtl_img_man_manager of img_man_manager is
 	signal cur_st			:	fsm_states;			-- Current State
 	
 	-------------------------Coordinate Counter Procces
-	signal finish_init_coord	: std_logic;				-- flag indicating when initilze coordinate is complete
-	signal finish_image 		: std_logic;				-- flag indicating when image is complete botom left corner
-	signal finish_increment 	: std_logic;				-- flag indicating when one incrament was done
+	signal finish_init_coord_st	: std_logic;				-- finish init index state
+	signal finish_image 		: std_logic;				-- flag indicating when image is complete, bottom left corner
+	signal finish_increment_st 	: std_logic;				-- finish incrament index state
+	
+	signal row_idx_sig		 :  signed (row_bits_c downto 0);	  --fix to generic
+	signal col_idx_sig       :  signed (col_bits_c downto 0);  		--fix to generic
+	
+	------------------------Address Calculator
+	--signal add_calc_OOR			:	std_logic;		--address calculator result is out of range (oor)
+	--signal finish_addr_calc_st	:	std_logic;		--finish address calculate state
+	--------------------------Read From SDRAM
+	--signal finish_read_st		:	std_logic;		--finish Read From SDRAM state
+    --
+	--------------------------bilinear interpolation
+	--signal finish_bilinear_st	:	std_logic;	--finish bilinear intepolation state
+	--------------------------WB to SDRAM
+	--signal finish_WB_st			:	std_logic;		--finish Write Back to SDRAM state
 
-	signal row_idx_sig		 :  signed (10 downto 0);	  --fix to generic
-	signal col_idx_sig       :  signed (10 downto 0);  		--fix to generic
---	###########################		Implementation		##############################	--
+	--	###########################		Implementation		##############################	--
 begin	
 ----------------------------------------------------------------------------------------
 ----------------------------		index valid  Processes			------------------------
@@ -101,35 +120,42 @@ begin
 			cur_st		<=	fsm_idle_st;
 		elsif rising_edge (sys_clk) then
 			case cur_st is
+			------------------------------Idle State---------------------------------
 				when fsm_idle_st =>
 					if (req_trig='1') then
 						cur_st	<= 	fsm_init_coord_st;
 					else
 						cur_st 	<= 	cur_st;	
 					end if;				
-				
+			-----------------------------Init coordinate state----------------------
 				when fsm_init_coord_st =>
-					if (finish_init_coord='1') then
+					if (finish_init_coord_st='1') then
 						cur_st	<=	fsm_address_calc_st;
 					else
 						cur_st 	<= 	cur_st;
 					end if;	
-				
+			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
 						cur_st 	<= 	fsm_address_calc_st;
-						
+			-----------------------------Address calculate state----------------------						
 				when fsm_address_calc_st =>
 					if (finish_image = '1') then  			-- image is complete, back to idle
 						cur_st		<=	fsm_idle_st;
-					else
-						cur_st 	<= 	fsm_READ_from_SDRAM_st;		--for tb of coordinate process
+					elsif (addr_calc_oor ='1') then		--current index is out of range, WB black
+						cur_st		<=	fsm_WB_to_SDRAM_st;
+					elsif (addr_calc_valid ='1') then		--addr_calc is finish, continue to Read from SDRAM
+						cur_st 	<= 	fsm_READ_from_SDRAM_st;		
 					end if;	
+			-----------------------------Read From SDRAM state----------------------					
 				when fsm_READ_from_SDRAM_st =>		
 						cur_st 	<= 	fsm_bilinear_st;			--for tb of coordinate process
+			-----------------------------bilinear state----------------------
 				when fsm_bilinear_st =>		
 						cur_st 	<= 	fsm_WB_to_SDRAM_st;			--for tb of coordinate process
+			-----------------------------Write Back to SDRAM state----------------------
 				when fsm_WB_to_SDRAM_st =>							
 						cur_st 	<= 	fsm_increment_coord_st;		--for tb of coordinate process
+			-----------------------------Debugg state, catch Unimplemented state
 				when others =>
 					cur_st	<=	fsm_idle_st;
 					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected" severity error;
@@ -148,9 +174,9 @@ begin
 coord_proc : process (sys_clk,sys_rst)			
 	begin
 		if (sys_rst =reset_polarity_g) then	
-			finish_init_coord <= '0';
+			finish_init_coord_st <= '0';
 			finish_image <='0';
-			finish_increment <='0';
+			finish_increment_st <='0';
 			row_idx_sig <=(others => '0');
 			col_idx_sig <=(others => '0');
 		elsif rising_edge(sys_clk) then
@@ -159,28 +185,28 @@ coord_proc : process (sys_clk,sys_rst)
 				row_idx_sig(0)<='1';
 				col_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --col starts with 0d1 
 				col_idx_sig(0)<='1';	
-				finish_init_coord <= '1';
+				finish_init_coord_st <= '1';
 				finish_image <='0';
 			elsif (cur_st=fsm_increment_coord_st) then	--increment row if possible, else move to new col
-				finish_init_coord<='0';
+				finish_init_coord_st<='0';
 				if (row_idx_sig< img_ver_pixels_g) then --increment row
 					row_idx_sig<=row_idx_sig+1;
-					finish_increment<='1';
+					finish_increment_st<='1';
 					finish_image <='0';
 				else  	--(row_idx_sig == img_ver_pixels_g) -> co is over, move to new col
 					if (col_idx_sig<img_hor_pixels_g) then
 						row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
 						row_idx_sig(0)<='1';
 						col_idx_sig<=col_idx_sig+1;
-						finish_increment<='1';
+						finish_increment_st<='1';
 					else --(col_idx_sig == img_hor_pixels_g)&(row_idx_sig == img_ver_pixels_g) -> image is complete
 						finish_image <='1';
-						finish_increment<='0';
+						finish_increment_st<='0';
 					end if;	
 				end if;
 			else --(other state)
-				finish_increment<='0';
-				finish_init_coord<='0';
+				finish_increment_st<='0';
+				finish_init_coord_st<='0';
 				finish_image <='0';
 			end if;
 		end if;	
