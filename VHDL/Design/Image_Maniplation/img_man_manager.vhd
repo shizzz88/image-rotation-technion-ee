@@ -35,10 +35,9 @@ entity img_man_manager is
 				
 				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
 				
-				row_idx_valid		:	out std_logic;				--valid signal for row index
-				col_idx_valid		:	out std_logic;				--valid signal for col index
-				row_idx_out			:	out signed (10 downto 0); 	--current row index
-				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index
+				index_valid			:	out std_logic;				--valid signal for index
+				row_idx_out			:	out signed (10 downto 0); 	--current row index           --fix to generic
+				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index		  --fix to generic
 				
 			);
 end entity img_man_manager;
@@ -46,6 +45,7 @@ end entity img_man_manager;
 architecture rtl_img_man_manager of img_man_manager is
 
 	------------------------------	Constants	------------------------------------
+	  --fix to generic
 	constant col_bits_c			:	positive 	:= 11;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
 	constant row_bits_c			:	positive 	:= 11;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
 
@@ -69,22 +69,31 @@ architecture rtl_img_man_manager of img_man_manager is
 	signal finish_image 		: std_logic;				-- flag indicating when image is complete botom left corner
 	signal finish_increment 	: std_logic;				-- flag indicating when one incrament was done
 
-	signal row_idx_sig		 :  signed (10 downto 0);	
-	signal col_idx_sig       :  signed (10 downto 0);
+	signal row_idx_sig		 :  signed (10 downto 0);	  --fix to generic
+	signal col_idx_sig       :  signed (10 downto 0);  		--fix to generic
 --	###########################		Implementation		##############################	--
 begin	
 ----------------------------------------------------------------------------------------
 ----------------------------		index valid  Processes			------------------------
 ----------------------------------------------------------------------------------------
-row_valid_proc:
-row_idx_valid		<= '1' when (cur_st=fsm_address_calc_st and finish_image='0') else '0';
-col_valid_proc:
-col_idx_valid		<= '1' when (cur_st=fsm_address_calc_st and finish_image='0') else '0';
-
-------------------------------------------------------------------------------------
+----------------------------    the process controls when index output is valid    ------------------------
+----------------------------------------------------------------------------------------
+	index_valid_proc: process (sys_clk, sys_rst)
+	begin
+		if (sys_rst = reset_polarity_g) then
+			index_valid <= '0';
+		elsif rising_edge (sys_clk) then	
+			if (cur_st=fsm_increment_coord_st ) or (cur_st=fsm_init_coord_st ) then
+				index_valid		<= '1';
+			else
+				index_valid		<= '0';
+			end if;	
+		end if;
+	end process index_valid_proc;	
+----------------------------------------------------------------------------------------
 ----------------------------		fsm_proc Process			------------------------
 ----------------------------------------------------------------------------------------
-----------------------------    This is the main FSM Process    ------------------
+----------------------------    This is the main FSM Process    ------------------------
 ----------------------------------------------------------------------------------------
 	fsm_proc: process (sys_clk, sys_rst)
 	begin
