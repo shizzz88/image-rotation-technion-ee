@@ -236,12 +236,12 @@ component img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
-				img_ver_lines_g		:	positive					:= 480	--480 active lines
+				img_ver_pixels_g	:	positive					:= 480	--480 active lines
 			);
 	port	(
 			--Clock and Reset
-				clk_i				:	in std_logic;							--Wishbone clock
-				rst					:	in std_logic;							--Reset
+				system_clk			:	in std_logic;							--Wishbone clock
+				system_rst			:	in std_logic;							--Reset
 			
 			-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -608,14 +608,14 @@ img_man_inst 	:	 img_man_top generic map
 				(	
 					reset_polarity_g	 => '0',
 					img_hor_pixels_g	 => 128,                                         --************************************-
-				    img_ver_lines_g	     => 96                                        --************************************-
+				    img_ver_pixels_g	     => 96                                        --************************************-
 					--img_hor_pixels_g	 => 640,
 				    --img_ver_lines_g	     => 480
 				)
 				port map
 				(
-				clk_i			=>	clk_133,				
-				rst				=>	rst_133,	
+				system_clk			=>	clk_133,				
+				system_rst			=>	rst_133,	
 				
 				wbs_adr_i	=>	ic_wbs_adr_i (29 downto 20)		,		
 				wbs_tga_i	=>	ic_wbs_tga_i (29 downto 20)		,		
