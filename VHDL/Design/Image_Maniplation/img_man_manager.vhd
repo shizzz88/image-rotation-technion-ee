@@ -2,7 +2,7 @@
 -- Model Name 	:	Image Manipulation Manager (FSM)
 -- File Name	:	img_man_manager.vhd
 -- Generated	:	21.08.2012
--- Author		:	Uri Tzipin
+-- Author		:	Uri Tsipin
 -- Project		:	Im_rotate Project
 ------------------------------------------------------------------------------------------------
 -- Description  :   Manager for Image manipulation Block
@@ -11,7 +11,7 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		21.08.2012	Uri					creation
---					
+--			1.1			28.08.2012	Uri,Moshe			removed init_st, not necessary. fixed false valid on last pixel
 ------------------------------------------------------------------------------------------------
 -- TO DO:
 --			fix constants to be derived from generics, don't forget addr_calc.vhd
@@ -59,7 +59,6 @@ architecture rtl_img_man_manager of img_man_manager is
 	------------------------------	Types	------------------------------------
 	type fsm_states is (
 							fsm_idle_st,			-- Idle - wait to start 
-							fsm_init_coord_st, 		-- initialize coordinate registers to (0,0) or (1,1)??
 							fsm_increment_coord_st,	-- increment coordinate by 1, if line is over move to next line
 							fsm_address_calc_st,	-- send coordinates to Address Calc, if out of range WB BLACK_PIXEL(0) else continue
 							fsm_READ_from_SDRAM_st, -- read 4 pixels from SDRAM according to result of addr_calc
@@ -72,9 +71,7 @@ architecture rtl_img_man_manager of img_man_manager is
 	signal cur_st			:	fsm_states;			-- Current State
 	
 	-------------------------Coordinate Counter Procces
-	signal finish_init_coord_st	: std_logic;				-- finish init index state
-	signal finish_image 		: std_logic;				-- flag indicating when image is complete, bottom left corner
-	signal finish_increment_st 	: std_logic;				-- finish incrament index state
+	signal finish_image 		: std_logic;					-- flag indicating when image is complete, bottom left corner, working now on last pixel
 	
 	signal row_idx_sig		 :  signed (row_bits_c downto 0);	  --fix to generic
 	signal col_idx_sig       :  signed (col_bits_c downto 0);  		--fix to generic
@@ -102,7 +99,7 @@ begin
 		if (sys_rst = reset_polarity_g) then
 			index_valid <= '0';
 		elsif rising_edge (sys_clk) then	
-			if (cur_st=fsm_increment_coord_st ) or (cur_st=fsm_init_coord_st ) then
+			if (cur_st=fsm_increment_coord_st and finish_image='0') then
 				index_valid		<= '1';
 			else
 				index_valid		<= '0';
@@ -122,29 +119,26 @@ begin
 			case cur_st is
 			------------------------------Idle State---------------------------------
 				when fsm_idle_st =>
-					if (req_trig='1') then
-						cur_st	<= 	fsm_init_coord_st;
+					if (req_trig='1')  then
+						cur_st	<= 	fsm_increment_coord_st;
 					else
-						cur_st 	<= 	cur_st;	
+						cur_st 	<= 	fsm_idle_st;	
 					end if;				
-			-----------------------------Init coordinate state----------------------
-				when fsm_init_coord_st =>
-					if (finish_init_coord_st='1') then
-						cur_st	<=	fsm_address_calc_st;
-					else
-						cur_st 	<= 	cur_st;
-					end if;	
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
+					if (finish_image = '1') then  			-- image is complete, back to idle
+						cur_st	<=	fsm_idle_st;
+					else
 						cur_st 	<= 	fsm_address_calc_st;
+					end if;
 			-----------------------------Address calculate state----------------------						
 				when fsm_address_calc_st =>
-					if (finish_image = '1') then  			-- image is complete, back to idle
-						cur_st		<=	fsm_idle_st;
-					elsif (addr_calc_oor ='1') then		--current index is out of range, WB black
+					if (addr_calc_oor ='1') then			--current index is out of range, WB black
 						cur_st		<=	fsm_WB_to_SDRAM_st;
 					elsif (addr_calc_valid ='1') then		--addr_calc is finish, continue to Read from SDRAM
-						cur_st 	<= 	fsm_READ_from_SDRAM_st;		
+						cur_st 	<= 	fsm_READ_from_SDRAM_st;	
+					else
+						cur_st 	<= 	fsm_address_calc_st;
 					end if;	
 			-----------------------------Read From SDRAM state----------------------					
 				when fsm_READ_from_SDRAM_st =>		
@@ -153,8 +147,12 @@ begin
 				when fsm_bilinear_st =>		
 						cur_st 	<= 	fsm_WB_to_SDRAM_st;			--for tb of coordinate process
 			-----------------------------Write Back to SDRAM state----------------------
-				when fsm_WB_to_SDRAM_st =>							
+				when fsm_WB_to_SDRAM_st =>
+					if (finish_image ='0') then
 						cur_st 	<= 	fsm_increment_coord_st;		--for tb of coordinate process
+					else
+						cur_st	<=	fsm_idle_st;
+					end if;
 			-----------------------------Debugg state, catch Unimplemented state
 				when others =>
 					cur_st	<=	fsm_idle_st;
@@ -174,68 +172,41 @@ begin
 coord_proc : process (sys_clk,sys_rst)			
 	begin
 		if (sys_rst =reset_polarity_g) then	
-			finish_init_coord_st <= '0';
 			finish_image <='0';
-			finish_increment_st <='0';
 			row_idx_sig <=(others => '0');
 			col_idx_sig <=(others => '0');
 		elsif rising_edge(sys_clk) then
-			if (cur_st=fsm_init_coord_st) then 			--initialize row and col counter
-				row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --row starts with 0d1 
-				row_idx_sig(0)<='1';
+			if (cur_st=fsm_idle_st) then 				--initialize row and col counter
+				--row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --row starts with 0d1 
+				--row_idx_sig(0)<='1';
+				row_idx_sig <=(others => '0');
 				col_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --col starts with 0d1 
 				col_idx_sig(0)<='1';	
-				finish_init_coord_st <= '1';
 				finish_image <='0';
-			elsif (cur_st=fsm_increment_coord_st) then	--increment row if possible, else move to new col
-				finish_init_coord_st<='0';
+			elsif (cur_st=fsm_increment_coord_st)  then	--increment row if possible, else move to new col
 				if (row_idx_sig< img_ver_pixels_g) then --increment row
 					row_idx_sig<=row_idx_sig+1;
-					finish_increment_st<='1';
 					finish_image <='0';
 				else  	--(row_idx_sig == img_ver_pixels_g) -> co is over, move to new col
 					if (col_idx_sig<img_hor_pixels_g) then
 						row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
 						row_idx_sig(0)<='1';
 						col_idx_sig<=col_idx_sig+1;
-						finish_increment_st<='1';
-					else --(col_idx_sig == img_hor_pixels_g)&(row_idx_sig == img_ver_pixels_g) -> image is complete
-						finish_image <='1';
-						finish_increment_st<='0';
 					end if;	
 				end if;
-			else --(other state)
-				finish_increment_st<='0';
-				finish_init_coord_st<='0';
-				finish_image <='0';
+			elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=img_hor_pixels_g) and (row_idx_sig=img_ver_pixels_g) then
+				finish_image <='1';
 			end if;
 		end if;	
 	end process coord_proc;
 	-------------------Wire coordinates to out ports
+	
+	row_idx_out_proc:
 	row_idx_out<=row_idx_sig;
+	
+	col_idx_out_proc:
 	col_idx_out<=col_idx_sig;
 							
---	---------------------------------------------------------------------------------------
---	----------------------------	Bank value process	-----------------------------------
---	---------------------------------------------------------------------------------------
---	-- The process switches between the two double banks when fine image has been received.
---	---------------------------------------------------------------------------------------
---	bank_val_proc: process (sys_clk, sys_rst)
---	begin
---		if (sys_rst = reset_polarity_g) then
---			bank_val <= '0';
---			rd_bank_val <= '1';
---		elsif rising_edge (sys_clk) then
---			if (bank_switch = '1') then
---				bank_val <= not bank_val;
---				rd_bank_val <= not rd_bank_val;
---			else
---				bank_val <= bank_val;
---				rd_bank_val <= rd_bank_val;
---			end if;
---		end if;
---	end process bank_val_proc;
-	
 --	###########################		Instances		##############################	--
 
 
