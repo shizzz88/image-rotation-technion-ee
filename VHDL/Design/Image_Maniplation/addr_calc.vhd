@@ -18,7 +18,7 @@
 --			(2)			add valid/notvalid port for some signals
 --			(3)			singular cases - teta =90,180,270,0 
 --			(4)			fix size_calc_proc Process	
---			(5)			
+--			(5)			improve "convert [i,j] matrix form addreses to SDRAM address" to simple +1,+128
 ----------------------------------------------------------------------------------------------
 --                       MATH Functionality- EXPLAINED
 --
