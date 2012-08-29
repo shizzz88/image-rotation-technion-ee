@@ -13,9 +13,9 @@
 --			1.00		28.08.2012	Uri					creation
 --			
 ------------------------------------------------------------------------------------------------
--- TO DO: fix pixel_res slice, now it is only a guess
---		make valid process			
---		valid_counter - signal fix to generic
+-- TO DO:
+--				
+--		
 --					
 ----------------------------------------------------------------------------------------------
 --                       MATH Functionality- EXPLAINED
@@ -96,7 +96,7 @@ architecture rtl_bilinear of bilinear is
 	signal		res_sig :	std_logic_vector (trig_frac_size_g*3 downto 0);	
 	--enable/trigger process
 	signal      enable_unit			:	std_logic;	--enable unit signal, rises upon trigger	
-	signal		valid_counter		:	std_logic_vector (pipe_depth_const downto 0);	--FIX TO GENERIC
+	signal		valid_counter		:	std_logic_vector (pipe_depth_const downto 0);	
 	
 --	###########################		Implementation		##############################	--
 begin	
@@ -120,6 +120,7 @@ begin
 		--request trigger
 		if (req_trig='1') then
 			enable_unit<='1';
+			valid_counter<=(others =>'0');-----TEST-########################################
 		--unit enable
 		elsif (enable_unit='1')  then
 			if (valid_counter /= pipeline_depth_g) then        --calc is not finish: increment counter
