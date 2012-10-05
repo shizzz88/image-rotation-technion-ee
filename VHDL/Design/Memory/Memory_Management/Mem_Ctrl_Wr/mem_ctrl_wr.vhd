@@ -55,6 +55,7 @@ entity mem_ctrl_wr is
 		wbs_adr_i	:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 		wbs_tga_i	:	in std_logic_vector (9 downto 0);		--Burst length
 		wbs_dat_i	:	in std_logic_vector (7 downto 0);		--Data In (8 bits)
+		--##wbs_tgd_i (flag)
 		wbs_cyc_i	:	in std_logic;							--Cycle command from WBM
 		wbs_stb_i	:	in std_logic;							--Strobe command from WBM
 		wbs_stall_o	:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
@@ -82,6 +83,8 @@ entity mem_ctrl_wr is
 		
 		-- Signals from registers
 		type_reg	:	in std_logic_vector (7 downto 0);		--Type Register
+		--##type_reg2 (constant, not port)
+		--##wr_addr_reg2
 		wr_addr_reg	:	in std_logic_vector (21 downto 0);		--Write to SDRAM Address (Debug mode)
 		
 		-- Mem_Ctrl_Read signals
@@ -869,6 +872,7 @@ architecture rtl_mem_ctrl_wr of mem_ctrl_wr is
 			addr_reg_i			<= (others => '0');					
 		elsif rising_edge (clk_i) then
 			if (wbs_cur_st = wbs_neg_stall_st) then
+				--#Add another 'if' for flag (wbs_tgd_i)
 				type_reg_i		<= type_reg;
 				addr_reg_i		<= wr_addr_reg;		--Address register, for debug mode
 			else

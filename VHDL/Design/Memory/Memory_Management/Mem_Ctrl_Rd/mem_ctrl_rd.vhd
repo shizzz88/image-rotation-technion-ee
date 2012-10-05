@@ -49,11 +49,12 @@ entity mem_ctrl_rd is
 		rst			:	in std_logic;	--Reset
 
 		-- Wishbone Slave signals
+		wbs_cyc_i	:	in std_logic;							--Cycle command from WBM
+		wbs_stb_i	:	in std_logic;							--Strobe command from WBM
 		wbs_adr_i	:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 		wbs_tga_i	:	in std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
-		wbs_cyc_i	:	in std_logic;							--Cycle command from WBM
 		wbs_tgc_i	:	in std_logic;							--Cycle tag. '1' indicates start of transaction
-		wbs_stb_i	:	in std_logic;							--Strobe command from WBM
+		--#wbs_tgd_i
 		wbs_dat_o	:	out std_logic_vector (7 downto 0);		--Data Out (8 bits)
 		wbs_stall_o	:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 		wbs_ack_o	:	out std_logic;							--Input data has been successfuly acknowledged
@@ -79,6 +80,8 @@ entity mem_ctrl_rd is
 	
 		-- Signals from registers
 		type_reg	:	in std_logic_vector (7 downto 0);		--Type Register
+		--#type_reg2--> constant (not port)
+		--#rd_addr_reg2
 		rd_addr_reg	:	in std_logic_vector (21 downto 0);		--Read from SDRAM Address (Debug mode)
 		
 		-- mem_ctrl_write signals
@@ -244,7 +247,7 @@ architecture rtl_mem_ctrl_rd of mem_ctrl_rd is
 			case wbs_cur_st is
 				when wbs_idle_st =>
 					
-					if (wbs_cyc_i = '1') and (wbm_cur_st = wbm_idle_st) and (rd_cnt /= 0) then	--WBS Start of cycle
+					if (wbs_cyc_i = '1') and (wbm_cur_st = wbm_idle_st) and (rd_cnt /= 0) then	--WBS Start of cycle --##rd_cnt not relevant
 						wbs_cur_st		<= wbs_init_sdram_rx_st;
 					else
 						wbs_cur_st		<= wbs_idle_st;
@@ -430,6 +433,7 @@ architecture rtl_mem_ctrl_rd of mem_ctrl_rd is
 			addr_reg_i			<= (others => '0');					
 		elsif rising_edge (clk_i) then
 			if (wbs_cur_st = wbs_init_sdram_rx_st) then
+				--##another 'if' for flag (wbs_tgd_i)
 				type_reg_i		<= type_reg;
 				addr_reg_i		<= rd_addr_reg;		--Address register, for debug mode
 			else
