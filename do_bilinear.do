@@ -6,9 +6,9 @@ echo "START OF MACRO" 	; # Print this massage on screen.
 -- Compiling our units from lowest to highest level:
 quit -sim
 #vcom VHDL/Design/Image_Maniplation/bilinear.vhd
-vcom -work work c:/image-rotation-technion-ee/VHDL/Design/Image_Maniplation/bilinear.vhd
+#vcom -work work c:/image-rotation-technion-ee/VHDL/Design/Image_Maniplation/bilinear.vhd
 #vcom VHDL/Simulation/TB/Image_Manipulation/bilinear_tb.vhd
-vcom -work work c:/image-rotation-technion-ee/VHDL//Simulation/TB/Image_Manipulation/bilinear_tb.vhd
+#vcom -work work c:/image-rotation-technion-ee/VHDL//Simulation/TB/Image_Manipulation/bilinear_tb.vhd
 vsim -t ps -voptargs=+acc work.bilinear_tb
 
 add wave -r -radix unsigned /*
