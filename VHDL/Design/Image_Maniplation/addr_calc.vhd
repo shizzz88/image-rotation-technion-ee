@@ -72,9 +72,8 @@ entity addr_calc is
 	port	(
 				
 				zoom_factor			:	in signed (trig_frac_size_g+1 downto 0);	--zoom facotr given by user - x2,x4,x8 (zise fits to sin_teta)
-				sin_teta			:	in signed (trig_frac_size_g+1 downto 0);	--sine of rotation angle - calculated by software. 7 bits of sin + 1 bit of signed
+				sin_teta			:	in signed (trig_frac_size_g+1 downto 0);	--sine of rotation angle - calculated by software. 
 				cos_teta			:	in signed (trig_frac_size_g+1 downto 0);	--cosine of rotation angle - calculated by software. 
-				
 				
 				row_idx_in			:	in signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
 				col_idx_in			:	in signed (10 downto 0);		--the current column index of the output image
@@ -238,7 +237,7 @@ begin
 			
 			new_frame_y_size_shift(new_frame_y_size_shift'left downto new_frame_y_size_shift'left-1 )					<=( others => '0') ;
 			new_frame_y_size_shift(new_frame_y_size_shift'left-2 downto new_frame_y_size_shift'left-2-y_vector_size) 	<= to_signed(new_frame_y_size,y_signed_vector_size) ;
-			new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size downto 0 )							    <=( others => '0') ;
+			new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size-1 downto 0 )							    <=( others => '0') ;---------------------------synthesis error new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size downto 0 )							    <=( others => '0') ;
 			
 	--shift left by 7 (shift_left_by_7 ==> multiply by 128)
 			row_idx_in_shift(row_idx_in_shift'left downto trig_frac_size_g )	<= row_idx_in	;
