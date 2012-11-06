@@ -463,8 +463,8 @@ tic;
 
 %display rotated image
 rotangle=str2double(get(handles.RotAngle,'String'));
-sinangle=int16(sind(rotangle)*128);
-cosangle=int16(cosd(rotangle)*128);
+sinangle=floor(sind(rotangle)*128);
+cosangle=floor(cosd(rotangle)*128);
 zoom=str2double(get(handles.ZoomFactor,'String'));
 xstart=str2double(get(handles.Xstart,'String'));
 ystart=str2double(get(handles.Ystart,'String'));

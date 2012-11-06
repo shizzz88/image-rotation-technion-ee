@@ -147,11 +147,15 @@ trigger <=	'0', '1' after 100 ns, '0' after 107.5 ns;
 
 --assign constant signal values
 
-zoom_factor_sig			<=	"000100000";				--zoom factor=0.25
-sin_teta_sig		    <=  "001101111";				--teta=60 deg
-cos_teta_sig		    <=  "001000000";
+zoom_factor_sig			<=	"010000000";				--zoom factor=0.25
+--sin_teta_sig		    <=  "001101111";				--teta=60 deg
+--cos_teta_sig		    <=  "001000000";
 --sin_teta_sig		    <=  "000000000";				--teta=0 deg
 --cos_teta_sig		    <=  "010000000";
+--sin_teta_sig		    <=  "001110100";				--teta=153 deg
+--cos_teta_sig		    <=  "100011100";
+sin_teta_sig		    <=  "100000000";				--teta=90 deg
+cos_teta_sig		    <=  "000000000";
 
 x_crop_start_sig	    <=  "00000011110"; 				--x_crop=30
 y_crop_start_sig	    <=  "00000011101";  			--y_crop=29                
