@@ -146,8 +146,15 @@ trigger_proc:
 trigger <=	'0', '1' after 100 ns, '0' after 107.5 ns;
 
 --assign constant signal values
+--------------------------	ZOOM (from 256, not 128)!!!	-------------------------------------------------------------------
+--zoom_factor_sig			<=	"001000000";				--zoom factor=0.5 (x1)
+zoom_factor_sig			<=	"000100000";				--zoom factor=0.25 (x2)
+--zoom_factor_sig			<=	"000010000";				--zoom factor=0.125 (x4)
+--zoom_factor_sig			<=	"000001000";				--zoom factor=0.0625 (x8)
+--zoom_factor_sig			<=	"000000100";				--zoom factor=0.0625 (x16)
 
-zoom_factor_sig			<=	"010000000";				--zoom factor=0.25
+
+--------------------------	ANGLE (from 256, not 128)!!!	-------------------------------------------------------------------
 --sin_teta_sig		    <=  "001101111";				--teta=60 deg
 --cos_teta_sig		    <=  "001000000";
 --sin_teta_sig		    <=  "000000000";				--teta=0 deg
@@ -156,9 +163,23 @@ zoom_factor_sig			<=	"010000000";				--zoom factor=0.25
 --cos_teta_sig		    <=  "100011100";
 sin_teta_sig		    <=  "100000000";				--teta=90 deg
 cos_teta_sig		    <=  "000000000";
+--sin_teta_sig		    <=  "010110101";				--teta=45 deg
+--cos_teta_sig		    <=  "010110101";
+--sin_teta_sig		    <=  "000000000";				--teta=180 deg
+--cos_teta_sig		    <=  "110000000";
+--sin_teta_sig		    <=  "100101100";				--teta=304 deg
+--cos_teta_sig		    <=  "010001111";
+--sin_teta_sig		    <=  "100010000";				--teta=250 deg
+--cos_teta_sig		    <=  "110101001";
 
-x_crop_start_sig	    <=  "00000011110"; 				--x_crop=30
-y_crop_start_sig	    <=  "00000011101";  			--y_crop=29                
+
+---------------------------	CROP	-------------------------------------------------------------------
+--x_crop_start_sig	    <=  "00000011110"; 				--x_crop=30
+--y_crop_start_sig	    <=  "00000011101";  			--y_crop=29 
+--x_crop_start_sig	    <=  "00000001010"; 				--x_crop=10
+--y_crop_start_sig	    <=  "00000001010";  			--y_crop=10
+x_crop_start_sig	    <=  "00000101101"; 				--x_crop=45
+y_crop_start_sig	    <=  "00000101000";  			--y_crop=40                   
 ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0                           
 
 -- row_idx_sig <= to_signed(301,11);		--row,col =301
