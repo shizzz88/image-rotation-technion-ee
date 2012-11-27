@@ -11,6 +11,7 @@
 --			Number		Date		Name					Description			
 --			1.00		10.5.2011	Beeri Schreiber			Creation
 --			1.01		24.1.2012	Ran&Uri					fifo_mux was added, removal runlen extractor, signal sc_fifo_rd_req was added
+--			1.02		27.11.2012	Ran&Uri					upper_frame_proc - manually connected upper frame to lower frame because upper frame didn't calculate value 252=(600-96)/2
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 		left_frame_rg & right_frame_rg need to be updated
@@ -387,6 +388,8 @@ component pixel_mng
 		wbm_adr_o		:	out std_logic_vector (9 downto 0);	--Wishbone Address
 		wbm_tga_o		:	out std_logic_vector (9 downto 0);	--Burst Length
 		
+		--Signal to terminate cycle due to Debug Mode (Termination only before WBS_STALL_O negates)
+--		term_cyc		:	in std_logic;	--URI					--Terminate cycle
 		--Signals to FIFO
 		fifo_wr_en		:	out std_logic;						--Write Enable to FIFO
 		fifo_flush		:	out std_logic;						--Flush FIFO
@@ -567,7 +570,7 @@ begin
 
 	upper_frame_zero_proc:
 	upper_frame_rg (upper_frame_rg'left downto reg_width_c) <=	(others => '0');
-
+	
 	lower_frame_zero_proc:
 	lower_frame_rg (lower_frame_rg'left downto reg_width_c) <=	(others => '0');
 
@@ -581,9 +584,10 @@ begin
 					else right_frame_rg;
 
 	upper_frame_proc:
-	upper_frame	<=	upper_frame_sy when type_reg_dout (synth_bit_g) = '1'
-					else upper_frame_rg;
-
+	--upper_frame	<=	upper_frame_sy when type_reg_dout (synth_bit_g) = '1'
+	--				else upper_frame_rg;
+	upper_frame	<=	upper_frame_sy when type_reg_dout (synth_bit_g) = '1'---------image rotate
+					else lower_frame_rg;
 	lower_frame_proc:
 	lower_frame	<=	lower_frame_sy when type_reg_dout (synth_bit_g) = '1'
 					else lower_frame_rg;
@@ -668,6 +672,7 @@ pixel_mng_inst: pixel_mng generic map
 							fifo_flush	        =>	flush,
 							pixels_req	        =>	pixels_req,
 							req_ln_trig	        =>	req_ln_trig,
+							--term_cyc			=> '0'--------problem, beeri??
 							vsync		        =>	vsync_int		
 						);
 						

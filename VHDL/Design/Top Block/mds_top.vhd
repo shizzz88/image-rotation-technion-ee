@@ -71,6 +71,7 @@ architecture rtl_mds_top of mds_top is
 --constant num_of_wbs_z_c	:	natural := 4;	--4 WBS to INTERCON Z
 --constant num_of_wbm_z_c   :	natural := 2;	--2 WBM to INTERCON Z
 
+--uri
 constant num_of_wbs_z_c	:	natural := 5;	--4 WBS to INTERCON Z
 constant num_of_wbm_z_c :	natural := 2;	--2 WBM to INTERCON Z
 
@@ -482,20 +483,25 @@ begin
 --Connects WBS DATA to INTERCON. First "00" is MUX INTERCON (Intercon X). TODO: Second "00" is TX_PATH, which is not implemented yet
 ic_wbs_dat_o_proc:
 --ic_wbs_dat_o	<=	x"0000" & disp_rx_wbm_dat_i & mem_rx_wbm_dat_i ;
+--uri
 ic_wbs_dat_o	<=	x"0000" & disp_rx_wbm_dat_i & mem_rx_wbm_dat_i & img_rx_wbm_dat_i ;
+
 --Connects WBS ACK to INTERCON. First '0' is MUX INTERCON (Intercon X). TODO: Second '0' is TX_PATH, which is not implemented yet
 ic_wbs_ack_o_proc:
 --ic_wbs_ack_o	<=	"00" & disp_rx_wbm_ack_i & mem_rx_wbm_ack_i ;
+--uri
 ic_wbs_ack_o	<=	"00" & disp_rx_wbm_ack_i & mem_rx_wbm_ack_i & img_rx_wbm_ack_i;
 
 --Connects WBS ERR to INTERCON. First '0' is MUX INTERCON (Intercon X). TODO: Second '0' is TX_PATH, which is not implemented yet
 ic_wbs_err_o_proc:
 --ic_wbs_err_o	<=	"00" & disp_rx_wbm_err_i & mem_rx_wbm_err_i;
+--uri
 ic_wbs_err_o	<=	"00" & disp_rx_wbm_err_i & mem_rx_wbm_err_i & img_rx_wbm_err_i;
 
 --Connects WBS STALL to INTERCON. First '1' is MUX INTERCON (Intercon X). TODO: Second '1' is TX_PATH, which is not implemented yet
 ic_wbs_stall_o_proc:
 --ic_wbs_stall_o	<=	"11" & disp_rx_wbm_stall_i & mem_rx_wbm_stall_i;
+--uri
 ic_wbs_stall_o	<=	"11" & disp_rx_wbm_stall_i & mem_rx_wbm_stall_i & img_rx_wbm_stall_i;
 
 --Instatiations
