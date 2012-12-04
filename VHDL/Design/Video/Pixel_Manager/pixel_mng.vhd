@@ -373,7 +373,7 @@ begin
 				or (pix_cnt + 1= num_pixels_c) then
 					rd_adr	<=	rd_adr;
 				else
-					rd_adr	<=	rd_adr + '1';
+						rd_adr	<=	rd_adr + '1';
 				end if;
 
 			else

@@ -21,7 +21,7 @@ use ieee.std_logic_signed.all;
 use ieee.std_logic_arith.all;
 
 package ram_generic_pkg is
-  
+
 	--------------------------------------------------------------------------------------
 	---------------			Function data_wcalc		--------------------------------------
 	--------------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ package body ram_generic_pkg is
 		elsif (power_sign = 1) then
 			return ( width_in * (2**power2_out) );
 		else
-			report "RAM Generic Package, Data Port Function: Allowed values for power_sign are 1 and -1"
+			report "RAM Generic Package, Data_WCalc Function: Allowed values for power_sign are 1 and -1"
 				severity error;
 			return width_in;
 		end if;

@@ -10,11 +10,10 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		10.5.2011	Beeri Schreiber			Creation
---			1.01		10.01.2011	Uri & Ran			    4 registers were added. each register 2x8=16 bits. Registers address range: 12-19. 
---															reg_addr_width_c was modified, now support up to 32 registers. 
+--			1.10		13.2.2012	Beeri Schreiber			Added another clock domain
 ------------------------------------------------------------------------------------------------
 --	Todo:
---			(1)remove image manipulation registers
+--			(1)
 ------------------------------------------------------------------------------------------------
 
 library ieee;
@@ -22,9 +21,6 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 use ieee.math_real.all;
-
-library work ;
-use work.ram_generic_pkg.all;
 
 entity mem_mng_top is
 	generic (
@@ -35,9 +31,11 @@ entity mem_mng_top is
 				img_ver_lines_g		:	positive					:= 480	--480 active lines
 			);
 	port	(
-				--Clock and Reset
-				clk_i				:	in std_logic;							--Wishbone clock
-				rst					:	in std_logic;							--Reset
+				-- Clocks and Reset 
+				clk_sdram			:	in std_logic;	--Wishbone input clock for SDRAM (133MHz)
+				clk_sys				:	in std_logic;	--System clock
+				rst_sdram			:	in std_logic;	--Reset for SDRAM Clock domain
+				rst_sys				:	in std_logic;	--Reset for System Clock domain
 
 				-- Wishbone Slave (mem_ctrl_wr)
 				wr_wbs_adr_i		:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -73,7 +71,14 @@ entity mem_mng_top is
 				wbm_we_o			:	out std_logic;							--Write Enable
 				wbm_tga_o			:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
 				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
-				wbm_stb_o			:	out std_logic							--Strobe Command to interface
+				wbm_stb_o			:	out std_logic;							--Strobe Command to interface
+
+				--Debug Port
+				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
+				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
+				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
+				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
+				dbg_actual_rd_bank	:	out std_logic							--Actual Written bank
 			);
 end entity mem_mng_top;
 
@@ -81,14 +86,10 @@ architecture rtl_mem_mng_top of mem_mng_top is
 
 --	###########################		Costants		##############################	--
 	constant reg_width_c		:	positive 	:= 8;	--Width of registers
-	constant param_reg_depth_c	:	positive 	:= 2;	--Depth of registers 2*8 = 16 bits
-	constant reg_addr_width_c	:	positive 	:= 5;	--Width of registers' address
+	constant reg_addr_width_c	:	positive 	:= 4;	--Width of registers' address
 	constant dbg_reg_depth_c	:	positive	:= 3;	--3*8 = 24 bits
-	constant type_reg_addr_c	:	natural		:= 1;	--Type register address
---	constant angle_reg_addr_c	:	natural		:= 20;	--Angle register address	
---	constant x_start_reg_addr_c	:	natural		:= 14;	--x_start register address
---	constant y_start_reg_addr_c	:	natural		:= 16;	--y_start register address
---	constant zoom_reg_addr_c	:	natural		:= 18;	--Zoom register address
+	constant type_reg_addr_c	:	natural		:= 13;	--Type register address (0xD)
+	
 	--Debug SDRAM register address range: 2-->4 (Total of 24 bits)
 	constant dbg_reg_addr_c		:	natural		:= 2;	--Debug SDRAM address (read / write)
 
@@ -100,7 +101,7 @@ component gen_reg
 			width_g				:	positive	:= 8;					--Width: Number of bits
 			addr_en_g			:	boolean		:= true;				--TRUE: Address enabled  - responde by register will occur only when specific address has been specified
 			addr_val_g			:	natural		:= 0;					--Default register address
-			addr_width_g		:	positive	:= 5;					--2^5 = 32 register address is supported
+			addr_width_g		:	positive	:= 4;					--2^4 = 16 register address is supported
 			read_en_g			:	boolean		:= true;				--Enabling read
 			write_en_g			:	boolean		:= true;				--Enabling write
 			clear_on_read_g		:	boolean		:= false;				--TRUE: Clear on read (set to default value), FALSE otherwise
@@ -169,8 +170,10 @@ component mem_ctrl_wr
 		);
   port (
 		-- Clocks and Reset 
-		clk_i		:	in std_logic;	--Wishbone input clock
-		rst			:	in std_logic;	--Reset
+		clk_sdram	:	in std_logic;	--Wishbone input clock for SDRAM (133MHz)
+		clk_sys		:	in std_logic;	--System clock
+		rst_sdram	:	in std_logic;	--Reset for SDRAM Clock domain
+		rst_sys		:	in std_logic;	--Reset for System Clock domain
 
 		-- Wishbone Slave signals
 		wbs_adr_i	:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -207,7 +210,10 @@ component mem_ctrl_wr
 		
 		-- Mem_Ctrl_Read signals
 		wr_cnt_val	:	out std_logic_vector(integer(ceil(log(real(img_hor_pixels_g*img_ver_lines_g)) / log(2.0))) - 1 downto 0);	--wr_cnt value
-		wr_cnt_en	:	out std_logic							--wr_cnt write enable flag (Active for 1 clock)
+		wr_cnt_en	:	out std_logic;							--wr_cnt write enable flag (Active for 1 clock)
+		
+		--Debug Signals
+		dbg_wr_bank	:	out std_logic							--Current bank, which is written to.
 		); 
 end component mem_ctrl_wr;
 
@@ -221,8 +227,10 @@ component mem_ctrl_rd
 		);
   port (
 		-- Clocks and Reset 
-		clk_i		:	in std_logic;	--Wishbone input clock
-		rst			:	in std_logic;	--Reset
+		clk_sdram	:	in std_logic;	--Wishbone input clock for SDRAM (133MHz)
+		clk_sys		:	in std_logic;	--System clock
+		rst_sdram	:	in std_logic;	--Reset for SDRAM Clock domain
+		rst_sys		:	in std_logic;	--Reset for System Clock domain
 
 		-- Wishbone Slave signals
 		wbs_adr_i	:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -259,7 +267,10 @@ component mem_ctrl_rd
 		
 		-- mem_ctrl_write signals
 		wr_cnt_val	:	in std_logic_vector(integer(ceil(log(real(img_hor_pixels_g*img_ver_lines_g)) / log(2.0))) - 1 downto 0);	--wr_cnt value
-		wr_cnt_en	:	in std_logic							--wr_cnt write enable flag (Active for 1 clock)
+		wr_cnt_en	:	in std_logic;							--wr_cnt write enable flag (Active for 1 clock)
+
+		--Debug Signals
+		dbg_rd_bank	:	out std_logic							--Current bank, which is Read from.
 		); 
 end component mem_ctrl_rd;
 
@@ -384,36 +395,18 @@ signal dbg_reg_rd_en		:	std_logic_vector (dbg_reg_depth_c - 1 downto 0);	--Read 
 signal dbg_reg_dout			:	std_logic_vector (dbg_reg_depth_c * reg_width_c - 1 downto 0);		--Output data
 signal dbg_reg_dout_valid	:	std_logic_vector (dbg_reg_depth_c - 1 downto 0);					--Output data is valid
 
-----Angle register signals
---signal angle_reg_din_ack	:	std_logic_vector (param_reg_depth_c - 1 downto 0);	--Data has been acknowledged
---signal angle_reg_rd_en		:	std_logic_vector (param_reg_depth_c - 1 downto 0);	--Read Enable
---signal angle_reg_dout		:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);		--Output data
---signal angle_reg_dout_valid	:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
---
-----x_start register signals
---signal x_start_reg_din_ack		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Data has been acknowledged
---signal x_start_reg_rd_en		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Read Enable
---signal x_start_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);	--Output data
---signal x_start_reg_dout_valid	:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
---
-----y_start register signals
---signal y_start_reg_din_ack		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Data has been acknowledged
---signal y_start_reg_rd_en		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Read Enable
---signal y_start_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);	--Output data
---signal y_start_reg_dout_valid	:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
---
-----Zoom register signals
---signal zoom_reg_din_ack			:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Data has been acknowledged
---signal zoom_reg_rd_en			:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Read Enable
---signal zoom_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);	--Output data
---signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
 --	###########################		Implementation		##############################	--
 
 begin	
 	
 	--Cycle is active for registers
 	wr_wbs_reg_cyc_proc:
-	wr_wbs_reg_cyc	<=	wr_wbs_cyc_i and wr_wbs_tgc_i;
+	wr_wbs_reg_cyc	<=	wr_wbs_cyc_i and wr_wbs_tgc_i when
+						(conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c) or
+						(conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c + 2) or
+						(conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c + 1) or
+						(conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c)
+						else '0';
 	
 	--Cycle is active for components
 	wr_wbs_cmp_cyc_proc:
@@ -440,14 +433,6 @@ begin
 	--MUX, to route addressed register data to the WBS
 	wbs_reg_dout_proc:
 	wbs_reg_dout	<=	type_reg_dout when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c)) 
-						--else angle_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = angle_reg_addr_c + 1))      		--top 8 bits
-						--else angle_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = angle_reg_addr_c))											--buttom 8 bits 
-						--else x_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c + 1))		--top 8 bits
-						--else x_start_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c))                                     --buttom 8 bits 
-						--else y_start_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c + 1))		--top 8 bits
-						--else y_start_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c))                                     --buttom 8 bits 
-						--else zoom_reg_dout(param_reg_depth_c * reg_width_c - 1 downto reg_width_c) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c + 1))		--top 8 bits
-						--else zoom_reg_dout(reg_width_c - 1 downto 0) when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c))                                     --buttom 8 bits 
 						else dbg_reg_dout (3 * reg_width_c - 1 downto 2 * reg_width_c) 	when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c + 2)) 
 						else dbg_reg_dout (2 * reg_width_c - 1 downto reg_width_c) 		when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c + 1)) 
 						else dbg_reg_dout (reg_width_c - 1 downto 0)  					when ((wr_wbs_reg_cyc = '1') and (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c))
@@ -455,46 +440,17 @@ begin
 
 	--MUX, to route addressed register dout_valid to the WBS
 	wbs_reg_dout_valid_proc:
-	--wbs_reg_dout_valid	<=	angle_reg_dout_valid(0) or angle_reg_dout_valid(1) or x_start_reg_dout_valid(0) or x_start_reg_dout_valid(1) or y_start_reg_dout_valid(0) or y_start_reg_dout_valid(1) or zoom_reg_dout_valid(1) or zoom_reg_dout_valid(0) or type_reg_dout_valid or dbg_reg_dout_valid (2) or dbg_reg_dout_valid (1) or dbg_reg_dout_valid (0);
-	wbs_reg_dout_valid	<=	 type_reg_dout_valid or dbg_reg_dout_valid (2) or dbg_reg_dout_valid (1) or dbg_reg_dout_valid (0);
+	wbs_reg_dout_valid	<=	type_reg_dout_valid or dbg_reg_dout_valid (2) or dbg_reg_dout_valid (1)	or dbg_reg_dout_valid (0);
 	
 	--MUX, to route addressed register din_ack to the WBS
 	wbs_reg_din_ack_proc:
-	--wbs_reg_din_ack	<=	angle_reg_din_ack(0) or angle_reg_din_ack(1) or x_start_reg_din_ack(0) or x_start_reg_din_ack(1) or y_start_reg_din_ack(0) or y_start_reg_din_ack(1) or zoom_reg_din_ack(0) or zoom_reg_din_ack(1) or type_reg_din_ack or dbg_reg_din_ack (2) or dbg_reg_din_ack (1) or dbg_reg_din_ack (0);
 	wbs_reg_din_ack	<=	type_reg_din_ack or dbg_reg_din_ack (2) or dbg_reg_din_ack (1) or dbg_reg_din_ack (0);
 	
 	--Read Enables processes:
 	type_reg_rd_en_proc:
 	type_reg_rd_en	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
---	zoom_reg_rd_en_1proc:
---	zoom_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c +1) and (reg_rd_en = '1')
---						else '0';
---	zoom_reg_rd_en_proc:
---	zoom_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c) and (reg_rd_en = '1')
---						else '0';
---	
---	angle_reg_rd_en_1proc:
---	angle_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = angle_reg_addr_c +1) and (reg_rd_en = '1')
---						else '0';
---	angle_reg_rd_en_proc:
---	angle_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = angle_reg_addr_c) and (reg_rd_en = '1')
---						else '0';
---	
---	x_start_reg_rd_en_1proc:
---	x_start_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c +1) and (reg_rd_en = '1')
---						else '0';
---	x_start_reg_rd_en_proc:
---	x_start_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c) and (reg_rd_en = '1')
---						else '0';
---	
---	y_start_reg_rd_en_1proc:
---	y_start_reg_rd_en(1)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c +1) and (reg_rd_en = '1')
---						else '0';
---	y_start_reg_rd_en_proc:
---	y_start_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c) and (reg_rd_en = '1')
---						else '0';
-	
+
 	dbg_reg_rd_en_2proc:
 	dbg_reg_rd_en(2)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c + 2) and (reg_rd_en = '1')
 							else '0';
@@ -512,12 +468,12 @@ begin
 	---------------------------------------------------------------------------------------
 	-- The process switches between the two double banks when fine image has been received.
 	---------------------------------------------------------------------------------------
-	bank_val_proc: process (clk_i, rst)
+	bank_val_proc: process (clk_sdram, rst_sdram)
 	begin
-		if (rst = reset_polarity_g) then
+		if (rst_sdram = reset_polarity_g) then
 			wr_bank_val <= '0';
 			rd_bank_val <= '1';
-		elsif rising_edge (clk_i) then
+		elsif rising_edge (clk_sdram) then
 			if (bank_switch = '1') then
 				wr_bank_val <= not wr_bank_val;
 				rd_bank_val <= not rd_bank_val;
@@ -540,8 +496,10 @@ begin
 									port map
 										(
 										-- Clocks and Reset 
-										clk_i	=> clk_i,		
-										rst		=> rst,
+										clk_sdram	=> clk_sdram,
+                                        clk_sys		=> clk_sys,		
+										rst_sdram	=> rst_sdram,			
+										rst_sys		=> rst_sys,		
 
 										-- Wishbone Slave signals
 										wbs_adr_i	=> wr_wbs_adr_i,
@@ -578,15 +536,18 @@ begin
 										
 										-- Mem_Ctrl_Read signals
 										wr_cnt_val	=> wr_cnt_val,	
-										wr_cnt_en	=> wr_cnt_en	
+										wr_cnt_en	=> wr_cnt_en,
+
+										--Debug Signals
+										dbg_wr_bank	=> dbg_actual_wr_bank	
 										); 
 									
 	arbiter_inst : mem_mng_arbiter generic map 
 										(reset_polarity_g => reset_polarity_g)
 									port map
 										(
-										clk				=>	clk_i,			
-										reset			=>	rst,
+										clk				=>	clk_sdram,			
+										reset			=>	rst_sdram,
 														
 										wr_req			=>	arb_wr_req,
 										rd_req			=>	arb_rd_req,
@@ -634,8 +595,10 @@ begin
 									port map
 									(
 										-- Clocks and Reset 
-										clk_i			=>	clk_i,
-										rst				=>	rst,
+										clk_sdram		=>	clk_sdram	,
+										clk_sys			=>	clk_sys		,
+										rst_sdram		=>	rst_sdram	,
+										rst_sys			=>	rst_sys		,
 
 										-- Wishbone Slave signals
 										wbs_adr_i		=>	rd_wbs_adr_i,
@@ -672,7 +635,10 @@ begin
 										
 										-- mem_ctrl_write signals
 										wr_cnt_val		=>	wr_cnt_val,	
-										wr_cnt_en	    =>  wr_cnt_en
+										wr_cnt_en	    =>  wr_cnt_en,
+										
+										--Debug Signals
+										dbg_rd_bank		=> dbg_actual_rd_bank	
 									);
 								
 	gen_reg_type_inst	:	gen_reg generic map (
@@ -687,8 +653,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	clk_sys,
+									    reset		        =>	rst_sys,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -698,116 +664,7 @@ begin
 										dout		        =>	type_reg_dout,
                                         dout_valid	        =>	type_reg_dout_valid
 									);
-									
-
---	angle_reg_generate:
---	for idx in (param_reg_depth_c - 1) downto 0 generate
---		gen_reg_dbg_inst	:	gen_reg generic map (
---										reset_polarity_g	=>	reset_polarity_g,	
---										width_g				=>	reg_width_c,
---										addr_en_g			=>	true,
---										addr_val_g			=>	(angle_reg_addr_c + idx),
---										addr_width_g		=>	reg_addr_width_c,
---										read_en_g			=>	true,
---										write_en_g			=>	true,
---										clear_on_read_g		=>	false,
---										default_value_g		=>	0
---									)
---									port map (
---										clk					=>	clk_i,
---									    reset		        =>	rst,
---									    addr		        =>	reg_addr,
---									    din			        =>	reg_din,
---									    wr_en		        =>	reg_wr_en,
---									    clear		        =>	'0',
---                                        din_ack		        =>	angle_reg_din_ack (idx),
---                                        rd_en				=>	angle_reg_rd_en (idx),
---                                        dout		        =>	angle_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
---                                        dout_valid	        =>	angle_reg_dout_valid (idx)
---									);
---	end generate angle_reg_generate;
---	
---	x_start_reg_generate:
---	for idx in (param_reg_depth_c - 1) downto 0 generate
---		gen_reg_dbg_inst	:	gen_reg generic map (
---										reset_polarity_g	=>	reset_polarity_g,	
---										width_g				=>	reg_width_c,
---										addr_en_g			=>	true,
---										addr_val_g			=>	(x_start_reg_addr_c + idx),
---										addr_width_g		=>	reg_addr_width_c,
---										read_en_g			=>	true,
---										write_en_g			=>	true,
---										clear_on_read_g		=>	false,
---										default_value_g		=>	0
---									)
---									port map (
---										clk					=>	clk_i,
---									    reset		        =>	rst,
---									    addr		        =>	reg_addr,
---									    din			        =>	reg_din,
---									    wr_en		        =>	reg_wr_en,
---									    clear		        =>	'0',
---                                        din_ack		        =>	x_start_reg_din_ack (idx),
---                                        rd_en				=>	x_start_reg_rd_en (idx),
---                                        dout		        =>	x_start_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
---                                        dout_valid	        =>	x_start_reg_dout_valid (idx)
---									);
---	end generate x_start_reg_generate;
---	
---	y_start_reg_generate:
---	for idx in (param_reg_depth_c - 1) downto 0 generate
---		gen_reg_dbg_inst	:	gen_reg generic map (
---										reset_polarity_g	=>	reset_polarity_g,	
---										width_g				=>	reg_width_c,
---										addr_en_g			=>	true,
---										addr_val_g			=>	(y_start_reg_addr_c + idx),
---										addr_width_g		=>	reg_addr_width_c,
---										read_en_g			=>	true,
---										write_en_g			=>	true,
---										clear_on_read_g		=>	false,
---										default_value_g		=>	0
---									)
---									port map (
---										clk					=>	clk_i,
---									    reset		        =>	rst,
---									    addr		        =>	reg_addr,
---									    din			        =>	reg_din,
---									    wr_en		        =>	reg_wr_en,
---									    clear		        =>	'0',
---                                        din_ack		        =>	y_start_reg_din_ack (idx),
---                                        rd_en				=>	y_start_reg_rd_en (idx),
---                                        dout		        =>	y_start_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
---                                        dout_valid	        =>	y_start_reg_dout_valid (idx)
---									);
---	end generate y_start_reg_generate;
---
---	zoom_reg_generate:
---	for idx in (param_reg_depth_c - 1) downto 0 generate
---		gen_reg_dbg_inst	:	gen_reg generic map (
---										reset_polarity_g	=>	reset_polarity_g,	
---										width_g				=>	reg_width_c,
---										addr_en_g			=>	true,
---										addr_val_g			=>	(zoom_reg_addr_c + idx),
---										addr_width_g		=>	reg_addr_width_c,
---										read_en_g			=>	true,
---										write_en_g			=>	true,
---										clear_on_read_g		=>	false,
---										default_value_g		=>	0
---									)
---									port map (
---										clk					=>	clk_i,
---									    reset		        =>	rst,
---									    addr		        =>	reg_addr,
---									    din			        =>	reg_din,
---									    wr_en		        =>	reg_wr_en,
---									    clear		        =>	'0',
---                                        din_ack		        =>	zoom_reg_din_ack (idx),
---                                        rd_en				=>	zoom_reg_rd_en (idx),
---                                        dout		        =>	zoom_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
---                                        dout_valid	        =>	zoom_reg_dout_valid (idx)
---									);
---	end generate zoom_reg_generate;	
-
+	
 	dbg_reg_generate:
 	for idx in (dbg_reg_depth_c - 1) downto 0 generate
 		gen_reg_dbg_inst	:	gen_reg generic map (
@@ -822,8 +679,8 @@ begin
 										default_value_g		=>	0
 									)
 									port map (
-										clk					=>	clk_i,
-									    reset		        =>	rst,
+										clk					=>	clk_sys,
+									    reset		        =>	rst_sys,
 									    addr		        =>	reg_addr,
 									    din			        =>	reg_din,
 									    wr_en		        =>	reg_wr_en,
@@ -841,8 +698,8 @@ begin
 										addr_width_g	=>	reg_addr_width_c
 									)
 									port map (
-										rst				=>	rst,
-										clk_i			=> 	clk_i,
+										rst				=>	rst_sys,
+										clk_i			=> 	clk_sys,
 									    wbs_cyc_i	    =>	wr_wbs_reg_cyc,
 									    wbs_stb_i	    => 	wr_wbs_reg_stb,
 									    wbs_adr_i	    =>	wr_wbs_adr_i (reg_addr_width_c - 1 downto 0), 
@@ -861,4 +718,14 @@ begin
 										wr_en		    =>	reg_wr_en
 									);
 	
+-------------------------------	Debug Process--------------------------
+dbg_type_reg_proc:
+dbg_type_reg	<=	type_reg_dout;
+
+dbg_wr_bank_val_proc:
+dbg_wr_bank_val	<=	wr_bank_val;
+
+dbg_rd_bank_val_proc:
+dbg_rd_bank_val <=	rd_bank_val;  
+
 end architecture rtl_mem_mng_top;

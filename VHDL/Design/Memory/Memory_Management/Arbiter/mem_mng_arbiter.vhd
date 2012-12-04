@@ -15,6 +15,8 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		29.4.2011	Beeri Schreiber			Creation
+--			1.10		13.6.2012	Beeri Schreiber			Output GNT has been synchronized 
+--															to the clock to improve timing
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -83,14 +85,6 @@ architecture rtl_mem_mng_arbiter of mem_mng_arbiter is
 begin
 	
 	---------------------------------  Hidden processes	--------------------------
-	--Write grant
-	wr_gnt_proc:
-	wr_gnt			<=	wr_gnt_i;
-	
-	--Read grant
-	rd_gnt_proc:
-	rd_gnt			<=	not wr_gnt_i;
-	
 	--WBM Address
 	wbm_adr_o_proc:
 	wbm_adr_o		<= wr_wbm_adr_o	when (wr_gnt_i = '1')	else 	rd_wbm_adr_o;	
@@ -171,5 +165,21 @@ begin
 			end if;
 		end if;
 	end process arbitration_proc;
+
+	---------------------------------------------------------------------------------
+	----------------------------- Process arb_sync_proc		-------------------------
+	---------------------------------------------------------------------------------
+	-- The process synchronized wr_cnt and rd_cnt to the clock
+	---------------------------------------------------------------------------------
+	arb_sync_proc: process (clk, reset)
+	begin
+		if (reset = reset_polarity_g) then
+			wr_gnt	<= '0';
+			rd_gnt	<= '0';
+		elsif rising_edge(clk) then
+			wr_gnt	<=	wr_gnt_i;
+			rd_gnt	<=	not wr_gnt_i;
+		end if;
+	end process arb_sync_proc;
 
 end architecture rtl_mem_mng_arbiter;
