@@ -109,19 +109,9 @@ begin
 	------------------------------------------------------------------------------
 	-- The process controls the dout_valid signal
 	------------------------------------------------------------------------------
-	dout_val_proc: process (clk, reset)
-	begin
-		if (reset = reset_polarity_g) then
-			dout_valid			<=	'0';
-		elsif rising_edge(clk) then
-			if ((addr = conv_std_logic_vector(addr_val_g, addr_width_g)) or (not addr_en_g))
-			and (rd_en = '1') and read_en_g then
-				dout_valid		<= '1';
-			else
-				dout_valid		<= '0';
-			end if;
-		end if;
-	end process dout_val_proc;
+	dout_val_proc: 
+	dout_valid	<=	'1' when (((addr = conv_std_logic_vector(addr_val_g, addr_width_g)) or (not addr_en_g)) and (rd_en = '1') and read_en_g)
+					else '0';
 
 end architecture rtl_gen_reg;
 			

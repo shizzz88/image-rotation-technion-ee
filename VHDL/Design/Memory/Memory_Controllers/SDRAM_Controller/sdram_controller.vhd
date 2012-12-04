@@ -630,7 +630,7 @@ begin
 		  dram_bank_r <= address_r(21 downto 20);
 		else
 		  dram_addr_r <= (others => '0');
-		  dram_bank_r <= "00";
+		  dram_bank_r <= dram_bank_r;
 		end if;
 	end if;
   end process addr_proc;
