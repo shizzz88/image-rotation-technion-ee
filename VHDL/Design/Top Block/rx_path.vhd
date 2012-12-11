@@ -88,7 +88,8 @@ type wbm_states is
 				);
 ----------------------------------------------------------------------------------
 --	###########################		Costants		##############################	--
-	constant type_reg_addr_c	:	natural		:= 1;	--Type register address
+	constant base_type_reg_addr_c	:	natural		:= 13;	--Type register Base address (0xD) 
+	constant type_reg_clients_c		:	natural		:= 3;	--Clients: mem_mng, disp_ctrl, tx_path
 ---------------------------------  Components		------------------------------
 component ram_simple
 	generic (
@@ -222,7 +223,6 @@ end component;
 	--Signals for RAM
 	signal ram_addr_out		:	std_logic_vector (9 downto 0);		--Read address from RAM
 	signal ram_aout_val		:	std_logic;							--Read address from RAM is valid
-	signal ram_din_valid	:	std_logic;							--Written data to RAM is valid
 	signal ram_dout_valid	:	std_logic;							--Output data from RAM is valid
 	signal ram_dout			:	std_logic_vector (width_g - 1 downto 0);
 	--signal ram_dout			:	std_logic_vector (15 downto 0);		--Output data from RAM
@@ -244,13 +244,12 @@ end component;
 	signal type_reg			:	std_logic_vector (width_g * type_d_g - 1 downto 0);
 	signal addr_reg			:	std_logic_vector (width_g * addr_d_g - 1 downto 0); 
 	signal len_reg			:	std_logic_vector (width_g * len_d_g - 1 downto 0); 
+	signal type_reg_offset	:	natural range 0 to type_reg_clients_c;	--Offset of type register. Used to point to specific component (mem_mng, disp_ctrl, tx_path)
 	alias  datalen			:	std_logic_vector (9 downto 0) is len_reg (9 downto 0);
 		
 	--Data (Payload)	
 	signal write_en			:	std_logic; 													--'1' = Data is available (width_g length)
-	signal write_addr		:	std_logic_vector (width_g * len_d_g - 1 downto 0); 			--RAM Address
 	signal dec2ram			:	std_logic_vector (width_g - 1 downto 0) := (others => '0'); --Data to RAM
-	signal enc_dout_val		:	std_logic := '0'; 											--Data from MP encoder is valid
 	
 	--Decoder:
 	signal dec2crc_valid	: std_logic; 													--'1' when new data for CRC is valid, '0' otherwise
@@ -423,6 +422,8 @@ begin
 			wbm_adr_internal<= (others => '0');
 			wbm_cyc_internal<= '0';
 			wbm_stb_internal<= '0';
+			ram_aout_val	<= '0';
+			type_reg_offset	<= 0;
 			
 		elsif rising_edge (clk_i) then
 			case wbm_cur_st is
@@ -432,6 +433,7 @@ begin
 					wbm_stb_internal<= '0';
 					ram_addr_out	<= (others => '0');
 					wbm_adr_internal<= (others => '0');
+					type_reg_offset	<= 0;
 
 					ram_bytes_left	<= datalen;			--Latch number of words in RAM
 					
@@ -471,11 +473,17 @@ begin
 						ram_aout_val	<= '1';
 						wbm_cur_st		<= wbm_tx_st;
 
-					else											--End of cycle
+					elsif (wbm_stall_i = '0') then	--Slave ready, End of cycle	
+							ram_addr_out	<= ram_addr_out;
+							wbm_stb_internal<= '0';
+							ram_aout_val	<= '0';
+							wbm_cur_st		<= wbm_wait_burst_st;
+
+					else						--Slave is not ready, Keep current position
 						ram_addr_out	<= ram_addr_out;
-						wbm_stb_internal<= '0';
-						ram_aout_val	<= '0';
-						wbm_cur_st		<= wbm_wait_burst_st;
+						wbm_stb_internal<= wbm_stb_internal;
+						ram_aout_val	<= '1';
+						wbm_cur_st		<= wbm_cur_st;							
 					end if;
 					
 				when wbm_wait_burst_st =>
@@ -503,28 +511,35 @@ begin
 					
 				when wbm_tx_type_st =>
 					wbm_cyc_internal<= '1';
-					wbm_adr_internal<= conv_std_logic_vector (type_reg_addr_c, 10);
+					wbm_adr_internal<= conv_std_logic_vector (base_type_reg_addr_c + type_reg_offset, 10);
 					wbm_stb_internal<= wbm_stb_internal;
 					if (wbm_stall_i = '0')then	--Slave ready	
 						wbm_stb_internal<= '0';
+						type_reg_offset	<= type_reg_offset + 1;	--Prepre next client
 						wbm_cur_st		<= wbm_wait_type_st;
 					else										--STALL
 						wbm_stb_internal<= '1';
+						type_reg_offset	<= type_reg_offset;
 						wbm_cur_st		<= wbm_cur_st;
 					end if;
 				
 				when wbm_wait_type_st =>
 					wbm_stb_internal	<= '0';
 
-					if (err_i_status = '1') then					--An error has occured
+					if (err_i_status = '1') then						--An error has occured
 						wbm_cyc_internal<= '0';
 						wbm_adr_internal<= wbm_adr_internal;
 						wbm_cur_st		<= wbm_idle_st;
-					elsif (ack_i_cnt = 0) then						--All data has been transmitted to SDRAM
+					elsif (ack_i_cnt = 0) then							--All data has been transmitted to SDRAM
 						wbm_cyc_internal	<= '0';
 						wbm_adr_internal	<= (others => '0');
-						wbm_cur_st			<= wbm_neg_st;
-					else											--Cycle is in progress
+						if (type_reg_offset = type_reg_clients_c) then	--All clients had received Type Register Value
+							wbm_cur_st		<= wbm_neg_st;
+						else											--Transmit next client's type register
+							wbm_cur_st		<= wbm_tx_type_st;
+						end if;
+							
+					else												--Cycle is in progress
 						wbm_cyc_internal<= '1';
 						wbm_adr_internal<= wbm_adr_internal;
 						wbm_cur_st		<= wbm_cur_st;

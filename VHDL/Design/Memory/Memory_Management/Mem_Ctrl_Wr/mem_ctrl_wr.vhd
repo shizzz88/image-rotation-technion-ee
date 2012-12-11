@@ -33,6 +33,9 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 use ieee.math_real.all;
 
+LIBRARY altera_mf;
+USE altera_mf.all;
+
 entity mem_ctrl_wr is
   generic
 	   (
