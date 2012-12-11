@@ -87,38 +87,21 @@ end uart_tx_gen_model;
 architecture arc_uart_tx_gen_model of uart_tx_gen_model is
 
 ------------------  SIGNALS AND VARIABLES ------
-constant clk_en_c			:	time := 201 us;			--Init time to transmit
-
 FILE 	input				: 	text;					--Input File
 signal 	clk_i				:	std_logic 	:= '0';		--Internal Clock
-signal 	clk_unmasked		:	std_logic 	:= '0';		--Internal Clock
 signal 	reopen_file			:	boolean 	:= true;	--After end of transmission - Reopen file
 signal	reopen_file_delay	:	boolean 	:= false;	--After end of transmission - Wait some time
 signal 	valid_i				: 	std_logic	:= '0';		--Data valid data, for one clock
-signal	clk_en				:	boolean		:= false;	--Clock enable
 
 shared variable file_index	: 	positive 	:= file_max_idx_g;	--File Index (filename_fileIndex.fileExtension)
-shared variable file_status	: 	boolean 	:= false;	--TRUE = file is opened, FALSE = file is closed
+shared variable file_status	: 	boolean 	:= true;	--TRUE = file is opened, FALSE = file is closed
 
 
 ------------------  Design ----------------------
 begin
 	
    -------------- Clock Process ----------
-	clk_proc:
-	clk_unmasked <= not clk_unmasked after clock_period_g/2;
-	
-	clk_i_proc:	
-	clk_i		<=	clk_unmasked when clk_en
-					else '0';
-				
-	clk_en_proc: process
-	begin
-		clk_en	<=	false;
-		wait for clk_en_c;
-		clk_en	<=	true;
-		wait;
-	end process clk_en_proc;
+	clk_i <= not clk_i after clock_period_g/2;
  
    ----------File open delay Process --------
    --A delay between two files transmission is being executed here
@@ -198,12 +181,12 @@ begin
 					readline(input, ln); --Read line from text file
 				end if;
 
-				--Remove Comments
+				-- uri ran
+               --Remove Comments
            		while (ln'length >=1) and (ln(1) = '#') loop
 					readline(input, ln); --Read line from text file
 				end loop;
-
-				hread (ln, val_in, success); --Read value from file
+  		        hread (ln, val_in, success); --Read value from file
 		          if not success then
 					report "Time: " & time'image(now) & ", uart_tx_gen_model from file: Error deleting 'SPACE' and 'TAB' from input file " & file_name_g & "_" & positive'image(file_index) & "." & file_extension_g 
 					severity failure;
@@ -240,9 +223,9 @@ begin
 		  --Transmit parity bit
 		  elsif clk_cnt = 9 and parity_en_g = 1 then --Parity enable
 			if parity_odd_g then
-				uart_out <= parity_val; --Odd parity
+				uart_out <= not parity_val; --Odd parity
 			else
-				uart_out <= not parity_val; --Even parity
+				uart_out <= parity_val; --Even parity
 			end if;
 		  end if;
 		  
