@@ -10,7 +10,6 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		25.5.2011	Beeri Schreiber			Creation
---			1.01		24.1.2012	Ran&Uri					removal of rep_size_g
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -23,29 +22,32 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top_tb is
 	generic (
-			uart_tx_delay_g		:	positive	:= 1333333;			--Clock cycles between two transmissions
-			file_max_idx_g		:	positive 	:= 2				--Maximum file index
+			uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
+			file_max_idx_g		:	positive 	:= 2				-- uri ran Maximum file index
 		);
 end entity mds_top_tb;
 
 architecture sim_mds_top_tb of mds_top_tb is
 
---constant rep_size_c		:	positive	:= 8;				--2^8=256 => Maximum of 267 repetitions for pixel / line
-constant baudrate_c		:	positive := 115200*40;
-constant uart_period_c	:	time := 217.014 ns;
+--constant rep_size_c		:	positive	:= 8;				-- uri ran 2^8=256 => Maximum of 267 repetitions for pixel / line
+constant baudrate_c		:	positive := 115200 * 40;
+constant uart_period_c	:	time := (1 sec) / real(baudrate_c);
 
 --#############################	Components	##############################################--
 
 component mds_top
 	generic (
-				--rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
+				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
+--				rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
 			);
 	port	(
 				--Clock and Reset from system
 				clk_133				:	in std_logic;
+				clk_100				:	in std_logic;
 				clk_40				:	in std_logic;
 				rst_133				:	in std_logic;
+				rst_100				:	in std_logic;
 				rst_40				:	in std_logic;
 				
 				--UART
@@ -75,7 +77,21 @@ component mds_top
 					
 					--Sync Signals			
 				hsync				:	out std_logic;										--HSync Signal
-				vsync				:	out std_logic										--VSync Signal
+				vsync				:	out std_logic;										--VSync Signal
+
+				--Debug Ports
+				dbg_rx_path_cyc		:	out std_logic;							--RX Path WBM_CYC_O for debug
+				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
+				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
+				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
+				dbg_sdram_acive		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
+				dbg_disp_active		:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+				dbg_icy_bus_taken	:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
+				dbg_icz_bus_taken	:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
+				dbg_wr_bank_val		:	out std_logic;							--Write SDRAM Bank Value
+				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
+				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
+				dbg_actual_rd_bank	:	out std_logic							--Actual Written bank
 			);
 end component mds_top;
 
@@ -186,6 +202,8 @@ END component;
 --Clock and Reset
 signal clk_133			:	std_logic := '0';
 signal rst_133			:	std_logic;
+signal clk_100			:	std_logic := '0';
+signal rst_100			:	std_logic;
 signal clk_40			:	std_logic := '0';
 signal rst_40			:	std_logic;
 --UART
@@ -210,17 +228,35 @@ signal blank			:	std_logic;
 signal hsync			:	std_logic;						
 signal vsync			:	std_logic;						
 
+--Debug
+signal dbg_rx_path_cyc	:	std_logic;							--RX Path WBM_CYC_O for debug
+signal dbg_type_reg_disp:	std_logic_vector (7 downto 0);		--Display Type Register value for Debug
+signal dbg_type_reg_mem	:	std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
+signal dbg_type_reg_tx	:	std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
+signal dbg_sdram_acive	:	std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
+signal dbg_disp_active	:	std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+signal dbg_icy_bus_taken:	std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
+signal dbg_icz_bus_taken:	std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
+signal dbg_wr_bank_val	:	std_logic;							--Expected Write SDRAM Bank Value
+signal dbg_rd_bank_val  :	std_logic;							--Expected Read SDRAM Bank Value
+signal dbg_actual_wr_bank  :	std_logic;						--Actual Read SDRAM Bank Value
+signal dbg_actual_rd_bank  :	std_logic;						--Actual Read SDRAM Bank Value
+
 --#############################	Instantiaion ##############################################--
 begin
 
 clk_proc1:
 clk_133	<=	not clk_133 after 3.75 ns;
 clk_proc2:
+clk_100	<=	not clk_100 after 5 ns;
+clk_proc3:
 clk_40	<=	not clk_40 after 12.5 ns;
 
 rst_proc1:
 rst_133	<=	'0', '1' after 20 ns;
 rst_proc2:
+rst_100	<=	'0', '1' after 20 ns;
+rst_proc3:
 rst_40	<=	'0', '1' after 20 ns;
 
 
@@ -245,8 +281,10 @@ mds_top_inst	: mds_top
 	)
 	port map	(
 				clk_133	            =>	clk_133,
+				clk_100	            =>	clk_100,
                 clk_40	            =>	clk_40,
                 rst_133	            =>	rst_133,
+                rst_100	            =>	rst_100,
                 rst_40	            =>	rst_40,
 				uart_serial_in		=>	uart_serial_in	,
 				uart_serial_out		=>	uart_serial_out	,
@@ -265,7 +303,19 @@ mds_top_inst	: mds_top
 				b_out				=>	b_out			,
 				blank				=>	blank			,
 				hsync				=>	hsync			,
-				vsync				=>  vsync			
+				vsync				=>  vsync			,
+				dbg_rx_path_cyc		=>	dbg_rx_path_cyc		,
+                dbg_type_reg_disp	=>	dbg_type_reg_disp	,
+                dbg_type_reg_mem	=>	dbg_type_reg_mem	,
+                dbg_type_reg_tx		=>	dbg_type_reg_tx		,
+                dbg_sdram_acive		=>	dbg_sdram_acive		,
+                dbg_disp_active		=>	dbg_disp_active		,
+				dbg_icy_bus_taken	=>	dbg_icy_bus_taken	,
+				dbg_icz_bus_taken	=>	dbg_icz_bus_taken,	
+				dbg_wr_bank_val 	=>	dbg_wr_bank_val,
+				dbg_rd_bank_val 	=>	dbg_rd_bank_val,
+				dbg_actual_wr_bank	=>	dbg_actual_wr_bank,
+				dbg_actual_rd_bank  =>	dbg_actual_rd_bank
 			);                      
 		
 vesa_pic_col_inst : vesa_pic_col	generic map

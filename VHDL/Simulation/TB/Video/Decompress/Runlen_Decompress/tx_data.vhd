@@ -1,23 +1,5 @@
 ------------------------------------------------------------------------------------------------
 -- Description: Transmit compressed data
--- 	'Tx_data' transmits a compressed data (from matlab) to the decompressor.
---
--- Compressed file structure:
---	Color Value (0-->FF)		Color Repetition (0-->FF)
---	FF							FF
---	01							AC
---
---	TX will send (1) FF and FF, and then (2) 01 and AC.
---	Data will be send once in (color value + repetition)'s depth clocks.
---	for example: suppose that color value is 8 bits, repetition is 8 bits,
---	then data will be transmitted once in [(8+8)/16)] a clock cycle.
---
--- Work Method:
---	When 'decomp' is ready to recieve new data (repetition = 0), it rises the
---	'rx_rdy' flag. the TX_DATA recieves this signal, and when ready, rises the
---	'data_rdy' flag. Then 'decomp' unrises the 'rx_rdy' signal, and data is
---	being recieved and decompressed.
---	When end of picture is reahced, 'end_pic' signal is being rised.
 --
 -----------------------------------------------------------------------------------------------
 
@@ -121,5 +103,3 @@ begin
 end process file_proc;
 
 end arc_tx_data;		
-
-
