@@ -824,7 +824,7 @@ end
 %fprintf(fid, '#Debug Register\r\n'); 
 dataToSend=[sof     type    addr   0      len       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-% fwrite(serial_port, dataToSend);
+%fwrite(serial_port, dataToSend);
 
 % Transmit Frames Register data
 clear payload;
@@ -839,7 +839,7 @@ end
 %fprintf(fid, '#Left Frame Register\r\n'); 
 dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
 %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+%fwrite(serial_port, dataToSend);
 
 addr = 6;
 len = 0; %0 = 1 address data
