@@ -32,6 +32,7 @@
 -- Revision:
 --			Number		Date		Name				Description
 --			1.00		17.11.2010	Alon Yavich			Creation
+--			1.10		6.11.2011	Alon Yavich			Parity Bug fixed
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --							
@@ -207,7 +208,7 @@ begin
 							
 							if sample_cnt = clk_div_factor then --Current position is next data (or parity / stop) bit
 								sample_cnt 	<= 0;
-								one_cnt 	<= 0;		
+								one_cnt 	<= 0;
 								if (pos_cnt = databits_g) then --End of data recieve. Next step: stop bit / parity bit
 									if (parity_en_g = 1) then --parity enabled
 										if parity_odd_g then
@@ -235,28 +236,26 @@ begin
 									one_cnt <= one_cnt + 1;
 								end if;
 								
-								if sample_cnt = 5 then
-									if (not parity_odd_g) then --Odd parity
-										if (one_cnt > 2 and parity_bit /= '1') or (one_cnt < 3 and parity_bit /= '0') then -- comparing the sampeled din_d2 with parity value calculated in RX_ST
+							elsif sample_cnt = 5 then
+								if (not parity_odd_g) then --Odd parity
+									if (one_cnt > 2 and parity_bit /= '1') or (one_cnt < 3 and parity_bit /= '0') then -- comparing the sampeled din_d2 with parity value calculated in RX_ST
 											parity_err 		<= '1';				-- parity bit error
 											parity_err_i	<= '1';				-- Internal parity bit error, for not asserting 'valid'
-										else
+									else
 											parity_err 		<= '0';
 											parity_err_i	<= '0';
-										end if;
-									else		 				--Even parity
-										if (one_cnt > 2 and parity_bit /= '0') or (one_cnt < 3 and parity_bit /= '1') then -- comparing the sampeled din_d2 with parity value calculated in RX_ST
+									end if;
+								else		 				--Even parity
+									if (one_cnt > 2 and parity_bit /= '0') or (one_cnt < 3 and parity_bit /= '1') then -- comparing the sampeled din_d2 with parity value calculated in RX_ST
 											parity_err 		<= '1';				-- parity bit error
 											parity_err_i	<= '1';				-- Internal parity bit error, for not asserting 'valid'
-										else
+									else
 											parity_err 		<= '0';
 											parity_err_i	<= '0';
-										end if;
 									end if;
 								end if;
 							end if;
-							
-							sample_cnt <= sample_cnt + 1;		
+									
 							
 							-- Keep counting until next bit (stop bit) position is achieved
 							
@@ -264,6 +263,8 @@ begin
 								sample_cnt 		<= 0;
 								one_cnt 		<= 0;
 								cur_st 			<= STOPBIT_ST;
+							else
+								sample_cnt <= sample_cnt + 1;
 							end if;
 
 				when STOPBIT_ST =>

@@ -37,6 +37,8 @@
 --			1.02		07.02.2011	Beeri Schreiber		(1) Blocks where converted to Shift Registers
 --														(2) Maximum function has been added
 --			1.03		25.02.2011	Beeri Schreiber		(1) General_err flag has been deleted
+--			1.04		13.08.2011	Beeri Schreiber		CRC_ERR is asserted also when MP_DONE
+--														is asserted.
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -437,8 +439,10 @@ begin
 		elsif rising_edge (clk) then
 			if (cur_st = eof_st) and (crc_in_val = '1') and (crc_in /= crc_blk) then
 				crc_err_i	<= '1';		-- CRC Error
+			elsif (cur_st = sof_st) then
+				crc_err_i	<= '0';		-- Clear CRC
 			else
-				crc_err_i	<= '0';		-- CRC OK
+				crc_err_i	<=	crc_err_i;
 			end if;
 		end if;
 	end process crc_err_proc;

@@ -10,6 +10,7 @@
 --					(1) Clocks:
 --						(*) System Clock 	- 	50MHz
 --						(*) SDRAM Clock		-	133MHz
+--						(*)	System Clock	-	100MHz
 --						(*)	VESA Clock		-	40MHz
 --
 --					(2) Asynchronous Reset to FPGA
@@ -19,11 +20,13 @@
 --				Outputs:
 --					(1) Synchronous Resets:
 --						(*) Synchronous Reset	-	133MHz
+--						(*) Synchronous Reset	-	100MHz
 --						(*) Synchronous Reset	-	40MHz
 ------------------------------------------------------------------------------------------------
 -- Revision:
 --			Number		Date		Name				Description
 --			1.00		06.03.2011	Beeri Schreiber		Creation
+--			1.10		16.02.2012	Beeri Schreiber		Added 100MHz clock domain
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -39,10 +42,12 @@ entity reset_blk_top is
 	port (
 			fpga_clk		:	in std_logic ;				--Input clock to the FPGA (50MHz)
 			sdram_clk		:	in std_logic ;				--Input SDRAM clock (133MHz)
+			system_clk		:	in std_logic ;				--Input System clock (100MHz)
 			vesa_clk		:	in std_logic ;				--Input VESA clock (40MHz)
 			fpga_rst		:	in std_logic ;				--Input reset from FPGA
 			pll_locked		:	in std_logic ;				--PLL locked indication. In case PLL is not in the design, connect VCC to this port
 			sync_sdram_rst	:	out std_logic ;				--Output Synchronized reset - 133MHz
+			sync_system_rst	:	out std_logic ;				--Output Synchronized reset - 100MHz
 			sync_vesa_rst	:	out std_logic				--Output Synchronized reset - 40MHz
 		);
 end entity reset_blk_top;
@@ -102,6 +107,17 @@ begin
 						clk         	=>	sdram_clk,
 						sys_rst_in  	=>	sync_rst_50_i,
 						sync_rst_out	=>	sync_sdram_rst
+					);
+
+	--Sync reset generator. Synchronized the 50MHz reset to System clock
+	sync_rst_sys_inst: sync_rst_gen
+				generic map 
+					( reset_polarity_g => reset_polarity_g )
+				port map
+					(
+						clk         	=>	system_clk,
+						sys_rst_in  	=>	sync_rst_50_i,
+						sync_rst_out	=>	sync_system_rst
 					);
 
 	--Sync reset generator. Synchronized the 50MHz reset to VESA clock
