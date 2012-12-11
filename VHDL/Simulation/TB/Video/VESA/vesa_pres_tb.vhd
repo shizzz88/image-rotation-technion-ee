@@ -73,7 +73,7 @@ architecture arc_vesa_pres_tb of vesa_pres_tb is
 -----------------------------------    Components	-------------------------------
 
 
-component vesa_presentation
+component synthetic_frame_generator
 	generic (
 			reset_polarity_g		:	std_logic 	:= '0';				--Reset Polarity. '0' = Reset
 			hsync_polarity_g		:	std_logic 	:= '1';				--Positive HSync
@@ -106,7 +106,7 @@ component vesa_presentation
 			lower_frame				:	out std_logic_vector(integer(ceil(log(real(ver_active_lines_g)) / log(2.0))) - 1 downto 0);		--Lower frame border
 			data_valid				: 	out std_logic
 			);
-end component vesa_presentation;
+end component synthetic_frame_generator;
 
 component vesa_gen_ctrl 
 	generic (
@@ -259,7 +259,7 @@ signal vsync		:		std_logic;										--VSync Signal
 -------------------------------	Implementation	---------------------------
 begin
 
-	vesa_pres_inst: vesa_presentation generic map
+	vesa_pres_inst: synthetic_frame_generator generic map
 					(                          
 						reset_polarity_g	   => reset_polarity_g,
 						hsync_polarity_g	   => hsync_polarity_g,

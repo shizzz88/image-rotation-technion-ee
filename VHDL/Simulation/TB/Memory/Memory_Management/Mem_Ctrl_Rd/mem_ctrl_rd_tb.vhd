@@ -10,6 +10,7 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		4.5.2011	Beeri Schreiber			Creation
+--			1.10		28.3.2012	Beeri Schreiber			Updated TB for new MEM_MENAGEMENT
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -20,9 +21,6 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 use ieee.math_real.all;
-
-library work ;
-use work.ram_generic_pkg.all;
 
 entity mem_ctrl_rd_tb is
 	generic (
@@ -88,8 +86,10 @@ component mem_ctrl_wr
 		);
   port (
 		-- Clocks and Reset 
-		clk_i		:	in std_logic;	--Wishbone input clock
-		rst			:	in std_logic;	--Reset
+		clk_sdram	:	in std_logic;	--Wishbone input clock for SDRAM (133MHz)
+		clk_sys		:	in std_logic;	--System clock
+		rst_sdram	:	in std_logic;	--Reset for SDRAM Clock domain
+		rst_sys		:	in std_logic;	--Reset for System Clock domain
 
 		-- Wishbone Slave signals
 		wbs_adr_i	:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -140,8 +140,10 @@ component mem_ctrl_rd
 		);
   port (
 		-- Clocks and Reset 
-		clk_i		:	in std_logic;	--Wishbone input clock
-		rst			:	in std_logic;	--Reset
+		clk_sdram	:	in std_logic;	--Wishbone input clock for SDRAM (133MHz)
+		clk_sys		:	in std_logic;	--System clock
+		rst_sdram	:	in std_logic;	--Reset for SDRAM Clock domain
+		rst_sys		:	in std_logic;	--Reset for System Clock domain
 
 		-- Wishbone Slave signals
 		wbs_adr_i	:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -256,6 +258,7 @@ end component mem_mng_arbiter;
 
 --Clock and Reset
 signal clk_133		:	std_logic := '0'; --133 MHz
+signal clk_100		:	std_logic := '0'; --100 MHz
 signal rst			:	std_logic := '0'; --Reset
 
 --SDRAM Signals
@@ -352,8 +355,11 @@ signal rd_addr_reg	:	std_logic_vector (21 downto 0):= (others => '0');	--Read fr
 
 begin
 	--Clock process
-	clk_proc:
+	clk_133_proc:
 	clk_133 <= not clk_133 after 3.75 ns;
+
+	clk_100_proc:
+	clk_100 <= not clk_100 after 5 ns;
 	
 	--Reset process
 	rst_proc:
@@ -393,7 +399,7 @@ begin
 			end if;
 			wr_wbs_adr_i	<= (others => '0');
 			wr_wbs_tga_i	<= conv_std_logic_vector (min_val, 10);
-			wait until rising_edge(clk_133);
+			wait until rising_edge(clk_100);
 			wr_wbs_cyc_i	<= '1';
 			wr_wbs_stb_i	<= '1';
 			blen_loop:
@@ -405,17 +411,17 @@ begin
 					wr_wbs_dat_i	<= 	counter;
 					counter			:=	counter + '1';
 					wait until wr_wbs_stall_o = '0';
-					wait until rising_edge(clk_133);
+					wait until rising_edge(clk_100);
 					wr_wbs_dat_i	<= 	counter;
 					counter			:=	counter + '1';
 				end if;
 				wr_wbs_adr_i	<= wr_wbs_adr_i + '1';
 				blen := blen - 1;
 
-				if (idx = min_val) or (blen = 1) then
+				if (idx = min_val) or (blen = 0) then
 					wr_wbs_stb_i	<= '0';
 				end if;
-				wait until rising_edge(clk_133);
+				wait until rising_edge(clk_100);
 				if (blen <= 1) then
 					if (blen = 1) then
 						wr_wbs_stb_i	<= '0';
@@ -435,6 +441,7 @@ begin
 	procedure wbm_rd_burst (constant burst_param : in natural) is
 	variable blen 		:	natural := burst_param;
 	variable min_val	:	natural;
+	variable bank_rstrt	:	boolean := true;
 	begin
 		rd_wbs_cyc_i	<= '0';
 		rd_wbs_stb_i	<= '0';
@@ -446,16 +453,31 @@ begin
 			end if;
 			rd_wbs_adr_i	<= (others => '0');
 			rd_wbs_tga_i	<= conv_std_logic_vector (min_val, 10);
-			wait until rising_edge(clk_133);
+			wait until rising_edge(clk_100);
+			if (bank_rstrt) then
+				rd_wbs_cyc_i	<= '1';
+				rd_wbs_stb_i	<= '1';
+				rd_wbs_tgc_i	<= '1';
+				bank_rstrt		:=	false;
+				if (rd_wbs_stall_o = '1') then
+					wait until rd_wbs_stall_o = '0';
+				end if;
+				rd_wbs_tgc_i	<= '0';
+				rd_wbs_stb_i	<= '0';
+				wait until falling_edge(rd_wbs_ack_o);
+				rd_wbs_cyc_i	<= '0';
+			end if;
+			--End of TGC.
+			wait until rising_edge(clk_100);
+			wait until rising_edge(clk_100);
 			rd_wbs_cyc_i	<= '1';
 			rd_wbs_stb_i	<= '1';
-			rd_wbs_tgc_i	<= '1';
+			wait until rising_edge(clk_100);
 			blen_loop:
 			for idx in 0 to min_val loop	--Burst length
 				if (rd_wbs_stall_o = '1') then
 					wait until rd_wbs_stall_o = '0';
-					rd_wbs_tgc_i	<= '0';
-					wait until rising_edge(clk_133);
+					wait until rising_edge(clk_100);
 				end if;
 				rd_wbs_adr_i	<= rd_wbs_adr_i + '1';
 				blen := blen - 1;
@@ -463,9 +485,9 @@ begin
 				if (idx = min_val) or (blen = 0) then
 					rd_wbs_stb_i	<= '0';
 				end if;
-				wait until rising_edge(clk_133);
+				wait until rising_edge(clk_100);
 			end loop blen_loop;
-			--wait until rising_edge(clk_133);
+			--wait until rising_edge(clk_100);
 			rd_wbs_stb_i	<= '0';
 			wait until all_ack_rd_satisfied;
 			rd_wbs_cyc_i	<= '0';
@@ -491,7 +513,7 @@ begin
 		wr_wbs_stb_i	<= '0';
 		wr_wbs_adr_i	<= (others => '0');
 		wr_wbs_tga_i	<= conv_std_logic_vector(integer(ceil(real(sum_counter))) - 1, 10);
-		wait until rising_edge(clk_133);
+		wait until rising_edge(clk_100);
 		wr_wbs_cyc_i	<= '1';
 		wr_wbs_stb_i	<= '1';
 		chunk_loop:
@@ -499,7 +521,7 @@ begin
 			wr_wbs_dat_i	<= conv_std_logic_vector(sum_chunk_v mod 256, 8);
 			if (wr_wbs_stall_o = '1') then
 				wait until wr_wbs_stall_o = '0';
-				wait until rising_edge(clk_133);
+				wait until rising_edge(clk_100);
 			end if;
 			sum_chunk_v := sum_chunk_v / 256;
 			wr_wbs_dat_i	<= conv_std_logic_vector(sum_chunk_v mod 256, 8);
@@ -508,7 +530,7 @@ begin
 			if (sum_chunk_v = 0) then
 				wr_wbs_stb_i	<= '0';
 			end if;
-			wait until rising_edge(clk_133);
+			wait until rising_edge(clk_100);
 		end loop chunk_loop;
 		wait until all_ack_wr_satisfied;
 		wr_wbs_cyc_i	<= '0';
@@ -526,29 +548,29 @@ begin
 		rd_wbs_tgc_i	<= '0';
 		wait for 230 us;	--After RESET process of SDRAM
 
-		--########## 	Write BURST #1	##########
-		report "Time : " & time'image(now) & ", Write Burst #1" severity warning;
-		wbm_wr_burst (burst_len_g);
+		-- --########## 	Write BURST #1	##########
+		-- report "Time : " & time'image(now) & ", Write Burst #1" severity warning;
+		-- wbm_wr_burst (burst_len_g);
 		
-		--Summary chunk
-		report "Time : " & time'image(now) & ", Sum chunk 1 #1" severity warning;
-		wbm_sum (burst_len_g);
+		-- --Summary chunk
+		-- report "Time : " & time'image(now) & ", Sum chunk 1 #1" severity warning;
+		-- wbm_sum (burst_len_g);
 		
-		--########## 	Read BURST #1	##########
-		report "Time : " & time'image(now) & ", Read Burst #1" severity warning;
-		wbm_rd_burst (burst_len_g);
+		-- --########## 	Read BURST #1	##########
+		-- report "Time : " & time'image(now) & ", Read Burst #1" severity warning;
+		-- wbm_rd_burst (burst_len_g);
 
-		--########## 	Write DEBUG #1	##########
-		--Change type register: Debug mode
-		report "Time : " & time'image(now) & ", Write DBG #1" severity warning;
-		type_reg(0)	<= '1';
-		wr_addr_reg	<= conv_std_logic_vector(wr_addr_dbg_g, 22);
-		wbm_wr_burst (burst_len_dbg_g);
+		-- --########## 	Write DEBUG #1	##########
+		-- --Change type register: Debug mode
+		-- report "Time : " & time'image(now) & ", Write DBG #1" severity warning;
+		-- type_reg(0)	<= '1';
+		-- wr_addr_reg	<= conv_std_logic_vector(wr_addr_dbg_g, 22);
+		-- wbm_wr_burst (burst_len_dbg_g);
 		
-		--########## 	Read DEBUG #1	##########
-		report "Time : " & time'image(now) & ", Read DBG #1" severity warning;
-		rd_addr_reg	<= conv_std_logic_vector(wr_addr_dbg_g, 22);
-		wbm_rd_burst (burst_len_dbg_g);
+		-- --########## 	Read DEBUG #1	##########
+		-- report "Time : " & time'image(now) & ", Read DBG #1" severity warning;
+		-- rd_addr_reg	<= conv_std_logic_vector(wr_addr_dbg_g, 22);
+		-- wbm_rd_burst (burst_len_dbg_g);
 
 		--########## 	Write BURST #2	##########
 		--Change type register: Normal mode
@@ -566,6 +588,10 @@ begin
 		--########## 	Read BURST #2	##########
 		report "Time : " & time'image(now) & ", Read Burst #2" severity warning;
 		wbm_rd_burst (burst_len_g*2);
+
+		--########## 	Read BURST #3	##########
+		report "Time : " & time'image(now) & ", Read Burst #3" severity warning;
+		wbm_rd_burst (burst_len_g*2);
 		wait;
 	end process wbs_proc;
 	
@@ -574,10 +600,10 @@ begin
 	begin
 		all_ack_wr_satisfied	<= false;
 		wait until wr_wbs_cyc_i = '1';
-		wait until rising_edge(clk_133);
+		wait until rising_edge(clk_100);
 		wait until wr_wbs_ack_o = '0';
 		all_ack_wr_satisfied	<= true;
-		wait until rising_edge(clk_133);
+		wait until rising_edge(clk_100);
 	end process ack_i_wr_cnt_proc;
 	
 	--Count number of Read WBS_ACK_I
@@ -585,10 +611,10 @@ begin
 	begin
 		all_ack_rd_satisfied	<= false;
 		wait until rd_wbs_cyc_i = '1';
-		wait until rising_edge(clk_133);
+		wait until rising_edge(clk_100);
 		wait until rd_wbs_ack_o = '0';
 		all_ack_rd_satisfied	<= true;
-		wait until rising_edge(clk_133);
+		wait until rising_edge(clk_100);
 	end process ack_i_rd_cnt_proc;
 
 	--Componenets:
@@ -634,8 +660,10 @@ begin
 									port map
 										(
 										-- Clocks and Reset 
-										clk_i	=> clk_133,		
-										rst		=> rst,
+										clk_sdram	=> clk_133,		
+										clk_sys		=> clk_100,		
+										rst_sdram	=> rst,
+										rst_sys		=> rst,
 
 										-- Wishbone Slave signals
 										wbs_adr_i	=> wr_wbs_adr_i,
@@ -742,8 +770,10 @@ begin
 									port map
 									(
 										-- Clocks and Reset 
-										clk_i			=>	clk_133,
-										rst				=>	rst,
+										clk_sdram	=> clk_133,		
+										clk_sys		=> clk_100,		
+										rst_sdram	=> rst,
+										rst_sys		=> rst,
 
 										-- Wishbone Slave signals
 										wbs_adr_i		=>	rd_wbs_adr_i,

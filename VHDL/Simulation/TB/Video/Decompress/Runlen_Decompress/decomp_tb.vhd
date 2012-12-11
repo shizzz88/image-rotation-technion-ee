@@ -65,7 +65,7 @@ signal sc_fifo_dout	:	std_logic_vector (7 downto 0);
 signal dc_fifo_dout	:	std_logic_vector (7 downto 0);
 signal sc_fifo_dout_val		:	std_logic;
 signal dc_fifo_dout_val		:	std_logic;
-signal flush		:	std_logic := '0';
+signal flush		:	std_logic;
 signal fifo_full	:	std_logic := '0';
 signal fifo_empty	:	std_logic := '0';
 
@@ -87,7 +87,7 @@ begin
 						 end_pic	=>	end_pic
 					   );
 					   
-	runlen_inst: runlen_extractor generic map
+	runlen_inst : runlen_extractor generic map
 						(
 						reset_polarity_g	=>	'0',	
 						pixels_per_line_g	=>	640,
