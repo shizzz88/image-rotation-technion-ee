@@ -29,6 +29,10 @@
 -- Frame:	A generic-color frame can wrap the transmitted image, using the left, right, lower and upper 
 --			input registers.
 --
+-- Frame example: In case the picture is 800X600, where the ROI is 640X480 and the picture is centered, then:
+--		(*) Left and Right frame 	= 80 [ (800-640)/2 ]
+--		(*) Upper and Lower frame 	= 60 [ (600-480)/2 ]
+--
 --						-----------------------------
 --						|			Frame			|
 --						|   ---------------------	|
@@ -313,7 +317,7 @@ begin
 				elsif (req_lines_cnt = 1) then
 					req_lines_cnt 	<= req_lines_g;
 					req_ln_trig		<= '1';
-					pixels_req		<= conv_std_logic_vector((hor_active_pixels_g - conv_integer(left_frame)- conv_integer(right_frame)) * req_lines_g, integer(ceil(log(real(hor_active_pixels_g * req_lines_g)) / log(2.0))));
+					pixels_req		<= conv_std_logic_vector((hor_active_pixels_g - conv_integer(left_frame) - conv_integer(right_frame) ) * req_lines_g, integer(ceil(log(real(hor_active_pixels_g * req_lines_g)) / log(2.0))));
 				elsif ((vcnt < lower_frame_i) and (vcnt >= upper_frame_i)) then
 					req_lines_cnt	<= req_lines_cnt - 1;
 					req_ln_trig 	<= '0';
