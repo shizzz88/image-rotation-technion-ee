@@ -1,9 +1,12 @@
 mem_ctrl_wr  line 151 :
 	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g ;		--Summary chunk value
-	
+	in the new version -1 removed by beeri
+	nothing to change
+
 mds_top	
- mem_mng_inst - generic map
- disp_ctrl_inst - generic map
+ mem_mng_inst - generic map			update 	resolutions in g map
+ disp_ctrl_inst - generic map			update resolutions in g map	
+
  
 disp_ctrl_top
  frame calculations
