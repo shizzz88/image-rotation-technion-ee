@@ -81,7 +81,7 @@ signal system_rst			:	std_logic;
 signal write_en	:	std_logic;
 signal cycle_in	:	std_logic;
 signal strobe_in:	std_logic;
- 
+signal grant_in:	std_logic;
 				
 begin
 ---------------------------		process + inst	-----------------------------------------
@@ -111,7 +111,7 @@ rd_wr_inst: rd_wr_ctr
             wbm_stall_i	=>  '0',						
             wbm_err_i	=>  '0',						
 			wbm_ack_i	=>  '0',
-			arbiter_gnt=>'0'			
+			arbiter_gnt => grant_in			
 			
 			
 			); 

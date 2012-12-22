@@ -144,16 +144,17 @@ architecture rtl_rd_wr_ctr of rd_wr_ctr is
 			case wbm_cur_st is
 				
 				when wbm_idle_st =>
-					
-				   if (wbs_cyc_i='1') and (wbs_stb_i='1') then
-						if (wbs_we_i='1') then
-							wbm_cur_st<=wbm_write_st;
-						else
-							wbm_cur_st<=wbm_read_st;
+				   if (wbs_cyc_i='1') and (wbs_stb_i='1')  then
+						if (wbs_we_i='1')  then
+							wbm_cur_st <= wbm_write_st;
+						elsif (wbs_we_i='0')  then
+							wbm_cur_st <= wbm_read_st;
 						end if;
 					else
-						wbm_cur_st<=wbm_cur_st;
+						wbm_cur_st <= wbm_cur_st;
 					end if;						
+					arbiter_req	<= "00";
+
 				
 				when wbm_read_st =>
 					wbm_adr_o(21) <= '0';	--read pixels from bank 0
@@ -163,12 +164,12 @@ architecture rtl_rd_wr_ctr of rd_wr_ctr is
 					wbm_tga_o	<= tga_in  ;  
 					wbm_cyc_o	<= cyc_in  ;  
 					wbm_stb_o	<= stb_in  ;
-
 					wbs_dat_o	<=  dat_in	;
 					wbs_stall_o	<=  stall_in;
 					wbs_err_o	<=  err_in	;
 					wbs_ack_o	<=  ack_in	;
-					
+					arbiter_req	<= "01";
+
 					if (wbs_cyc_i='1') and (wbs_stb_i='1') and (wbm_ack_i='1') then
 						wbm_cur_st<=wbm_idle_st;
 					else			
@@ -188,7 +189,8 @@ architecture rtl_rd_wr_ctr of rd_wr_ctr is
 					wbs_stall_o	<=  stall_in;
 					wbs_err_o	<=  err_in	;
 					wbs_ack_o	<=  ack_in	;
-				
+					arbiter_req	<= "10";
+
 					if (wbs_cyc_i='1') and (wbs_stb_i='1') and (wbm_ack_i='1') then
 						wbm_cur_st<=wbm_idle_st;
 					else			
@@ -211,21 +213,21 @@ architecture rtl_rd_wr_ctr of rd_wr_ctr is
 	---------------------------------------------------------------------------------
 	-- The process controls the arbiter_req signal
 	---------------------------------------------------------------------------------
-	arbiter_req_proc: process (clk_i, rst)
-	begin
+	-- arbiter_req_proc: process (clk_i, rst)
+	-- begin
 		
-		if (rst = reset_polarity_g) then
-			arbiter_req	<= "00";
-		elsif rising_edge (clk_i) then
-			if (wbm_cur_st = wbm_idle_st) then
-				arbiter_req	<= "00";
-			elsif  (wbm_cur_st = wbm_read_st) then
-				arbiter_req	<= "01";
-			else --  (wbm_cur_st = wbm_write_st) then
-				arbiter_req	<= "10";
-			end if;	
-		end if;
-	end process arbiter_req_proc;
+		-- if (rst = reset_polarity_g) then
+			-- arbiter_req	<= "00";
+		-- elsif rising_edge (clk_i) then
+			-- if (wbm_cur_st = wbm_idle_st) then
+				-- arbiter_req	<= "00";
+			-- elsif  (wbm_cur_st = wbm_read_st) then
+				-- arbiter_req	<= "01";
+			-- elsif  (wbm_cur_st = wbm_write_st) then
+				-- arbiter_req	<= "10";
+			-- end if;	
+		-- end if;
+	-- end process arbiter_req_proc;
 	
 
 

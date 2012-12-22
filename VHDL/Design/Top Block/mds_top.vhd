@@ -351,7 +351,7 @@ component rx_path
 			);	
 end component rx_path;
 
-component mem_mng_top 
+component mem_mng_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				mode_g				:	natural range 0 to 7 		:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
@@ -401,15 +401,29 @@ component mem_mng_top
 				wbm_tga_o			:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
 				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
 				wbm_stb_o			:	out std_logic;							--Strobe Command to interface
-
+				
+				-- Wishbone Slave signals from Image Manipulation Block
+				-- Wishbone Slave signals to Read/Write interface
+				img_wbs_adr_i	:	in std_logic_vector (22 downto 0);		--Address (Bank, Row, Col)
+				img_wbs_dat_i	:	in std_logic_vector (15 downto 0);		--Data In (16 bits)
+				img_wbs_we_i	:	in std_logic;							--Write Enable
+				img_wbs_tga_i	:	in std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
+				img_wbs_cyc_i	:	in std_logic;							--Cycle Command from interface
+				img_wbs_stb_i	:	in std_logic;							--Strobe Command from interface
+				img_wbs_dat_o	:	out std_logic_vector (15 downto 0);		--Data Out (16 bits)
+				img_wbs_stall_o	:	out std_logic;							--Slave is not ready to receive new data
+				img_wbs_err_o	:	out std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
+				img_wbs_ack_o	:	out std_logic;							--When Read Burst: DATA bus must be valid in this cycle
+																		--When Write Burst: Data has been read from SDRAM and is valid		
+	
 				--Debug Port
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
-				dbg_wr_bank_val		:	out std_logic;							--Write SDRAM Bank Value
+				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
 				dbg_actual_rd_bank	:	out std_logic							--Actual Written bank
 			);
-end component mem_mng_top;	
+end component mem_mng_top;
 
 component disp_ctrl_top is
 	generic (
@@ -674,8 +688,19 @@ signal tx_icz_wbs_stall_o	:	std_logic;						--STALL from TX Path registers
 signal tx_icz_wbs_ack_o		:	std_logic;						--ACK from TX Path registers
 signal tx_icz_wbs_err_o		:	std_logic;						--ERR from TX Path Registers
 
+	-- Wishbone slave Signals to mem_management from
+signal icy_mem_img_wbs_adr_i	:	std_logic_vector (22 downto 0);	
+signal icy_mem_img_wbs_dat_i	:	std_logic_vector (15 downto 0);	
+signal icy_mem_img_wbs_we_i		:	std_logic;						
+signal icy_mem_img_wbs_tga_i	:	std_logic_vector (7 downto 0);	
+signal icy_mem_img_wbs_cyc_i	:	std_logic;						
+signal icy_mem_img_wbs_stb_i	:	std_logic;						
+signal icy_mem_img_wbs_dat_o	:	std_logic_vector (15 downto 0);	
+signal icy_mem_img_wbs_stall_o	:	std_logic;						
+signal icy_mem_img_wbs_err_o	:	std_logic;					
+signal icy_mem_img_wbs_ack_o	:	std_logic;						
+	
 begin
-
 --Hidden Processes
 
 --Connects SDRAM clock to out
@@ -918,6 +943,18 @@ mem_mng_inst 	:	 mem_mng_top generic map
 				rd_wbs_stall_o	=>	rd_wbs_stall_o	,	
 				rd_wbs_ack_o	=>	rd_wbs_ack_o	,	
 				rd_wbs_err_o	=>	rd_wbs_err_o	,	
+				
+				img_wbs_adr_i	   =>icy_mem_img_wbs_adr_i	 ,
+				img_wbs_dat_i	   =>icy_mem_img_wbs_dat_i	 ,
+				img_wbs_we_i	   =>icy_mem_img_wbs_we_i	,	
+				img_wbs_tga_i	   =>icy_mem_img_wbs_tga_i	 ,
+				img_wbs_cyc_i	   =>icy_mem_img_wbs_cyc_i	 ,
+				img_wbs_stb_i	   =>icy_mem_img_wbs_stb_i	 ,
+				img_wbs_dat_o	   =>icy_mem_img_wbs_dat_o	 ,
+				img_wbs_stall_o	   =>icy_mem_img_wbs_stall_o,	
+				img_wbs_err_o	   =>icy_mem_img_wbs_err_o	 ,
+				img_wbs_ack_o	   =>icy_mem_img_wbs_ack_o	 ,
+				                                             
 				
 				wbm_dat_i		=>	wbm_dat_i		,	
 				wbm_stall_i		=>	wbm_stall_i		,	
