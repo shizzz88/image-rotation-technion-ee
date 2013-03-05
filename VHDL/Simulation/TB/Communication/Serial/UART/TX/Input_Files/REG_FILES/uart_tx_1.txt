@@ -1,0 +1,63 @@
+#Chunk - SDRAM DBG Register
+#SOF
+64
+#Type
+80
+#Address
+02
+#Length
+00	02
+#Payload
+01 F0 E0
+#CRC
+55
+#EOF
+C8
+#--------------------------------
+#Chunk - Length Register
+#SOF
+64
+#Type
+80
+#Address
+09
+#Length
+00	01
+#Payload = 00 01 = 1 = 2 bytes
+01 00
+#CRC
+8B
+#EOF
+C8
+#--------------------------------
+#Chunk - Register Address Register
+#SOF
+64
+#Type
+80
+#Address
+0C
+#Length
+00	00
+#Payload
+01
+#CRC
+8D
+#EOF
+C8
+#--------------------------------
+#Chunk - DBG Command Register
+#SOF
+64
+#Type
+80
+#Address
+0B
+#Length
+00	00
+#Payload
+01
+#CRC
+8C
+#EOF
+C8

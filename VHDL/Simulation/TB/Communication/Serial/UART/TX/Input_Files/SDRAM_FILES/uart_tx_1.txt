@@ -1,0 +1,70 @@
+#Chunk - Write to SDRAM
+#SOF
+64
+#Type
+00
+#Address
+00
+#Length
+00	0F
+#Payload
+01	02
+03	04
+05	06
+07	08
+09	0A
+0B	0C
+0D	0E
+0F	10
+#CRC
+97
+#EOF
+C8
+# -----------------------
+#Chunk - SDRAM DBG Register
+#SOF
+64
+#Type
+80
+#Address
+02
+#Length
+00	02
+#Payload
+00 00 00
+#CRC
+84
+#EOF
+C8
+#--------------------------------
+#Chunk - Length Register
+#SOF
+64
+#Type
+80
+#Address
+09
+#Length
+00	01
+#Payload = 00 0F = 15 = 16 bytes
+0F 00
+#CRC
+99
+#EOF
+C8
+#--------------------------------
+#Chunk - DBG Command Register
+#SOF
+64
+#Type - DBG Mode
+81
+#Address
+0B
+#Length
+00	00
+#Payload
+01
+#CRC
+8D
+#EOF
+C8
