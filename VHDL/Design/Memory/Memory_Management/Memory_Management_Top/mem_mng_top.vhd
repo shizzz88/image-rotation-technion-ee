@@ -72,21 +72,7 @@ entity mem_mng_top is
 				wbm_tga_o			:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
 				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
 				wbm_stb_o			:	out std_logic;							--Strobe Command to interface
-				
-				-- Wishbone Slave signals from Image Manipulation Block
-				-- Wishbone Slave signals to Read/Write interface
-				img_wbs_adr_i	:	in std_logic_vector (22 downto 0);		--Address (Bank, Row, Col)
-				img_wbs_dat_i	:	in std_logic_vector (15 downto 0);		--Data In (16 bits)
-				img_wbs_we_i	:	in std_logic;							--Write Enable
-				img_wbs_tga_i	:	in std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-				img_wbs_cyc_i	:	in std_logic;							--Cycle Command from interface
-				img_wbs_stb_i	:	in std_logic;							--Strobe Command from interface
-				img_wbs_dat_o	:	out std_logic_vector (15 downto 0);		--Data Out (16 bits)
-				img_wbs_stall_o	:	out std_logic;							--Slave is not ready to receive new data
-				img_wbs_err_o	:	out std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-				img_wbs_ack_o	:	out std_logic;							--When Read Burst: DATA bus must be valid in this cycle
-																		--When Write Burst: Data has been read from SDRAM and is valid		
-	
+
 				--Debug Port
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
 				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
@@ -288,7 +274,7 @@ component mem_ctrl_rd
 		); 
 end component mem_ctrl_rd;
 
-component mem_mng_arbiter is
+component mem_mng_arbiter
 	generic	(
 			reset_polarity_g	:	std_logic	:= '0'					--When reset = reset_polarity_g, system is in RESET mode
 			);
@@ -298,12 +284,10 @@ component mem_mng_arbiter is
 			reset			:	in std_logic;							--Reset
 									
 			--Requests and grants						
-			img_man_req		:	in std_logic_vector (1 downto 0);		--Image Manipulation request
 			wr_req			:	in std_logic;							--Write request
 			rd_req			:	in std_logic;							--Read Request
 			wr_gnt			:	out std_logic;							--Write grant
 			rd_gnt			:	out std_logic;							--Read grant
-			img_man_gnt		:	out std_logic;							--Image Manipulation grant
 			
 			-- Write: Wishbone Master signals to SDRAM
 			wr_wbm_adr_o	:	in std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
@@ -326,20 +310,6 @@ component mem_mng_arbiter is
 			rd_wbm_stall_i	:	out std_logic;							--Slave is not ready to receive new data
 			rd_wbm_err_i	:	out std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
 			rd_wbm_ack_i	:	out std_logic;							--When Read Burst: DATA bus must be valid in this cycle
-			
-			-- Read/Write: Wishbone Master signals to SDRAM from image manipulation rd_wr_ctr
-			img_wbm_adr_o	:	in std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
-			img_wbm_dat_o	:	in std_logic_vector (15 downto 0);		--Data In (16 bits)
-			img_wbm_we_o	:	in std_logic;							--Write Enable
-			img_wbm_tga_o	:	in std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-			img_wbm_cyc_o	:	in std_logic;							--Cycle Command from interface
-			img_wbm_stb_o	:	in std_logic;							--Strobe Command from interface
-			img_wbm_dat_i	:	out  std_logic_vector (15 downto 0);	--Data for write (16 bits)
-			img_wbm_stall_i	:	out  std_logic;							--Slave is not ready to receive new data
-			img_wbm_err_i	:	out  std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-			img_wbm_ack_i	:	out  std_logic;							--When Write Burst: DATA bus must be valid in this cycle
-																		--When Read Burst: Data has been read from SDRAM and is valid
-
 
 			-- Wishbone Master signals to SDRAM, after arbitration
 			wbm_adr_o		:	out std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
@@ -355,49 +325,6 @@ component mem_mng_arbiter is
 			);
 end component mem_mng_arbiter;
 
-component rd_wr_ctr is
-  generic
-	   (
-		reset_polarity_g	:	std_logic				:= '0'	--When rst = reset_polarity_g, system is in RESET mode
-		);
-  port (
-		-- Clocks and Reset 
-		clk_i		:	in std_logic;	--Wishbone input clock
-		rst			:	in std_logic;	--Reset
-		
-		-- Wishbone Slave signals from Image Manipulation Block
-		-- Wishbone Slave signals to Read/Write interface
-		wbs_adr_i	:	in std_logic_vector (22 downto 0);		--Address (Bank, Row, Col)
-		wbs_dat_i	:	in std_logic_vector (15 downto 0);		--Data In (16 bits)
-		wbs_we_i	:	in std_logic;							--Write Enable
-		wbs_tga_i	:	in std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-		wbs_cyc_i	:	in std_logic;							--Cycle Command from interface
-		wbs_stb_i	:	in std_logic;							--Strobe Command from interface
-		wbs_dat_o	:	out std_logic_vector (15 downto 0);		--Data Out (16 bits)
-		wbs_stall_o	:	out std_logic;							--Slave is not ready to receive new data
-		wbs_err_o	:	out std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-		wbs_ack_o	:	out std_logic;							--When Read Burst: DATA bus must be valid in this cycle
-																--When Write Burst: Data has been read from SDRAM and is valid		
-	
-	-- Wishbone Master signals to Arbiter/SDRAM
-		wbm_adr_o	:	out std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
-		wbm_dat_o	:	out std_logic_vector (15 downto 0);		--Data In (16 bits)
-		wbm_we_o	:	out std_logic;							--Write Enable
-		wbm_tga_o	:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-		wbm_cyc_o	:	out std_logic;							--Cycle Command from interface
-		wbm_stb_o	:	out std_logic;							--Strobe Command from interface
-		wbm_dat_i	:	in  std_logic_vector (15 downto 0);		--Data for write (16 bits)
-		wbm_stall_i	:	in  std_logic;							--Slave is not ready to receive new data
-		wbm_err_i	:	in  std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-		wbm_ack_i	:	in  std_logic;							--When Write Burst: DATA bus must be valid in this cycle
-																--When Read Burst: Data has been read from SDRAM and is valid
-
-		-- Arbiter signals
-		arbiter_gnt	:	in std_logic;							--Grant control on SDRAM from Arbiter
-		arbiter_req	:	out std_logic_vector (1 downto 0)		--Request for control on SDRAM from Arbiter
-
-		); 
-end component rd_wr_ctr;
 --	###########################		Signals		##############################	--
 
 -- Logic signals, derived from Wishbone Slave (mem_ctrl_wr)
@@ -435,26 +362,11 @@ signal rd_wbm_stall_i:	std_logic;							--Slave is not ready to receive new data
 signal rd_wbm_err_i	:   std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
 signal rd_wbm_ack_i	:   std_logic;							--When Read Burst: DATA bus must be valid in this cycle
 
----- Wishbone Master signals from rd_wr_ctr to Arbiter
-signal img_wbm_adr_o		: std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)
-signal img_wbm_we_o			: std_logic;							--Write Enable
-signal img_wbm_tga_o		: std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-signal img_wbm_cyc_o		: std_logic;							--Cycle Command to interface
-signal img_wbm_stb_o		: std_logic;							--Strobe Command to interface
-signal img_wbm_dat_o		: std_logic_vector (15 downto 0);		--Data Out (16 bits)
-signal img_wbm_dat_i		: std_logic_vector (15 downto 0);		--Data In (16 bits)
-signal img_wbm_stall_i		: std_logic;							--Slave is not ready to receive new data
-signal img_wbm_err_i		: std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-signal img_wbm_ack_i		: std_logic	;						--When Read Burst: DATA bus must be valid in this cycle
-
 -- Arbiter signals
 signal arb_wr_gnt	:	std_logic;							--Write: Grant control on SDRAM from Arbiter
 signal arb_wr_req	:	std_logic;							--Write: Request for control on SDRAM from Arbiter
 signal arb_rd_gnt	:	std_logic;							--Read: Grant control on SDRAM from Arbiter
 signal arb_rd_req	:	std_logic;							--Read: Request for control on SDRAM from Arbiter
-signal arb_img_man_gnt	:	std_logic;						--image: Grant control on SDRAM from Arbiter
-signal arb_img_man_req	:	std_logic_vector(1 downto 0);	--image: Request for control on SDRAM from Arbiter
-
 
 -- Wr_Rd_Bank signals
 signal wr_bank_val	:	std_logic; 							--Wr_Bank value
@@ -636,14 +548,12 @@ begin
 										(
 										clk				=>	clk_sdram,			
 										reset			=>	rst_sdram,
-										
-										img_man_req		=>	"00",--arb_img_man_req,			
+														
 										wr_req			=>	arb_wr_req,
 										rd_req			=>	arb_rd_req,
 										wr_gnt			=>	arb_wr_gnt,
 										rd_gnt			=>	arb_rd_gnt,
-										img_man_gnt		=>	arb_img_man_gnt,						
-                
+										                
 										wr_wbm_adr_o	=>	wr_wbm_adr_o,
 										wr_wbm_dat_o	=>  wr_wbm_dat_o,
 										wr_wbm_we_o		=>  wr_wbm_we_o,
@@ -663,18 +573,7 @@ begin
 										rd_wbm_stall_i	=>	rd_wbm_stall_i,	
 										rd_wbm_err_i	=>	rd_wbm_err_i,	
 										rd_wbm_ack_i	=>	rd_wbm_ack_i,	
-										
-										img_wbm_adr_o	=>   img_wbm_adr_o,
-										img_wbm_dat_o	=>   img_wbm_dat_o,	
-										img_wbm_we_o	=>   img_wbm_we_o,
-										img_wbm_tga_o	=>   img_wbm_tga_o,
-										img_wbm_cyc_o	=>   img_wbm_cyc_o,
-										img_wbm_stb_o	=>   img_wbm_stb_o,
-										img_wbm_dat_i	 =>  img_wbm_dat_i,	
-										img_wbm_stall_i	 =>  img_wbm_stall_i,	
-										img_wbm_err_i	 =>  img_wbm_err_i,	
-										img_wbm_ack_i	 =>  img_wbm_ack_i,	
-																				
+										                
 										wbm_adr_o		=>	wbm_adr_o,
 										wbm_we_o		=>  wbm_we_o,
 										wbm_tga_o		=>  wbm_tga_o,
@@ -741,48 +640,7 @@ begin
 										--Debug Signals
 										dbg_rd_bank		=> dbg_actual_rd_bank	
 									);
-	rd_wr_ctr_inst	: rd_wr_ctr 
-					generic map(reset_polarity_g	=> reset_polarity_g)
-				  port map (
-						-- Clocks and Reset 
-						clk_i		=>clk_sys,
-						rst			=>rst_sys,
-						
-						-- Wishbone Slave signals from Image Manipulation Block
-						-- Wishbone Slave signals to Read/Write interface
-						wbs_adr_i		=> img_wbs_adr_i,
-						wbs_dat_i		=> img_wbs_dat_i,
-						wbs_we_i		=> img_wbs_we_i,
-						wbs_tga_i		=> img_wbs_tga_i,
-						wbs_cyc_i		=> img_wbs_cyc_i,
-						wbs_stb_i		=> img_wbs_stb_i,
-						
-						wbs_dat_o	=>		img_wbs_dat_o,
-						wbs_stall_o	=>		img_wbs_stall_o,	
-						wbs_err_o	=>		img_wbs_err_o, 
-						wbs_ack_o	=>		img_wbs_ack_o,	
-																		
-					
-					-- Wishbone Master signals to Arbiter/SDRAM
-						wbm_adr_o	=> img_wbm_adr_o,
-						wbm_dat_o	=> img_wbm_dat_o    ,
-						wbm_we_o	=> img_wbm_we_o	,
-						wbm_tga_o	=> img_wbm_tga_o	,
-						wbm_cyc_o	=> img_wbm_cyc_o	,
-						wbm_stb_o	=> img_wbm_stb_o	,
-						                             
-						wbm_dat_i  => img_wbm_dat_i	,
-						wbm_stall_i => img_wbm_stall_i  ,
-						wbm_err_i  => img_wbm_err_i	,
-						wbm_ack_i  => img_wbm_ack_i 	,
-																		
-
-						-- Arbiter signals
-						arbiter_gnt	=>		arb_img_man_gnt ,	                     	
-						arbiter_req	=>		arb_img_man_req	         	
-
-						); 	
-	
+								
 	gen_reg_type_inst	:	gen_reg generic map (
 										reset_polarity_g	=>	reset_polarity_g,	
 										width_g				=>	reg_width_c,
