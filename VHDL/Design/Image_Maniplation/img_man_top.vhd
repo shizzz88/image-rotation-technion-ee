@@ -43,8 +43,32 @@ entity img_man_top is
 				wbs_dat_o			:	out std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
 				wbs_stall_o			:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				wbs_ack_o			:	out std_logic;							--Input data has been successfuly acknowledged
-				wbs_err_o			:	out std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
-			
+				wbs_err_o			:	out std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				
+					-- Wishbone Master (mem_ctrl_wr)
+				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				wr_wbm_tga_o		:	out std_logic_vector (9 downto 0);		--Burst Length
+				wr_wbm_dat_o		:	out std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wr_wbm_cyc_o		:	out std_logic;							--Cycle command from WBM
+				wr_wbm_stb_o		:	out std_logic;							--Strobe command from WBM
+				wr_wbm_we_o			:	out std_logic;							--Write Enable
+				wr_wbm_tgc_o		:	out std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wr_wbm_dat_i		:	in std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wr_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wr_wbm_ack_i		:	in std_logic;							--Input data has been successfuly acknowledged
+				wr_wbm_err_i		:	in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+
+				-- Wishbone Master (mem_ctrl_rd)
+				rd_wbm_adr_o 		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				rd_wbm_tga_o 		:   out std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
+				rd_wbm_cyc_o		:   out std_logic;							--Cycle command from WBM
+				rd_wbm_tgc_o 		:   out std_logic;							--Cycle tag. '1' indicates start of transaction
+				rd_wbm_stb_o		:   out std_logic;							--Strobe command from WBM
+				rd_wbm_dat_i		:  	in std_logic_vector (7 downto 0);		--Data Out (8 bits)
+				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
+				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				
 			);
 end entity img_man_top;
 
@@ -170,7 +194,53 @@ component addr_calc is
 			);
 end component addr_calc;
 
+component img_man_manager is
+	generic (
+				reset_polarity_g 	: 	std_logic 					:= '0';
+				img_hor_pixels_g	:	positive					:= 640;	--640 pixel in a coloum
+				img_ver_pixels_g	:	positive					:= 480	--480 pixels in a row
+			);
+	port	(
+				--Clock and Reset 
+				sys_clk				:	in std_logic;				-- clock
+				sys_rst				:	in std_logic;				-- Reset
+				
+				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
+				--from addr_calc
+				addr_calc_oor		:	in std_logic;				--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				addr_calc_valid		:	in std_logic;				--data valid indicator
+				
+				
+				index_valid			:	out std_logic;				--valid signal for index
+				row_idx_out			:	out signed (10 downto 0); 	--current row index           --fix to generic
+				col_idx_out			:	out signed (10 downto 0); 	--corrent coloumn index		  --fix to generic
+				
+				-- Wishbone Master (mem_ctrl_wr)
+				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				wr_wbm_tga_o		:	out std_logic_vector (9 downto 0);		--Burst Length
+				wr_wbm_dat_o		:	out std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wr_wbm_cyc_o		:	out std_logic;							--Cycle command from WBM
+				wr_wbm_stb_o		:	out std_logic;							--Strobe command from WBM
+				wr_wbm_we_o			:	out std_logic;							--Write Enable
+				wr_wbm_tgc_o		:	out std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wr_wbm_dat_i		:	in std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wr_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wr_wbm_ack_i		:	in std_logic;							--Input data has been successfuly acknowledged
+				wr_wbm_err_i		:	in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
 
+				-- Wishbone Master (mem_ctrl_rd)
+				rd_wbm_adr_o 		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				rd_wbm_tga_o 		:   out std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
+				rd_wbm_cyc_o		:   out std_logic;							--Cycle command from WBM
+				rd_wbm_tgc_o 		:   out std_logic;							--Cycle tag. '1' indicates start of transaction
+				rd_wbm_stb_o		:   out std_logic;							--Strobe command from WBM
+				rd_wbm_dat_i		:  	in std_logic_vector (7 downto 0);		--Data Out (8 bits)
+				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
+				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				
+			);
+end component img_man_manager;
 --	###########################		Signals		##############################	--
 
 -- Logic signals, derived from Wishbone Slave
@@ -240,6 +310,11 @@ signal zoom_reg_rd_en			:	std_logic_vector (param_reg_depth_c - 1 downto 0);				
 signal zoom_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 downto 0);	--Output data
 signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
 
+--from img_manager
+signal	index_valid_sig	            : std_logic;			
+signal	row_idx_out_sig	            : signed (10 downto 0);
+signal	col_idx_out_sig	            : signed (10 downto 0);
+signal	manipulation_trig			: std_logic;	
 
 --	###########################		Implementation		##############################	--
 begin	
@@ -355,7 +430,48 @@ begin
 --	end process bank_val_proc;
 	
 --	###########################		Instances		##############################	--
-			
+	
+	img_man_manager_inst : img_man_manager generic map 
+										(reset_polarity_g => reset_polarity_g)
+									port map
+										(
+										sys_clk				=>	system_clk,				-- clock
+										sys_rst				=>	system_rst,				-- Reset
+										req_trig			=>	manipulation_trig,		-- Trigger for image manipulation to begin,
+                                        
+										--from addr_calc
+										addr_calc_oor		=>	'0',				--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+										addr_calc_valid		=>	'1',				--data valid indicator                  
+				                   
+										index_valid			=>	index_valid_sig,					--valid signal for index
+										row_idx_out			=>	row_idx_out_sig, 	--current row index           --fix to generic
+										col_idx_out			=>	col_idx_out_sig,	 	--corrent coloumn index		  --fix to generic
+
+										-- Wishbone Master (mem_ctrl_wr)
+										wr_wbm_adr_o		=>	    wr_wbm_adr_o	,
+										wr_wbm_tga_o		=>	    wr_wbm_tga_o	,
+										wr_wbm_dat_o		=>	    wr_wbm_dat_o	,
+										wr_wbm_cyc_o		=>	    wr_wbm_cyc_o	,
+										wr_wbm_stb_o		=>	    wr_wbm_stb_o	,
+										wr_wbm_we_o			=>	    wr_wbm_we_o		,
+										wr_wbm_tgc_o		=>	    wr_wbm_tgc_o	,
+										wr_wbm_dat_i		=>	    wr_wbm_dat_i	,
+										wr_wbm_stall_i		=>	    wr_wbm_stall_i	,
+										wr_wbm_ack_i		=>	    wr_wbm_ack_i	,
+										wr_wbm_err_i		=>	    wr_wbm_err_i	,
+						                                                            
+										-- Wishbone Master (mem_ctrl-- Wishbone Mast'rd)
+										rd_wbm_adr_o 		=>	    rd_wbm_adr_o 	,
+										rd_wbm_tga_o 		=>      rd_wbm_tga_o 	,
+										rd_wbm_cyc_o		=>      rd_wbm_cyc_o	,
+										rd_wbm_tgc_o 		=>      rd_wbm_tgc_o 	,
+										rd_wbm_stb_o		=>      rd_wbm_stb_o	,
+										rd_wbm_dat_i		=>      rd_wbm_dat_i	,
+										rd_wbm_stall_i		=>	    rd_wbm_stall_i	,
+										rd_wbm_ack_i		=>      rd_wbm_ack_i	,
+										rd_wbm_err_i		=>      rd_wbm_err_i	
+	
+										);
 	gen_reg_type_inst	:	gen_reg generic map (
 										reset_polarity_g	=>	reset_polarity_g,	
 										width_g				=>	reg_width_c,
