@@ -12,6 +12,7 @@
 --			1.00		25.5.2011	Beeri Schreiber			Creation
 --			1.10		5.2.2012	Beeri Schreiber			Added clock domain
 --			1.2			11.12.2012	uri ran					nivun
+--    1.21  27.03.2013  uri ran     image_man_top added to top design
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) ADD img_man including adding ports to wishbone intercon
@@ -91,12 +92,64 @@ architecture rtl_mds_top of mds_top is
 
 
 --#############################	Constants	##############################################--
-constant num_of_wbs_z_c	:	natural := 3;	--3 WBS to INTERCON Z
-constant num_of_wbm_z_c :	natural := 2;	--2 WBM to INTERCON Z
+constant num_of_wbs_z_c	:	natural := 4;	--4 WBS to INTERCON Z	uri ran original 3
+constant num_of_wbm_z_c :	natural := 3;	--3 WBM to INTERCON Z uri ran original 2
 constant num_of_wbs_y_c	:	natural := 1;	--1 WBS to INTERCON Y
-constant num_of_wbm_y_c :	natural := 2;	--2 WBM to INTERCON Y
+constant num_of_wbm_y_c :	natural := 3;	--3 WBM to INTERCON Y	uri ran original 3
 
 --#############################	Components	##############################################--
+
+component img_man_top is
+	generic (
+				reset_polarity_g 	: 	std_logic 					:= '0';
+				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
+				img_ver_pixels_g	:	positive					:= 480	--480 active lines
+			);
+	port	(
+				--Clock and Reset
+				system_clk				:	in std_logic;							--Clock
+				system_rst				:	in std_logic;							--Reset
+
+				-- Wishbone Slave (For Registers)
+				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
+				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
+				wbs_dat_i			:	in std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wbs_cyc_i			:	in std_logic;							--Cycle command from WBM
+				wbs_stb_i			:	in std_logic;							--Strobe command from WBM
+				wbs_we_i			:	in std_logic;							--Write Enable
+				wbs_tgc_i			:	in std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wbs_dat_o			:	out std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wbs_stall_o			:	out std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wbs_ack_o			:	out std_logic;							--Input data has been successfuly acknowledged
+				wbs_err_o			:	out std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				
+					-- Wishbone Master (mem_ctrl_wr)
+				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				wr_wbm_tga_o		:	out std_logic_vector (9 downto 0);		--Burst Length
+				wr_wbm_dat_o		:	out std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wr_wbm_cyc_o		:	out std_logic;							--Cycle command from WBM
+				wr_wbm_stb_o		:	out std_logic;							--Strobe command from WBM
+				wr_wbm_we_o			:	out std_logic;							--Write Enable
+				wr_wbm_tgc_o		:	out std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wr_wbm_dat_i		:	in std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wr_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wr_wbm_ack_i		:	in std_logic;							--Input data has been successfuly acknowledged
+				wr_wbm_err_i		:	in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+
+				-- Wishbone Master (mem_ctrl_rd)
+				rd_wbm_adr_o 		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				rd_wbm_tga_o 		:   out std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
+				rd_wbm_cyc_o		:   out std_logic;							--Cycle command from WBM
+				rd_wbm_tgc_o 		:   out std_logic;							--Cycle tag. '1' indicates start of transaction
+				rd_wbm_stb_o		:   out std_logic;							--Strobe command from WBM
+				rd_wbm_dat_i		:  	in std_logic_vector (7 downto 0);		--Data Out (8 bits)
+				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
+				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				
+			);
+end component img_man_top;
+
 component tx_path
    generic (
 				--------------------- Common generic --------------------------------------------------------
@@ -351,7 +404,7 @@ component rx_path
 			);	
 end component rx_path;
 
-component mem_mng_top is
+component mem_mng_top 
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				mode_g				:	natural range 0 to 7 		:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
@@ -401,29 +454,15 @@ component mem_mng_top is
 				wbm_tga_o			:	out std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
 				wbm_cyc_o			:	out std_logic;							--Cycle Command to interface
 				wbm_stb_o			:	out std_logic;							--Strobe Command to interface
-				
-				-- Wishbone Slave signals from Image Manipulation Block
-				-- Wishbone Slave signals to Read/Write interface
-				img_wbs_adr_i	:	in std_logic_vector (22 downto 0);		--Address (Bank, Row, Col)
-				img_wbs_dat_i	:	in std_logic_vector (15 downto 0);		--Data In (16 bits)
-				img_wbs_we_i	:	in std_logic;							--Write Enable
-				img_wbs_tga_i	:	in std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
-				img_wbs_cyc_i	:	in std_logic;							--Cycle Command from interface
-				img_wbs_stb_i	:	in std_logic;							--Strobe Command from interface
-				img_wbs_dat_o	:	out std_logic_vector (15 downto 0);		--Data Out (16 bits)
-				img_wbs_stall_o	:	out std_logic;							--Slave is not ready to receive new data
-				img_wbs_err_o	:	out std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
-				img_wbs_ack_o	:	out std_logic;							--When Read Burst: DATA bus must be valid in this cycle
-																		--When Write Burst: Data has been read from SDRAM and is valid		
-	
+
 				--Debug Port
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
-				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
+				dbg_wr_bank_val		:	out std_logic;							--Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
 				dbg_actual_rd_bank	:	out std_logic							--Actual Written bank
 			);
-end component mem_mng_top;
+end component mem_mng_top;	
 
 component disp_ctrl_top is
 	generic (
@@ -635,6 +674,38 @@ signal ic_wbs_stall_o	:	std_logic_vector (num_of_wbs_z_c - 1 downto 0);					--Sl
 signal ic_wbs_ack_o		:	std_logic_vector (num_of_wbs_z_c - 1 downto 0);					--Input data has been successfuly acknowledged
 signal ic_wbs_err_o		:	std_logic_vector (num_of_wbs_z_c - 1 downto 0);					--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
 
+	-- Signals from image manipulation wbs to intercon Z
+signal img_wbs_dat_o			: std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+signal img_wbs_stall_o			: std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+signal img_wbs_ack_o			: std_logic;							--Input data has been successfuly acknowledged
+signal img_wbs_err_o			: std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				 
+	--Signals from image manipulation wbm_wr to intercon Z
+signal	img_wr_wbm_adr_o		: std_logic_vector (9 downto 0);		--Address in internal RAM
+signal	img_wr_wbm_tga_o		: std_logic_vector (9 downto 0);		--Burst Length
+signal	img_wr_wbm_dat_o		: std_logic_vector (7 downto 0);		--Data In (8 bits)
+signal	img_wr_wbm_cyc_o		: std_logic;							--Cycle command from WBM
+signal	img_wr_wbm_stb_o		: std_logic;							--Strobe command from WBM
+signal	img_wr_wbm_we_o			: std_logic;							--Write Enable
+signal	img_wr_wbm_tgc_o		: std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+signal	img_wr_wbm_dat_i		:std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+signal	img_wr_wbm_stall_i		:std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+signal	img_wr_wbm_ack_i		:std_logic;							--Input data has been successfuly acknowledged
+signal	img_wr_wbm_err_i		:std_logic;		
+
+	-- --Signals from image manipulation wbm_rd to intercon Y
+signal	img_rd_wbm_adr_o 		:	std_logic_vector (9 downto 0);		--Address in internal RAM
+signal	img_rd_wbm_tga_o 		:   std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
+signal	img_rd_wbm_cyc_o		:   std_logic;							--Cycle command from WBM
+signal	img_rd_wbm_tgc_o 		:   std_logic;							--Cycle tag. '1' indicates start of transaction
+signal	img_rd_wbm_stb_o		:   std_logic;							--Strobe command from WBM
+signal	img_rd_wbm_dat_i		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
+signal	img_rd_wbm_stall_i		:	std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+signal	img_rd_wbm_ack_i		:  std_logic;							--Input data has been successfuly acknowledged
+signal	img_rd_wbm_err_i		:  std_logic;	
+
+signal	img_rd_wbm_dat_o		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
+signal	img_rd_wbm_we_o			:  std_logic;	
 
 	-- Wishbone Master (RX Block)
 signal rx_wbm_adr_o		:	std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -688,19 +759,9 @@ signal tx_icz_wbs_stall_o	:	std_logic;						--STALL from TX Path registers
 signal tx_icz_wbs_ack_o		:	std_logic;						--ACK from TX Path registers
 signal tx_icz_wbs_err_o		:	std_logic;						--ERR from TX Path Registers
 
-	-- Wishbone slave Signals to mem_management from
-signal icy_mem_img_wbs_adr_i	:	std_logic_vector (22 downto 0);	
-signal icy_mem_img_wbs_dat_i	:	std_logic_vector (15 downto 0);	
-signal icy_mem_img_wbs_we_i		:	std_logic;						
-signal icy_mem_img_wbs_tga_i	:	std_logic_vector (7 downto 0);	
-signal icy_mem_img_wbs_cyc_i	:	std_logic;						
-signal icy_mem_img_wbs_stb_i	:	std_logic;						
-signal icy_mem_img_wbs_dat_o	:	std_logic_vector (15 downto 0);	
-signal icy_mem_img_wbs_stall_o	:	std_logic;						
-signal icy_mem_img_wbs_err_o	:	std_logic;					
-signal icy_mem_img_wbs_ack_o	:	std_logic;						
-	
 begin
+img_rd_wbm_dat_o <=	(others => '0');
+img_rd_wbm_we_o	<='0';
 --Hidden Processes
 
 --Connects SDRAM clock to out
@@ -713,19 +774,19 @@ clk_vesa_out	<=	clk_40;
 
 --Connects WBS DATA to INTERCON. 
 ic_wbs_dat_o_proc:
-ic_wbs_dat_o	<=	tx_icz_wbs_dat_o & disp_rx_wbm_dat_i & mem_rx_wbm_dat_i ;
+ic_wbs_dat_o	<=	img_wbs_dat_o & tx_icz_wbs_dat_o & disp_rx_wbm_dat_i & mem_rx_wbm_dat_i  ;
 
 --Connects WBS ACK to INTERCON. 
 ic_wbs_ack_o_proc:
-ic_wbs_ack_o	<=	tx_icz_wbs_ack_o & disp_rx_wbm_ack_i & mem_rx_wbm_ack_i ;
+ic_wbs_ack_o	<=	img_wbs_ack_o & 	tx_icz_wbs_ack_o & disp_rx_wbm_ack_i & mem_rx_wbm_ack_i ;
 
 --Connects WBS ERR to INTERCON. 
 ic_wbs_err_o_proc:
-ic_wbs_err_o	<=	tx_icz_wbs_err_o & disp_rx_wbm_err_i & mem_rx_wbm_err_i;
+ic_wbs_err_o	<=	img_wbs_err_o & tx_icz_wbs_err_o & disp_rx_wbm_err_i & mem_rx_wbm_err_i ;
 
 --Connects WBS STALL to INTERCON. 
 ic_wbs_stall_o_proc:
-ic_wbs_stall_o	<=	tx_icz_wbs_stall_o & disp_rx_wbm_stall_i & mem_rx_wbm_stall_i;
+ic_wbs_stall_o	<=	img_wbs_stall_o & tx_icz_wbs_stall_o & disp_rx_wbm_stall_i & mem_rx_wbm_stall_i ;
 
 --Unconnected INTERCON_X from TX_PATH
 tx_icx_wbm_dat_o_proc:
@@ -767,29 +828,38 @@ intercon_z_inst		:	intercon generic map
 				--Signals from INTERCON to WBM 
 				ic_wbm_dat_i (7 downto 0)	=>	rx_wbm_dat_i (7 downto 0),
 				ic_wbm_dat_i (15 downto 8)	=>	icx_wbm_dat_i (7 downto 0),
+				ic_wbm_dat_i (23 downto 16)	=>	img_wr_wbm_dat_i(7 downto 0),
 				ic_wbm_stall_i(0)			=>	rx_wbm_stall_i,
 				ic_wbm_stall_i(1)			=>	icx_wbm_stall_i,
+				ic_wbm_stall_i(2)			=>	img_wr_wbm_stall_i,
 				ic_wbm_ack_i(0)				=>	rx_wbm_ack_i,
 				ic_wbm_ack_i(1)				=>	icx_wbm_ack_i,
+				ic_wbm_ack_i(2)				=>	img_wr_wbm_ack_i,
 				ic_wbm_err_i(0)				=>	rx_wbm_err_i,
 				ic_wbm_err_i(1)				=>	icx_wbm_err_i,
-				
+				ic_wbm_err_i(2)				=>	img_wr_wbm_err_i,
 				--Signals from WBM to INTERCON
 				ic_wbm_adr_o (9 downto 0)	=>	rx_wbm_adr_o,		
-				ic_wbm_adr_o (19 downto 10)	=>	icx_wbm_adr_o (9 downto 0),		
+				ic_wbm_adr_o (19 downto 10)	=>	icx_wbm_adr_o (9 downto 0),
+				ic_wbm_adr_o (29 downto 20)	=>	img_wr_wbm_adr_o, -- uri ran
 				ic_wbm_tga_o (9 downto 0)	=>	rx_wbm_tga_o,		
-				ic_wbm_tga_o (19 downto 10)	=>	icx_wbm_tga_o (9 downto 0),		
+				ic_wbm_tga_o (19 downto 10)	=>	icx_wbm_tga_o (9 downto 0),	
+				ic_wbm_tga_o (29 downto 20)	=>	img_wr_wbm_tga_o,
 				ic_wbm_dat_o (7 downto 0)	=>	rx_wbm_dat_o,		
-				ic_wbm_dat_o (15 downto 8)	=>	icx_wbm_dat_o (7 downto 0),		
+				ic_wbm_dat_o (15 downto 8)	=>	icx_wbm_dat_o (7 downto 0),	
+				ic_wbm_dat_o (23 downto 16)	=>	img_wr_wbm_dat_o,
 				ic_wbm_cyc_o(0)				=>	rx_wbm_cyc_o,		
 				ic_wbm_cyc_o(1)				=>	icx_wbm_cyc_o,		
+				ic_wbm_cyc_o(2)				=>	img_wr_wbm_cyc_o,
 				ic_wbm_stb_o(0)				=>	rx_wbm_stb_o,		
 				ic_wbm_stb_o(1)				=>	icx_wbm_stb_o,		
+				ic_wbm_stb_o(2)				=>	img_wr_wbm_stb_o,
 				ic_wbm_we_o(0)				=>	rx_wbm_we_o,		
 				ic_wbm_we_o(1)				=>	icx_wbm_we_o,		
+				ic_wbm_we_o(2)				=>	img_wr_wbm_we_o,
 				ic_wbm_tgc_o(0)				=>	rx_wbm_tgc_o,		
 				ic_wbm_tgc_o(1)				=>	icx_wbm_tgc_o,		
-				
+				ic_wbm_tgc_o(2)				=>	img_wr_wbm_tgc_o,
 				--Signals from WBS to INTERCON
 				ic_wbs_dat_o		=>	ic_wbs_dat_o,	
 				ic_wbs_stall_o		=>	ic_wbs_stall_o,	
@@ -828,29 +898,39 @@ intercon_y_inst		:	intercon generic map
 				--Signals from INTERCON to WBM 
 				ic_wbm_dat_i (7 downto 0)	=>	icy_disp_wbm_dat_i (7 downto 0),
 				ic_wbm_dat_i (15 downto 8)	=>	icxy_wbm_dat_i (7 downto 0),
+				ic_wbm_dat_i (23 downto 16)	=>	img_rd_wbm_dat_i,
 				ic_wbm_stall_i(0)			=>	icy_disp_wbm_stall_i,
 				ic_wbm_stall_i(1)			=>	icxy_wbm_stall_i,
+				ic_wbm_stall_i(2)			=>	img_rd_wbm_stall_i,
 				ic_wbm_ack_i(0)				=>	icy_disp_wbm_ack_i,
 				ic_wbm_ack_i(1)				=>	icxy_wbm_ack_i,
+				ic_wbm_ack_i(2)				=>	img_rd_wbm_ack_i,
 				ic_wbm_err_i(0)				=>	icy_disp_wbm_err_i,
 				ic_wbm_err_i(1)				=>	icxy_wbm_err_i,
+				ic_wbm_err_i(2)				=>	img_rd_wbm_err_i,
 				
 				--Signals from WBM (Disp Ctrl (0) & INTERCON X (1)) to INTERCON Y
 				ic_wbm_adr_o (9 downto 0)	=>	icy_disp_wbm_adr_o,		
 				ic_wbm_adr_o (19 downto 10)	=>	icxy_wbm_adr_o (9 downto 0),		
+				ic_wbm_adr_o (29 downto 20)	=>	img_rd_wbm_adr_o,
 				ic_wbm_tga_o (9 downto 0)	=>	icy_disp_wbm_tga_o,		
 				ic_wbm_tga_o (19 downto 10)	=>	icxy_wbm_tga_o (9 downto 0),		
+				ic_wbm_tga_o (29 downto 20)	=>	img_rd_wbm_tga_o,
 				ic_wbm_dat_o (7 downto 0)	=>	OPEN_disp_dat_o,		
 				ic_wbm_dat_o (15 downto 8)	=>	icxy_wbm_dat_o (7 downto 0),		
+				ic_wbm_dat_o (23 downto 16)	=>	img_rd_wbm_dat_o,	-- dummy signal uri ran bug
 				ic_wbm_cyc_o(0)				=>	icy_disp_wbm_cyc_o,		
 				ic_wbm_cyc_o(1)				=>	icxy_wbm_cyc_o,		
+				ic_wbm_cyc_o(2)				=>	img_rd_wbm_cyc_o,
 				ic_wbm_stb_o(0)				=>	icy_disp_wbm_stb_o,		
 				ic_wbm_stb_o(1)				=>	icxy_wbm_stb_o,		
+				ic_wbm_stb_o(2)				=>	img_rd_wbm_stb_o,
 				ic_wbm_we_o(0)				=>	OPEN_disp_we_o,		
 				ic_wbm_we_o(1)				=>	icxy_wbm_we_o,		
+				ic_wbm_we_o(2)				=>	img_rd_wbm_we_o,	-- dummy signal uri ran bug
 				ic_wbm_tgc_o(0)				=>	icy_disp_wbm_tgc_o,		
 				ic_wbm_tgc_o(1)				=>	icxy_wbm_tgc_o,		
-				
+				ic_wbm_tgc_o(2)				=>	img_rd_wbm_tgc_o,	
 				--Signals from WBS to INTERCON
 				ic_wbs_dat_o		=>	rd_wbs_dat_o,	
 				ic_wbs_stall_o (num_of_wbs_y_c - 1)		=>	rd_wbs_stall_o,	
@@ -943,18 +1023,6 @@ mem_mng_inst 	:	 mem_mng_top generic map
 				rd_wbs_stall_o	=>	rd_wbs_stall_o	,	
 				rd_wbs_ack_o	=>	rd_wbs_ack_o	,	
 				rd_wbs_err_o	=>	rd_wbs_err_o	,	
-				
-				img_wbs_adr_i	   =>icy_mem_img_wbs_adr_i	 ,
-				img_wbs_dat_i	   =>icy_mem_img_wbs_dat_i	 ,
-				img_wbs_we_i	   =>icy_mem_img_wbs_we_i	,	
-				img_wbs_tga_i	   =>icy_mem_img_wbs_tga_i	 ,
-				img_wbs_cyc_i	   =>icy_mem_img_wbs_cyc_i	 ,
-				img_wbs_stb_i	   =>icy_mem_img_wbs_stb_i	 ,
-				img_wbs_dat_o	   =>icy_mem_img_wbs_dat_o	 ,
-				img_wbs_stall_o	   =>icy_mem_img_wbs_stall_o,	
-				img_wbs_err_o	   =>icy_mem_img_wbs_err_o	 ,
-				img_wbs_ack_o	   =>icy_mem_img_wbs_ack_o	 ,
-				                                             
 				
 				wbm_dat_i		=>	wbm_dat_i		,	
 				wbm_stall_i		=>	wbm_stall_i		,	
@@ -1104,6 +1172,56 @@ tx_path_inst: tx_path
 				dbg_type_reg		=>	dbg_type_reg_tx
 			);
 
+img_man_top_inst: img_man_top 
+		generic map(
+				reset_polarity_g 	=>	'0',
+				img_hor_pixels_g	 =>640,	--640 active pixels
+				img_ver_pixels_g	=> 480	--480 active lines
+			)
+	port map(
+				--Clock and Reset
+				system_clk			=>	clk_100,
+				system_rst			=>	rst_100,
+                                     
+				-- Wishbone Slave (Fr Registers)
+				wbs_adr_i			=> ic_wbs_adr_i(39 downto 30),
+				wbs_tga_i			=> ic_wbs_tga_i(29 downto 20),
+				wbs_dat_i			=> ic_wbs_dat_i(23 downto 16),
+				wbs_cyc_i			=> ic_wbs_cyc_i(3),
+				wbs_stb_i			=> ic_wbs_stb_i(3),
+				wbs_we_i			=> ic_wbs_we_i (3),
+				wbs_tgc_i			=> ic_wbs_tgc_i(3),
+				wbs_dat_o			=>	img_wbs_dat_o	 ,
+				wbs_stall_o			=>	img_wbs_stall_o,	
+				wbs_ack_o			=>	img_wbs_ack_o	 ,
+				wbs_err_o			=>	img_wbs_err_o	 ,
+				                     
+					-- Wishbone Mastr (mem_ctrl_wr)
+				wr_wbm_adr_o		=>  img_wr_wbm_adr_o,	
+				wr_wbm_tga_o		=>  img_wr_wbm_tga_o,	
+				wr_wbm_dat_o		=>  img_wr_wbm_dat_o,	
+				wr_wbm_cyc_o		=>  img_wr_wbm_cyc_o,	
+				wr_wbm_stb_o		=>  img_wr_wbm_stb_o,	
+				wr_wbm_we_o			=>  img_wr_wbm_we_o	,	
+				wr_wbm_tgc_o		=>  img_wr_wbm_tgc_o,	
+				wr_wbm_dat_i		=>  img_wr_wbm_dat_i	,
+				wr_wbm_stall_i		=>  img_wr_wbm_stall_i,	
+				wr_wbm_ack_i		=>  img_wr_wbm_ack_i,	
+				wr_wbm_err_i		=>  img_wr_wbm_err_i,	
+                                     
+				-- Wishbone Master (em_ctrl_rd)
+				rd_wbm_adr_o 		=>  img_rd_wbm_adr_o,
+				rd_wbm_tga_o 		=>  img_rd_wbm_tga_o,
+				rd_wbm_cyc_o		=>  img_rd_wbm_cyc_o,
+				rd_wbm_tgc_o 		=>  img_rd_wbm_tgc_o,
+				rd_wbm_stb_o		=>  img_rd_wbm_stb_o,
+				rd_wbm_dat_i		=>  img_rd_wbm_dat_i,
+				rd_wbm_stall_i		=>  img_rd_wbm_stall_i,
+				rd_wbm_ack_i		=>  img_rd_wbm_ack_i,
+				rd_wbm_err_i		=>  img_rd_wbm_err_i
+				
+			);
+		
 -----------------------------	Debug Ports	-----------------------
 --WBM_CYC_O from RX_Path to INTERCON_Z state
 dbg_rx_path_cyc_proc:
