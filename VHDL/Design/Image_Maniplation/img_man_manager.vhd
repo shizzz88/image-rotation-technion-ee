@@ -44,7 +44,31 @@ entity img_man_manager is
 				
 				index_valid			:	out std_logic;				--valid signal for index
 				row_idx_out			:	out signed (10 downto 0); 	--current row index           --fix to generic
-				col_idx_out			:	out signed (10 downto 0) 	--corrent coloumn index		  --fix to generic
+				col_idx_out			:	out signed (10 downto 0); 	--corrent coloumn index		  --fix to generic
+				
+				-- Wishbone Master (mem_ctrl_wr)
+				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				wr_wbm_tga_o		:	out std_logic_vector (9 downto 0);		--Burst Length
+				wr_wbm_dat_o		:	out std_logic_vector (7 downto 0);		--Data In (8 bits)
+				wr_wbm_cyc_o		:	out std_logic;							--Cycle command from WBM
+				wr_wbm_stb_o		:	out std_logic;							--Strobe command from WBM
+				wr_wbm_we_o			:	out std_logic;							--Write Enable
+				wr_wbm_tgc_o		:	out std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+				wr_wbm_dat_i		:	in std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
+				wr_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				wr_wbm_ack_i		:	in std_logic;							--Input data has been successfuly acknowledged
+				wr_wbm_err_i		:	in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+
+				-- Wishbone Master (mem_ctrl_rd)
+				rd_wbm_adr_o 		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
+				rd_wbm_tga_o 		:   out std_logic_vector (9 downto 0);		--Address Tag : Read burst length-1 (0 represents 1 byte, 3FF represents 1023 bytes)
+				rd_wbm_cyc_o		:   out std_logic;							--Cycle command from WBM
+				rd_wbm_tgc_o 		:   out std_logic;							--Cycle tag. '1' indicates start of transaction
+				rd_wbm_stb_o		:   out std_logic;							--Strobe command from WBM
+				rd_wbm_dat_i		:  	in std_logic_vector (7 downto 0);		--Data Out (8 bits)
+				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
+				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
+				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
 				
 			);
 end entity img_man_manager;
@@ -65,7 +89,13 @@ architecture rtl_img_man_manager of img_man_manager is
 							fsm_bilinear_st,		-- do a bilinear interpolation between the 4 pixels
 							fsm_WB_to_SDRAM_st		-- Write Back result to SDRAM
 						);
-						
+	type read_states is (		
+							phase_1,
+							phase_2,
+							phase_3, 
+							phase_4,
+							phase_5
+					);					
 	------------------------------	Signals	------------------------------------
 	-------------------------FSM
 	signal cur_st			:	fsm_states;			-- Current State
@@ -80,8 +110,9 @@ architecture rtl_img_man_manager of img_man_manager is
 	--signal add_calc_OOR			:	std_logic;		--address calculator result is out of range (oor)
 	--signal finish_addr_calc_st	:	std_logic;		--finish address calculate state
 	--------------------------Read From SDRAM
-	--signal finish_read_st		:	std_logic;		--finish Read From SDRAM state
-    --
+	signal finish_read_st		:	std_logic;		--finish Read From SDRAM state
+	signal en_read_proc		:	std_logic;		--start Read From SDRAM state
+    signal phase_number 		:	read_states;
 	--------------------------bilinear interpolation
 	--signal finish_bilinear_st	:	std_logic;	--finish bilinear intepolation state
 	--------------------------WB to SDRAM
@@ -119,11 +150,31 @@ begin
 			case cur_st is
 			------------------------------Idle State---------------------------------
 				when fsm_idle_st =>
+					wr_wbm_adr_o	<=	(others => '0');
+					wr_wbm_tga_o	<=	(others => '0');
+					wr_wbm_dat_o	<=	(others => '0');
+					wr_wbm_cyc_o	<=	'0';
+					wr_wbm_stb_o	<=	'0';
+					wr_wbm_we_o		<=	'0';
+					wr_wbm_tgc_o	<=	'0';
+					rd_wbm_tga_o 	<=	(others => '0');	
+					rd_wbm_cyc_o	<=	'0';	
+					rd_wbm_stb_o	<=	'0';
+					rd_wbm_adr_o	<=	(others => '0');	
+					rd_wbm_tga_o	<=	(others => '0');	
+					rd_wbm_cyc_o	<=	'0';
+					rd_wbm_tgc_o	<=	'0';
+					rd_wbm_stb_o	<=	'0';
+					finish_read_st	<=	'0';						
+					en_read_proc <=	'0';
+					finish_image	<=	'0';
+					
 					if (req_trig='1')  then
 						cur_st	<= 	fsm_increment_coord_st;
 					else
 						cur_st 	<= 	fsm_idle_st;	
 					end if;				
+			
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
 					if (finish_image = '1') then  			-- image is complete, back to idle
@@ -131,6 +182,7 @@ begin
 					else
 						cur_st 	<= 	fsm_address_calc_st;
 					end if;
+			
 			-----------------------------Address calculate state----------------------						
 				when fsm_address_calc_st =>
 					if (addr_calc_oor ='1') then			--current index is out of range, WB black
@@ -140,12 +192,22 @@ begin
 					else
 						cur_st 	<= 	fsm_address_calc_st;
 					end if;	
+			
 			-----------------------------Read From SDRAM state----------------------					
-				when fsm_READ_from_SDRAM_st =>		
+				when fsm_READ_from_SDRAM_st =>
+					en_read_proc	<= '1'; --start read process			
+					if (finish_read_st='11')	then
+						en_read_proc	<= '0'; --end read process	
 						cur_st 	<= 	fsm_bilinear_st;			--for tb of coordinate process
+					else if (finish_read_st='01')	then
+						
+					    cur_st	<=	fsm_READ_from_SDRAM_st;
+					end if;	
+			
 			-----------------------------bilinear state----------------------
 				when fsm_bilinear_st =>		
 						cur_st 	<= 	fsm_WB_to_SDRAM_st;			--for tb of coordinate process
+			
 			-----------------------------Write Back to SDRAM state----------------------
 				when fsm_WB_to_SDRAM_st =>
 					if (finish_image ='0') then
@@ -153,6 +215,7 @@ begin
 					else
 						cur_st	<=	fsm_idle_st;
 					end if;
+			
 			-----------------------------Debugg state, catch Unimplemented state
 				when others =>
 					cur_st	<=	fsm_idle_st;
@@ -160,7 +223,73 @@ begin
 				end case;
 		end if;
 	end process fsm_proc;
-
+---------------------------------------------------------------------------------------
+----------------------------	read_from_SDRAM process	-----------------------------------
+---------------------------------------------------------------------------------------
+-- the process will manage the read transaction from the sdram
+-- the read will be executed in 4 phase, 2 phases for each address
+-- 
+-- 
+---------------------------------------------------------------------------------------	
+read_from_SDRAM : process (sys_clk,sys_rst)			
+	begin
+		if (sys_rst =reset_polarity_g) then	
+			wr_wbm_adr_o	<=	(others => '0');
+			wr_wbm_tga_o	<=	(others => '0');
+			wr_wbm_dat_o	<=	(others => '0');
+			wr_wbm_cyc_o	<=	'0';
+			wr_wbm_stb_o	<=	'0';
+			wr_wbm_we_o		<=	'0';
+			wr_wbm_tgc_o	<=	'0';
+			rd_wbm_tga_o 	<=	(others => '0');	
+			rd_wbm_cyc_o	<=	'0';	
+			rd_wbm_stb_o	<=	'0';
+			finish_read_st	<=	'0';
+		
+		elsif rising_edge(sys_clk)  then
+				
+			case phase_number is		
+				when phase_1 =>
+					if (en_read_proc='1')  then
+						--write 0x80 to Type register
+						wr_wbm_adr_o	<=	"0000001101";
+						wr_wbm_tga_o	<=	(others => '0');
+						wr_wbm_dat_o	<=	"10000000";
+						wr_wbm_cyc_o	<=	'1';
+						wr_wbm_stb_o	<=	'1';
+						wr_wbm_we_o		<=	'1';
+						wr_wbm_tgc_o	<=	'1';
+						phase_number <= phase_2;
+					else
+						phase_number	<= 	phase_1;
+					end if;
+				when phase_2 =>
+					--write address to DBG_address_register		-- add another reg - 16 bit address
+					wr_wbm_adr_o	<=	"0000000010";
+					wr_wbm_dat_o	<=	"00110000";--address to be
+					phase_number <=	phase_3;
+				when phase_3 =>
+					--write 0x81 to Type register
+					wr_wbm_adr_o	<=	"0000001101";
+					wr_wbm_dat_o	<=	"10000001";
+					phase_number <=	phase_4;
+				when phase_4 =>
+					rd_wbm_tga_o 	<=	"0000000010";	
+					rd_wbm_cyc_o	<=	'1';	
+					rd_wbm_stb_o	<=	'1';
+					if (rd_wbm_ack_i='1') then		--recieve ack on read
+						finish_read_1st_pixel	<=	'1';
+						phase_number	<=	phase_1;
+					else
+						finish_read_1st_pixel	<=	'0';
+						phase_number		<=	phase_4;
+					end if;	
+					
+				when others =>
+					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected in read sdram process" severity error;
+				end case;	
+		end if;	
+	end process read_from_SDRAM;
 ---------------------------------------------------------------------------------------
 ----------------------------	coordinate process	-----------------------------------
 ---------------------------------------------------------------------------------------

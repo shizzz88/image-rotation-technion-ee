@@ -285,7 +285,7 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 						end if;
 						addr_pipe		<= x"FE" - cur_rd_addr(7 downto 0);
 						wbm_stb_internal<= '0';
-						cur_rd_addr		<= cur_rd_addr + '1'; 
+						cur_rd_addr		<= cur_rd_addr + '1';
 						wbm_cur_st		<= wbm_wait_burst_st;
 						
 					else											--Cycle in progress
@@ -301,7 +301,7 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 								ram_addr_in_i		<= ram_addr_in_i + '1';
 								dat_1st_bool	<= false;
 							end if;
-							cur_rd_addr		<= cur_rd_addr + '1'; 
+							cur_rd_addr		<= cur_rd_addr + '1';
 							ram_words_left	<= ram_words_left - '1';
 							ram_words_cnt	<= ram_words_cnt - '1';
 						else										--Repeat last transaction

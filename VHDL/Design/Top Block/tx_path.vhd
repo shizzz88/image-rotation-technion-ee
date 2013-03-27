@@ -729,15 +729,17 @@ begin
 										clk					=>	clk_i,
 									    reset		        =>	rst,
 									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
+									    din			        =>	reg_din, 
 									    wr_en		        =>	reg_wr_en,
 									    clear		        =>	'0',
                                         din_ack		        =>	rd_burst_reg_din_ack (idx),
                                         rd_en				=>	rd_burst_reg_rd_en (idx),
-                                        dout		        =>	rd_burst_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
-                                        dout_valid	        =>	rd_burst_reg_dout_valid (idx)
+                                       -- uri ran
+									   -- dout		        =>	rd_burst_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
+										dout_valid	        =>	rd_burst_reg_dout_valid (idx)
 									);
 	end generate rd_burst_reg_generate;
+	rd_burst_reg_dout<="0000000000000010";	-- uri ran
 												
 	wbs_reg_inst:	wbs_reg 	
 								generic map (
