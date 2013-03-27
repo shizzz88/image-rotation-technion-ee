@@ -7,10 +7,10 @@ echo "START OF MACRO" 	; # Print this massage on screen.
 quit -sim
 vcom VHDL/Design/Image_Maniplation/img_man_manager.vhd
 vcom VHDL/Simulation/TB/Image_Manipulation/img_man_manager_tb.vhd
-vsim -t ps -voptargs=+acc work.img_man_manager_tb
+vsim -t ps  work.img_man_manager_tb
 
-add wave -r -radix decimal /*
-run 90200000 ps
+add wave -r -radix hexadecimal /*
+run 300 ns
 
 
 #;# ======= end of stimulus section ======= 
