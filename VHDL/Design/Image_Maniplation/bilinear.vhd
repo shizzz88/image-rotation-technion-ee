@@ -68,7 +68,7 @@ entity bilinear is
 				delta_col			:	in	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
 
 				
-				pixel_valid				:	out std_logic;				--valid signal for index
+				pixel_valid			:	out std_logic;				--valid signal for index
 				pixel_res			:	out std_logic_vector (trig_frac_size_g downto 0) 	--current row index           --fix to generic
 			
 			);
