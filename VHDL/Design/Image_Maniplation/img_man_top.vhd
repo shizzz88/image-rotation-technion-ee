@@ -10,8 +10,11 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		07.08.2012	Ran&Uri					creation
---					
-
+--			1.1			07.04.2013	uri						added address calculator		
+------------------------------------------------------------------------------------------------
+-- TO DO:
+		--zoom factor,x_crop,y_crop,cos must be reset to 1
+		--cos to 010000000
 ------------------------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -24,14 +27,15 @@ library work ;
 entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
-				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
-				img_ver_pixels_g	:	positive					:= 480	--480 active lines
+				img_hor_pixels_g	:	positive					:= 128;	--800 active pixels
+				img_ver_pixels_g	:	positive					:= 96;	--600 active lines
+				trig_frac_size_g	: 	positive					:= 7 
 			);
 	port	(
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-
+				req_trig				:	in std_logic;								-- Trigger for image manipulation to begin,
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
@@ -197,23 +201,42 @@ end component addr_calc;
 component img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
-				img_hor_pixels_g	:	positive					:= 640;	--640 pixel in a coloum
-				img_ver_pixels_g	:	positive					:= 480	--480 pixels in a row
+				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
+				img_hor_pixels_g	:	positive					:= 128;	--128 pixel in a coloum
+				img_ver_pixels_g	:	positive					:= 96	--96 pixels in a row
 			);
 	port	(
 				--Clock and Reset 
-				sys_clk				:	in std_logic;				-- clock
-				sys_rst				:	in std_logic;				-- Reset
+				sys_clk				:	in std_logic;								-- clock
+				sys_rst				:	in std_logic;								-- Reset					
+				req_trig			:	in std_logic;								-- Trigger for image manipulation to begin,
+					
+				-- addr_calc					
 				
-				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
-				--from addr_calc
-				addr_calc_oor		:	in std_logic;				--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
-				addr_calc_valid		:	in std_logic;				--data valid indicator
+				addr_row_idx_in			:	out signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
+				addr_col_idx_in			:	out signed (10 downto 0);		--the current column index of the output image
 				
+                addr_tl_out				:	in std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
+				addr_bl_out				:	in std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
+				addr_delta_row_out		:	in	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				addr_delta_col_out		:	in	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+
+				addr_out_of_range		:	in std_logic;		--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				addr_data_valid_out		:	in std_logic;		--data valid indicator
+
+				addr_unit_finish		:	in std_logic;                              --signal indicating addr_calc is finished
+				addr_trigger_unit		:	out std_logic;                               --enable signal for addr_calc
 				
-				index_valid			:	out std_logic;				--valid signal for index
-				row_idx_out			:	out signed (10 downto 0); 	--current row index           --fix to generic
-				col_idx_out			:	out signed (10 downto 0); 	--corrent coloumn index		  --fix to generic
+			--	-- bilinear
+			--	bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
+			--	bili_tl_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
+			--	bili_tr_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
+			--	bili_bl_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
+			--	bili_br_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
+			--	bili_delta_row			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+			--	bili_delta_col			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+			--	bili_pixel_valid		:	in std_logic;				--valid signal for index
+			--	bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
 				
 				-- Wishbone Master (mem_ctrl_wr)
 				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -311,11 +334,26 @@ signal zoom_reg_dout			:	std_logic_vector (param_reg_depth_c * reg_width_c - 1 d
 signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);					--Output data is valid
 
 --from img_manager
-signal	index_valid_sig	            : std_logic;			
-signal	row_idx_out_sig	            : signed (10 downto 0);
-signal	col_idx_out_sig	            : signed (10 downto 0);
-signal	manipulation_trig			: std_logic;	
+	
+	signal	index_valid_sig	            : std_logic;			
+	signal	row_idx_out_sig	            : signed (10 downto 0);
+	signal	col_idx_out_sig	            : signed (10 downto 0);
+	signal	manipulation_trig			: std_logic;	
+	-- img_manager to addr_calc
+	signal im_addr_row_idx_in			:	 signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
+	signal im_addr_col_idx_in			:	 signed (10 downto 0);		--the current column index of the output image
+	signal im_addr_tl_out				:	std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
+	signal im_addr_bl_out				:	std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
+	signal im_addr_delta_row_out		:	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+	signal im_addr_delta_col_out		:	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+	signal im_addr_out_of_range		:	std_logic;		--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+	signal im_addr_data_valid_out	:	std_logic;		--data valid indicator 
+	signal im_addr_unit_finish		:	 std_logic;                              --signal indicating addr_calc is finished
+	signal im_addr_trigger_unit		:	 std_logic;                               --enable signal for addr_calc
 
+--- garbage signals - to be deleted
+signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
+signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
 --	###########################		Implementation		##############################	--
 begin	
 	
@@ -431,233 +469,290 @@ begin
 	
 --	###########################		Instances		##############################	--
 	
-	img_man_manager_inst : img_man_manager generic map 
-										(reset_polarity_g => reset_polarity_g)
-									port map
-										(
-										sys_clk				=>	system_clk,				-- clock
-										sys_rst				=>	system_rst,				-- Reset
-										req_trig			=>	manipulation_trig,		-- Trigger for image manipulation to begin,
-                                        
-										--from addr_calc
-										addr_calc_oor		=>	'0',				--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
-										addr_calc_valid		=>	'1',				--data valid indicator                  
-				                   
-										index_valid			=>	index_valid_sig,					--valid signal for index
-										row_idx_out			=>	row_idx_out_sig, 	--current row index           --fix to generic
-										col_idx_out			=>	col_idx_out_sig,	 	--corrent coloumn index		  --fix to generic
-
-										-- Wishbone Master (mem_ctrl_wr)
-										wr_wbm_adr_o		=>	    wr_wbm_adr_o	,
-										wr_wbm_tga_o		=>	    wr_wbm_tga_o	,
-										wr_wbm_dat_o		=>	    wr_wbm_dat_o	,
-										wr_wbm_cyc_o		=>	    wr_wbm_cyc_o	,
-										wr_wbm_stb_o		=>	    wr_wbm_stb_o	,
-										wr_wbm_we_o			=>	    wr_wbm_we_o		,
-										wr_wbm_tgc_o		=>	    wr_wbm_tgc_o	,
-										wr_wbm_dat_i		=>	    wr_wbm_dat_i	,
-										wr_wbm_stall_i		=>	    wr_wbm_stall_i	,
-										wr_wbm_ack_i		=>	    wr_wbm_ack_i	,
-										wr_wbm_err_i		=>	    wr_wbm_err_i	,
-						                                                            
-										-- Wishbone Master (mem_ctrl-- Wishbone Mast'rd)
-										rd_wbm_adr_o 		=>	    rd_wbm_adr_o 	,
-										rd_wbm_tga_o 		=>      rd_wbm_tga_o 	,
-										rd_wbm_cyc_o		=>      rd_wbm_cyc_o	,
-										rd_wbm_tgc_o 		=>      rd_wbm_tgc_o 	,
-										rd_wbm_stb_o		=>      rd_wbm_stb_o	,
-										rd_wbm_dat_i		=>      rd_wbm_dat_i	,
-										rd_wbm_stall_i		=>	    rd_wbm_stall_i	,
-										rd_wbm_ack_i		=>      rd_wbm_ack_i	,
-										rd_wbm_err_i		=>      rd_wbm_err_i	
+	img_man_manager_inst : img_man_manager 
+	generic map 
+				(reset_polarity_g => reset_polarity_g)
+	port map(
+			sys_clk				=>	system_clk,				-- clock
+			sys_rst				=>	system_rst,				-- Reset
+			req_trig			=>	req_trig,		-- Trigger for image manipulation to begin,
+            
+			--from addr_calc
+			
+			
+			addr_row_idx_in			=>  im_addr_row_idx_in,		--to address calculator
+			addr_col_idx_in			=>  im_addr_col_idx_in	,	--to address calculator                        
+			addr_tl_out				=>  im_addr_tl_out,			--from address calculator
+			addr_bl_out				=>  im_addr_bl_out,			--from address calculator
+			addr_delta_row_out		=>  im_addr_delta_row_out,	--from address calculator
+			addr_delta_col_out		=>  im_addr_delta_col_out,	--from address calculator											
+			addr_out_of_range		=>  im_addr_out_of_range,	--from address calculator
+			addr_data_valid_out		=>  im_addr_data_valid_out,	--from address calculator 											
+			addr_unit_finish		=>  im_addr_unit_finish,	--from address calculator
+			addr_trigger_unit		=>  im_addr_trigger_unit,	
+			
+			
+			
+			-- Wishbone Master (mem_ctrl_wr)
+			wr_wbm_adr_o		=>	    wr_wbm_adr_o	,
+			wr_wbm_tga_o		=>	    wr_wbm_tga_o	,
+			wr_wbm_dat_o		=>	    wr_wbm_dat_o	,
+			wr_wbm_cyc_o		=>	    wr_wbm_cyc_o	,
+			wr_wbm_stb_o		=>	    wr_wbm_stb_o	,
+			wr_wbm_we_o			=>	    wr_wbm_we_o		,
+			wr_wbm_tgc_o		=>	    wr_wbm_tgc_o	,
+			wr_wbm_dat_i		=>	    wr_wbm_dat_i	,
+			wr_wbm_stall_i		=>	    wr_wbm_stall_i	,
+			wr_wbm_ack_i		=>	    wr_wbm_ack_i	,
+			wr_wbm_err_i		=>	    wr_wbm_err_i	,
+			                                            
+			-- Wishbone Master (mem_ctrl-- Wishbone Mast'rd)
+			rd_wbm_adr_o 		=>	    rd_wbm_adr_o 	,
+			rd_wbm_tga_o 		=>      rd_wbm_tga_o 	,
+			rd_wbm_cyc_o		=>      rd_wbm_cyc_o	,
+			rd_wbm_tgc_o 		=>      rd_wbm_tgc_o 	,
+			rd_wbm_stb_o		=>      rd_wbm_stb_o	,
+			rd_wbm_dat_i		=>      rd_wbm_dat_i	,
+			rd_wbm_stall_i		=>	    rd_wbm_stall_i	,
+			rd_wbm_ack_i		=>      rd_wbm_ack_i	,
+			rd_wbm_err_i		=>      rd_wbm_err_i	
+	);
 	
-										);
-	gen_reg_type_inst	:	gen_reg generic map (
-										reset_polarity_g	=>	reset_polarity_g,	
-										width_g				=>	reg_width_c,
-										addr_en_g			=>	true,
-										addr_val_g			=>	type_reg_addr_c,
-										addr_width_g		=>	reg_addr_width_c,
-										read_en_g			=>	true,
-										write_en_g			=>	true,
-										clear_on_read_g		=>	false,
-										default_value_g		=>	0
-									)
-									port map (
-										clk					=>	system_clk,
-									    reset		        =>	system_rst,
-									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
-									    wr_en		        =>	reg_wr_en,
-									    clear		        =>	'0',
-                                        din_ack		        =>	type_reg_din_ack,
-                                        rd_en				=>	type_reg_rd_en,
-										dout		        =>	type_reg_dout,
-                                        dout_valid	        =>	type_reg_dout_valid
-									);
+	addr_calc_inst	:	addr_calc	
+	generic map (
+				reset_polarity_g		=> '0',				--Reset active low
+				x_size_in_g				=> img_ver_pixels_g,	-- number of rows  in the input image
+				y_size_in_g				=> img_hor_pixels_g,	-- number of columns  in the input image
+				x_size_out_g			=> 600,				-- number of rows  in theoutput image
+				y_size_out_g			=> 800,				-- number of columns  in the output image
+				trig_frac_size_g		=> 7,				-- number of digits after dot = resolution of fracture (binary)
+				pipe_depth_g			=> 12,				-- 
+				valid_setup_g			=> 5
+	)
+	port map(
+			zoom_factor			=>	"000000001",
+			--zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			--cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
+			cos_teta			=>	"010000000",                    
+			row_idx_in			=>	im_addr_row_idx_in,	--from manager
+			col_idx_in			=>	im_addr_col_idx_in,	--from manager
+			x_crop_start	 	=>	"00000000001",
+			y_crop_start		=>	"00000000001",
+			--x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
+			--y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
+			ram_start_add_in	=> (others => '0'),
+			                     
+            tl_out				=> im_addr_tl_out,
+			tr_out				=> addr_tr_out_garbage	,			
+			bl_out				=> im_addr_bl_out,
+			br_out				=> addr_br_out_garbage,
+			delta_row_out		=> im_addr_delta_row_out,
+			delta_col_out		=> im_addr_delta_col_out,
+			                    
+			out_of_range		=> im_addr_out_of_range,
+			data_valid_out		=> im_addr_data_valid_out,
+			                    
+			--CLK, RESET, ENABLE
+			unit_finish			=> im_addr_unit_finish, 
+			trigger_unit		=> im_addr_trigger_unit,
+			system_clk			=> system_clk,
+			system_rst			=> system_rst
+	);                      
+	
+	gen_reg_type_inst	:	gen_reg 
+	generic map (
+				reset_polarity_g	=>	reset_polarity_g,	
+				width_g				=>	reg_width_c,
+				addr_en_g			=>	true,
+				addr_val_g			=>	type_reg_addr_c,
+				addr_width_g		=>	reg_addr_width_c,
+				read_en_g			=>	true,
+				write_en_g			=>	true,
+				clear_on_read_g		=>	false,
+				default_value_g		=>	0
+	)
+	port map(
+			clk					=>	system_clk,
+			reset		        =>	system_rst,
+			addr		        =>	reg_addr,
+			din			        =>	reg_din,
+			wr_en		        =>	reg_wr_en,
+			clear		        =>	'0',
+			din_ack		        =>	type_reg_din_ack,
+			rd_en				=>	type_reg_rd_en,
+			dout		        =>	type_reg_dout,
+			dout_valid	        =>	type_reg_dout_valid
+	);
 									
 
 	cos_reg_generate:
 	for idx in (param_reg_depth_c - 1) downto 0 generate
-		gen_reg_dbg_inst	:	gen_reg generic map (
-										reset_polarity_g	=>	reset_polarity_g,	
-										width_g				=>	reg_width_c,
-										addr_en_g			=>	true,
-										addr_val_g			=>	(cos_reg_addr_c + idx),
-										addr_width_g		=>	reg_addr_width_c,
-										read_en_g			=>	true,
-										write_en_g			=>	true,
-										clear_on_read_g		=>	false,
-										default_value_g		=>	0
-									)
-									port map (
-										clk					=>	system_clk,
-									    reset		        =>	system_rst,
-									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
-									    wr_en		        =>	reg_wr_en,
-									    clear		        =>	'0',
-                                        din_ack		        =>	cos_reg_din_ack (idx),
-                                        rd_en				=>	cos_reg_rd_en (idx),
-                                        dout		        =>	cos_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
-                                        dout_valid	        =>	cos_reg_dout_valid (idx)
-									);
+		gen_reg_dbg_inst	:	gen_reg 
+		generic map (
+					reset_polarity_g	=>	reset_polarity_g,	
+					width_g				=>	reg_width_c,
+					addr_en_g			=>	true,
+					addr_val_g			=>	(cos_reg_addr_c + idx),
+					addr_width_g		=>	reg_addr_width_c,
+					read_en_g			=>	true,
+					write_en_g			=>	true,
+					clear_on_read_g		=>	false,
+					default_value_g		=>	0
+		)
+		port map(
+				clk					=>	system_clk,
+				reset		        =>	system_rst,
+				addr		        =>	reg_addr,
+				din			        =>	reg_din,
+				wr_en		        =>	reg_wr_en,
+				clear		        =>	'0',
+                din_ack		        =>	cos_reg_din_ack (idx),
+                rd_en				=>	cos_reg_rd_en (idx),
+                dout		        =>	cos_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
+                dout_valid	        =>	cos_reg_dout_valid (idx)
+		);
 	end generate cos_reg_generate;
 	
 	sin_reg_generate:
 	for idx in (param_reg_depth_c - 1) downto 0 generate
-		gen_reg_dbg_inst	:	gen_reg generic map (
-										reset_polarity_g	=>	reset_polarity_g,	
-										width_g				=>	reg_width_c,
-										addr_en_g			=>	true,
-										addr_val_g			=>	(sin_reg_addr_c + idx),
-										addr_width_g		=>	reg_addr_width_c,
-										read_en_g			=>	true,
-										write_en_g			=>	true,
-										clear_on_read_g		=>	false,
-										default_value_g		=>	0
-									)
-									port map (
-										clk					=>	system_clk,
-									    reset		        =>	system_rst,
-									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
-									    wr_en		        =>	reg_wr_en,
-									    clear		        =>	'0',
-                                        din_ack		        =>	sin_reg_din_ack (idx),
-                                        rd_en				=>	sin_reg_rd_en (idx),
-                                        dout		        =>	sin_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
-                                        dout_valid	        =>	sin_reg_dout_valid (idx)
-									);
+		gen_reg_dbg_inst	:	gen_reg 
+		generic map (
+					reset_polarity_g	=>	reset_polarity_g,	
+					width_g				=>	reg_width_c,
+					addr_en_g			=>	true,
+					addr_val_g			=>	(sin_reg_addr_c + idx),
+					addr_width_g		=>	reg_addr_width_c,
+					read_en_g			=>	true,
+					write_en_g			=>	true,
+					clear_on_read_g		=>	false,
+					default_value_g		=>	0
+		)
+		port map (
+		clk					=>	system_clk,
+		reset		        =>	system_rst,
+		addr		        =>	reg_addr,
+		din			        =>	reg_din,
+		wr_en		        =>	reg_wr_en,
+		clear		        =>	'0',
+        din_ack		        =>	sin_reg_din_ack (idx),
+        rd_en				=>	sin_reg_rd_en (idx),
+        dout		        =>	sin_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
+        dout_valid	        =>	sin_reg_dout_valid (idx)
+		);
 	end generate sin_reg_generate;
 	
 	x_start_reg_generate:
 	for idx in (param_reg_depth_c - 1) downto 0 generate
-		gen_reg_dbg_inst	:	gen_reg generic map (
-										reset_polarity_g	=>	reset_polarity_g,	
-										width_g				=>	reg_width_c,
-										addr_en_g			=>	true,
-										addr_val_g			=>	(x_start_reg_addr_c + idx),
-										addr_width_g		=>	reg_addr_width_c,
-										read_en_g			=>	true,
-										write_en_g			=>	true,
-										clear_on_read_g		=>	false,
-										default_value_g		=>	0
-									)
-									port map (
-										clk					=>	system_clk,
-									    reset		        =>	system_rst,
-									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
-									    wr_en		        =>	reg_wr_en,
-									    clear		        =>	'0',
-                                        din_ack		        =>	x_start_reg_din_ack (idx),
-                                        rd_en				=>	x_start_reg_rd_en (idx),
-                                        dout		        =>	x_start_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
-                                        dout_valid	        =>	x_start_reg_dout_valid (idx)
-									);
+		gen_reg_dbg_inst	:	gen_reg 
+		generic map (
+					reset_polarity_g	=>	reset_polarity_g,	
+					width_g				=>	reg_width_c,
+					addr_en_g			=>	true,
+					addr_val_g			=>	(x_start_reg_addr_c + idx),
+					addr_width_g		=>	reg_addr_width_c,
+					read_en_g			=>	true,
+					write_en_g			=>	true,
+					clear_on_read_g		=>	false,
+					default_value_g		=>	0
+		)
+		port map (
+				clk					=>	system_clk,
+				reset		        =>	system_rst,
+				addr		        =>	reg_addr,
+				din			        =>	reg_din,
+				wr_en		        =>	reg_wr_en,
+				clear		        =>	'0',
+                din_ack		        =>	x_start_reg_din_ack (idx),
+                rd_en				=>	x_start_reg_rd_en (idx),
+                dout		        =>	x_start_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
+                dout_valid	        =>	x_start_reg_dout_valid (idx)
+		);
 	end generate x_start_reg_generate;
 	
 	y_start_reg_generate:
 	for idx in (param_reg_depth_c - 1) downto 0 generate
-		gen_reg_dbg_inst	:	gen_reg generic map (
-										reset_polarity_g	=>	reset_polarity_g,	
-										width_g				=>	reg_width_c,
-										addr_en_g			=>	true,
-										addr_val_g			=>	(y_start_reg_addr_c + idx),
-										addr_width_g		=>	reg_addr_width_c,
-										read_en_g			=>	true,
-										write_en_g			=>	true,
-										clear_on_read_g		=>	false,
-										default_value_g		=>	0
-									)
-									port map (
-										clk					=>	system_clk,
-									    reset		        =>	system_rst,
-									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
-									    wr_en		        =>	reg_wr_en,
-									    clear		        =>	'0',
-                                        din_ack		        =>	y_start_reg_din_ack (idx),
-                                        rd_en				=>	y_start_reg_rd_en (idx),
-                                        dout		        =>	y_start_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
-                                        dout_valid	        =>	y_start_reg_dout_valid (idx)
-									);
+		gen_reg_dbg_inst	:	gen_reg 
+		generic map (
+					reset_polarity_g	=>	reset_polarity_g,	
+					width_g				=>	reg_width_c,
+					addr_en_g			=>	true,
+					addr_val_g			=>	(y_start_reg_addr_c + idx),
+					addr_width_g		=>	reg_addr_width_c,
+					read_en_g			=>	true,
+					write_en_g			=>	true,
+					clear_on_read_g		=>	false,
+					default_value_g		=>	0
+		)
+		port map (
+				clk					=>	system_clk,
+				reset		        =>	system_rst,
+				addr		        =>	reg_addr,
+				din			        =>	reg_din,
+				wr_en		        =>	reg_wr_en,
+				clear		        =>	'0',
+                din_ack		        =>	y_start_reg_din_ack (idx),
+                rd_en				=>	y_start_reg_rd_en (idx),
+                dout		        =>	y_start_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
+                dout_valid	        =>	y_start_reg_dout_valid (idx)
+		);
 	end generate y_start_reg_generate;
 
 	zoom_reg_generate:
 	for idx in (param_reg_depth_c - 1) downto 0 generate
-		gen_reg_dbg_inst	:	gen_reg generic map (
-										reset_polarity_g	=>	reset_polarity_g,	
-										width_g				=>	reg_width_c,
-										addr_en_g			=>	true,
-										addr_val_g			=>	(zoom_reg_addr_c + idx),
-										addr_width_g		=>	reg_addr_width_c,
-										read_en_g			=>	true,
-										write_en_g			=>	true,
-										clear_on_read_g		=>	false,
-										default_value_g		=>	0
-									)
-									port map (
-										clk					=>	system_clk,
-									    reset		        =>	system_rst,
-									    addr		        =>	reg_addr,
-									    din			        =>	reg_din,
-									    wr_en		        =>	reg_wr_en,
-									    clear		        =>	'0',
-                                        din_ack		        =>	zoom_reg_din_ack (idx),
-                                        rd_en				=>	zoom_reg_rd_en (idx),
-                                        dout		        =>	zoom_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
-                                        dout_valid	        =>	zoom_reg_dout_valid (idx)
-									);
+		gen_reg_dbg_inst	:	gen_reg 
+		generic map (
+					reset_polarity_g	=>	reset_polarity_g,	
+					width_g				=>	reg_width_c,
+					addr_en_g			=>	true,
+					addr_val_g			=>	(zoom_reg_addr_c + idx),
+					addr_width_g		=>	reg_addr_width_c,
+					read_en_g			=>	true,
+					write_en_g			=>	true,
+					clear_on_read_g		=>	false,
+					default_value_g		=>	0
+		)
+		port map (
+				clk					=>	system_clk,
+				reset		        =>	system_rst,
+				addr		        =>	reg_addr,
+				din			        =>	reg_din,
+				wr_en		        =>	reg_wr_en,
+				clear		        =>	'0',
+                din_ack		        =>	zoom_reg_din_ack (idx),
+                rd_en				=>	zoom_reg_rd_en (idx),
+                dout		        =>	zoom_reg_dout (((idx + 1) * reg_width_c - 1) downto (idx * reg_width_c)),
+                dout_valid	        =>	zoom_reg_dout_valid (idx)
+		);
 	end generate zoom_reg_generate;	
 
 
 	
-	wbs_reg_inst	:	wbs_reg generic map (
-										reset_polarity_g=>	reset_polarity_g,
-										width_g			=>	reg_width_c,
-										addr_width_g	=>	reg_addr_width_c
-									)
-									port map (
-										rst				=>	system_rst,
-										clk_i			=> 	system_clk,
-									    wbs_cyc_i	    =>	wbs_reg_cyc,
-									    wbs_stb_i	    => 	wbs_reg_stb,
-									    wbs_adr_i	    =>	wbs_adr_i (reg_addr_width_c - 1 downto 0), 
-									    wbs_we_i	    => 	wbs_we_i,
-									    wbs_dat_i	    => 	wbs_dat_i,
-									    wbs_dat_o	    => 	wbs_dat_o,
-									    wbs_ack_o	    => 	wbs_reg_ack_o,
-										wbs_stall_o		=>	wbs_reg_stall_o,
-										
-										din_ack			=>	wbs_reg_din_ack,
-										dout		    =>	wbs_reg_dout,
-										dout_valid	    =>	wbs_reg_dout_valid,
-										addr		    =>	reg_addr,
-										din			    =>	reg_din,
-										rd_en		    =>	reg_rd_en,
-										wr_en		    =>	reg_wr_en
-									);
+	wbs_reg_inst	:	wbs_reg 
+	generic map (
+				reset_polarity_g=>	reset_polarity_g,
+				width_g			=>	reg_width_c,
+				addr_width_g	=>	reg_addr_width_c
+	)
+	port map (
+			rst				=>	system_rst,
+			clk_i			=> 	system_clk,
+			wbs_cyc_i	    =>	wbs_reg_cyc,
+			wbs_stb_i	    => 	wbs_reg_stb,
+			wbs_adr_i	    =>	wbs_adr_i (reg_addr_width_c - 1 downto 0), 
+			wbs_we_i	    => 	wbs_we_i,
+			wbs_dat_i	    => 	wbs_dat_i,
+			wbs_dat_o	    => 	wbs_dat_o,
+			wbs_ack_o	    => 	wbs_reg_ack_o,
+			wbs_stall_o		=>	wbs_reg_stall_o,
+			
+			din_ack			=>	wbs_reg_din_ack,
+			dout		    =>	wbs_reg_dout,
+			dout_valid	    =>	wbs_reg_dout_valid,
+			addr		    =>	reg_addr,
+			din			    =>	reg_din,
+			rd_en		    =>	reg_rd_en,
+			wr_en		    =>	reg_wr_en
+	);
 	
 end architecture rtl_img_man_top;

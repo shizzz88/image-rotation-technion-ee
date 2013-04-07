@@ -18,7 +18,7 @@
 --			fix	row/col_idx_out	to be generic length
 --			fix phase 2 at read_from_SDRAM to support address length of 2 register (16 bit).
 --			fix top_fsm Read From SDRAM state to support to pixels burst of read.
---					
+--			check if index valid is necessary , fix to work according to calc coord proc		
 
 ------------------------------------------------------------------------------------------------
 library ieee;
@@ -40,29 +40,31 @@ entity img_man_manager is
 				req_trig			:	in std_logic;								-- Trigger for image manipulation to begin,
 					
 				-- addr_calc					
-				addr_calc_unit_finish	:	in std_logic;                  	           --signal indicating addr_calc is finished
-				addr_calc_req_trig		:	out std_logic;                 	     --enable signal for addr_calc	
-				addr_calc_oor		 	:	in std_logic;								--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
-				addr_calc_valid		 	:	in std_logic;								--data valid indicator
-				addr_calc_top_addr   	:   in std_logic_vector (22 downto 0);			--addres calculated by addr_calc of top left pixel (tl_out)
-				addr_calc_bottom_addr	:   in std_logic_vector (22 downto 0); 	--addres calculated by addr_calc of bottom right pixel(br_out)
-				addr_calc_delta_row		:	in	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-				addr_calc_delta_col		:	in	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-				index_valid				:	out std_logic;							--valid signal for index
-				row_idx_out				:	out signed (10 downto 0); 				--current row index           --fix to generic
-				col_idx_out				:	out signed (10 downto 0); 				--corrent coloumn index		  --fix to generic
 				
+				addr_row_idx_in			:	out signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed) --from coord calc process to address calc
+				addr_col_idx_in			:	out signed (10 downto 0);		--the current column index of the output image                                    --from coord calc process to address calc
 				
-				-- bilinear
-				bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
-				bili_tl_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
-				bili_tr_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
-				bili_bl_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
-				bili_br_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
-				bili_delta_row			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-				bili_delta_col			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-				bili_pixel_valid		:	in std_logic;				--valid signal for index
-				bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0) 	--current row index           --fix to generic
+				addr_tl_out				:	in std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
+				addr_bl_out				:	in std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
+				addr_delta_row_out		:	in	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				addr_delta_col_out		:	in	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+
+				addr_out_of_range		:	in std_logic;		--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+				addr_data_valid_out		:	in std_logic;		--data valid indicator
+
+				addr_unit_finish		:	in std_logic;                              --signal indicating addr_calc is finished
+				addr_trigger_unit		:	out std_logic;                               --enable signal for addr_calc
+				
+			--	-- bilinear
+			--	bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
+			--	bili_tl_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
+			--	bili_tr_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
+			--	bili_bl_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
+			--	bili_br_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
+			--	bili_delta_row			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+			--	bili_delta_col			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+			--	bili_pixel_valid		:	in std_logic;				--valid signal for index
+			--	bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
 				
 				-- Wishbone Master (mem_ctrl_wr)
 				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -119,18 +121,26 @@ architecture rtl_img_man_manager of img_man_manager is
 							phase_8
 					);					
 	------------------------------	Signals	------------------------------------
+	signal index_valid		: std_logic; 		--  signal for coordinate incerement process
 	-------------------------FSM
 	signal cur_st			:	fsm_states;			-- Current State
 	
 	-------------------------Coordinate Counter Procces
 	signal finish_image 		: std_logic;					-- flag indicating when image is complete, bottom left corner, working now on last pixel
 	
-	signal row_idx_sig		 :  signed (row_bits_c downto 0);	  --fix to generic
-	signal col_idx_sig       :  signed (col_bits_c downto 0);  		--fix to generic
+	signal row_idx_sig		 :  signed (row_bits_c downto 0);	  --
+	signal col_idx_sig       :  signed (col_bits_c downto 0);  	  --
 	
 	------------------------Address Calculator
-	--signal add_calc_OOR			:	std_logic;		--address calculator result is out of range (oor)
-	--signal finish_addr_calc_st	:	std_logic;		--finish address calculate state
+	signal en_addr_calc_proc				:	std_logic_vector (1 downto 0);	
+	signal addr_calc_oor			:	std_logic;		--address calculator result is out of range (oor)
+	signal addr_calc_valid			:	std_logic;		--address calculator result is valid
+	signal addr_calc_finish_st		:	std_logic;		--finish address calculate state
+	signal addr_calc_tl				:	std_logic_vector (22 downto 0);
+	signal addr_calc_bl				:	std_logic_vector (22 downto 0);
+	signal addr_calc_d_row			:   std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+	signal addr_calc_d_col			:   std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+	
 	--------------------------Read From SDRAM
 	signal finish_read_pxl		:	std_logic_vector (1 downto 0);		--finish Read From SDRAM state
 	signal en_read_proc			:	std_logic;		--start Read From SDRAM state
@@ -176,11 +186,12 @@ begin
 		if (sys_rst = reset_polarity_g) then
 			cur_st		<=	fsm_idle_st;
 			en_read_proc <=	'0';
+			en_addr_calc_proc	<="00";
 
 		
 		elsif rising_edge (sys_clk) then
 			case cur_st is
-			------------------------------Idle State---------------------------------
+			------------------------------Idle State--------------------------------- --
 				when fsm_idle_st =>
 					if (req_trig='1')  then
 						cur_st	<= 	fsm_increment_coord_st;
@@ -193,17 +204,24 @@ begin
 					if (finish_image = '1') then  			-- image is complete, back to idle
 						cur_st	<=	fsm_idle_st;
 					else
-						cur_st 	<= 	fsm_address_calc_st;
+						cur_st 	<= 	fsm_address_calc_st;	-- finish calculate index 
+						en_addr_calc_proc		<="01";		-- trigger addr_calc
 					end if;
 			
 			-----------------------------Address calculate state----------------------						
 				when fsm_address_calc_st =>
-					if (addr_calc_oor ='1') then			--current index is out of range, WB black
-						cur_st		<=	fsm_WB_to_SDRAM_st;
-					elsif (addr_calc_valid ='1') then		--addr_calc is finish, continue to Read from SDRAM
-						cur_st 	<= 	fsm_READ_from_SDRAM_st;
+					en_addr_calc_proc		<="10";							--diable  addr_calc trigger
+					
+					if ((addr_calc_oor and addr_calc_valid) = '1') then		--current index is out of range, WB black
+						en_addr_calc_proc	<="00";
+						cur_st			<=	fsm_WB_to_SDRAM_st;
+					
+					elsif ((not(addr_calc_oor) and addr_calc_valid) ='1') then		--addr_calc is finish, continue to Read from SDRAM
+						cur_st 			<= 	fsm_READ_from_SDRAM_st;
+						en_addr_calc_proc	<="00";
+					
 					else
-						cur_st 	<= 	fsm_address_calc_st;
+						cur_st 			<= 	fsm_address_calc_st;					
 					end if;	
 			
 			-----------------------------Read From SDRAM state----------------------					
@@ -238,178 +256,219 @@ begin
 				end case;
 		end if;
 	end process fsm_proc;
+	
 ---------------------------------------------------------------------------------------
-----------------------------	read_from_SDRAM process	-----------------------------------
+----------------------------	addr_calc process	-----------------------------------
 ---------------------------------------------------------------------------------------
--- the process will manage the read transaction from the sdram
--- the read will be executed in 4 phase, 2 phases for each address
--- 
--- 
+-- THE process will activate the address calculator
+-- input coordinate from coord_proc
+-- output 4 pixel addreses (need only two)+ 2 delta fractions 
 ---------------------------------------------------------------------------------------	
-read_from_SDRAM : process (sys_clk,sys_rst)			
+addr_calc_proc : process (sys_clk,sys_rst)			
 	begin
 		if (sys_rst =reset_polarity_g) then	
-			finish_read_pxl	<=	(others => '0');			
-			phase_number	<=	phase_0;
-			wr_wbm_adr_o	<=	(others => '0');
-			wr_wbm_tga_o	<=	(others => '0');
-			wr_wbm_dat_o	<=	(others => '0');
-			wr_wbm_cyc_o	<=	'0';
-			wr_wbm_stb_o	<=	'0';
-			wr_wbm_we_o		<=	'0';
-			wr_wbm_tgc_o	<=	'0';
-			rd_wbm_tga_o 	<=	(others => '0');	
-			rd_wbm_cyc_o	<=	'0';	
-			rd_wbm_stb_o	<=	'0';
-			rd_wbm_adr_o	<=	(others => '0');	
-			rd_wbm_tga_o	<=	(others => '0');	
-			rd_wbm_cyc_o	<=	'0';
-			rd_wbm_tgc_o	<=	'0';
-			rd_wbm_stb_o	<=	'0';
-			finish_read_pxl	<=	(others => '0');							
-			finish_image	<=	'0';
+			addr_trigger_unit		<=	'0';
+			addr_row_idx_in			<=(others => '0');
+			addr_col_idx_in			<=(others => '0');
 			
-		elsif rising_edge(sys_clk)  then	
-			case phase_number is		
-				
-				when phase_0 =>
-					finish_read_pxl<="00";   			--reset read pixel counter 
-					if ((en_read_proc='1') and (finish_read_pxl /="11"))  then
-						phase_number	<= 	phase_1;
-					else
-						phase_number	<= 	phase_0;
-						rd_wbm_tga_o 	<=	"0000000000";	
-						rd_wbm_cyc_o	<=	'0';	
-						rd_wbm_stb_o	<=	'0';
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';
-					end if;
-				when phase_1 =>
-						--write 0x80 to Type register
-						wr_wbm_adr_o	<=	"0000001101";
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"10000000";
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
-						phase_number <= phase_2a;
-
-				when phase_2a =>
-					--write address to DBG_address_register(0x2) - bottom bits of address
-					wr_wbm_adr_o	<=	"0000000010";
-					wr_wbm_dat_o	<=	addr_calc_top_addr(7 downto 0);	--address from addr_calc
-					phase_number <=	phase_2b;
-
-				when phase_2b =>
-					--write address to DBG_address_register(0x3) - top bits of address
-					wr_wbm_adr_o	<=	"0000000011";
-					wr_wbm_dat_o	<=	addr_calc_top_addr(15 downto 8); --address from addr_calc
-					phase_number <=	phase_3;
-								
-				when phase_3 =>
-					--write 0x81 to Type register
-					wr_wbm_adr_o	<=	"0000001101";
-					wr_wbm_dat_o	<=	"10000001";
-					phase_number <=	phase_4;
-				when phase_4 =>
-					rd_wbm_tga_o 	<=	"0000000010";	
-					rd_wbm_cyc_o	<=	'1';	
-					rd_wbm_stb_o	<=	'1';
-					if (rd_wbm_ack_i='1') then		--recieve ack on read
-						finish_read_pxl	<= "01";	-- finish first pixels pair
-						
-						phase_number	<=	phase_5;
-					else
-						finish_read_pxl	<=	"00";
-						phase_number		<=	phase_4;
-					end if;	
-				
-				when phase_5 =>
-						--terminate read req
-						rd_wbm_tga_o 	<=	"0000000000";	
-						rd_wbm_cyc_o	<=	'0';	
-						rd_wbm_stb_o	<=	'0';
-						--write 0x80 to Type register
-						wr_wbm_adr_o	<=	"0000001101";
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"10000000";
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
-						phase_number <= phase_6a;
-				when phase_6a =>
-					--write address to DBG_address_register(0x2) - bottom bits of address
-					wr_wbm_adr_o	<=	"0000000010";
-					wr_wbm_dat_o	<=	addr_calc_bottom_addr(7 downto 0);--address from addr_calc
-					phase_number <=	phase_6b;
-
-				when phase_6b =>
-					--write address to DBG_address_register(0x3) - top bits of address
-					wr_wbm_adr_o	<=	"0000000011";
-					wr_wbm_dat_o	<=	addr_calc_bottom_addr(15 downto 8);--address from addr_calc
-					phase_number <=	phase_7;
-				when phase_7 =>
-					--write 0x81 to Type register
-					wr_wbm_adr_o	<=	"0000001101";
-					wr_wbm_dat_o	<=	"10000001";
-					phase_number <=	phase_8;
-				when phase_8 =>
-					rd_wbm_tga_o 	<=	"0000000010";	
-					rd_wbm_cyc_o	<=	'1';	
-					rd_wbm_stb_o	<=	'1';
-					if (rd_wbm_ack_i='1') then			-- recieve ack on read
-						finish_read_pxl	<= "11";		-- finish second pixels pair
-						phase_number	<=	phase_0;
-					else
-						finish_read_pxl	<=	"01";
-						phase_number		<=	phase_8;
-					end if;							
-				
-				when others =>
-					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected in read sdram process" severity error;
-				end case;	
-		end if;	
-	end process read_from_SDRAM;
-	---------------------------------------------------------------------------------------
-----------------------------	bilinear process	-----------------------------------
----------------------------------------------------------------------------------------
--- THE process will cotrol the  bilinear interpolation execution using the bilinear.vhd block
--- reminder: input 4 pixels, output 1 pixel
-
----------------------------------------------------------------------------------------	
-bili_proc : process (sys_clk,sys_rst)			
-	begin
-		if (sys_rst =reset_polarity_g) then	
+			addr_calc_tl		<=  (others => '0');
+			addr_calc_bl		<=  (others => '0');
+			addr_calc_d_row		<=  (others => '0');	                
+			addr_calc_d_col		<=  (others => '0'); 
+			
+			addr_calc_oor		<=  '0';
+			addr_calc_valid		<=  '0' ;
 			
 		elsif rising_edge(sys_clk) then
-			if (en_bili_proc='1') then
-				bili_tl_pixel 	<=	tl_pixel ;
-				bili_tr_pixel 	<=	tr_pixel; 
-				bili_bl_pixel 	<=	bl_pixel ;
-				bili_br_pixel 	<=	br_pixel ;
-				bili_delta_row	<=  delta_row;
-				bili_delta_col	<=  delta_col;
-				--bili_req_trig	<= '1';
-			bili_pixel_valid		:	in std_logic;				--valid signal for index
-			bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0) 	--current row index           --fix to generic	
+			--trigger addres calculator
+			if (  en_addr_calc_proc ="01")  then --begin address calculation , send trigger to addr_calc
+				addr_trigger_unit	<=	'1';
 			
+			elsif ( en_addr_calc_proc ="10") then -- calculation in progress ,disable trigger
+				addr_trigger_unit	<=	'0';
 			
+			end if;	
+			addr_row_idx_in		<=  row_idx_sig;	--from coord calc process to address calc
+			addr_col_idx_in		<=  row_idx_sig;	--from coord calc process to address calc
+			addr_calc_tl		<=  addr_tl_out;
+			addr_calc_bl		<=  addr_bl_out;
+			addr_calc_d_row		<=  addr_delta_row_out;	                
+			addr_calc_d_col		<=  addr_delta_col_out; 
+			addr_calc_oor		<=  addr_out_of_range;
+			addr_calc_valid		<=  addr_data_valid_out ;
+				
 		end if;	
-	end process bili_proc;
-	-------------------Wire coordinates to out ports
-	
-	row_idx_out_proc:
-	row_idx_out<=row_idx_sig;
-	
-	col_idx_out_proc:
-	col_idx_out<=col_idx_sig;
+		
+end process addr_calc_proc;	
+
+
+
+-- ---------------------------------------------------------------------------------------
+-- ----------------------------	read_from_SDRAM process	-----------------------------------
+-- ---------------------------------------------------------------------------------------
+-- -- the process will manage the read transaction from the sdram
+-- -- the read will be executed in 4 phase, 2 phases for each address
+-- -- 
+-- -- 
+-- ---------------------------------------------------------------------------------------	
+-- read_from_SDRAM : process (sys_clk,sys_rst)			
+	-- begin
+		-- if (sys_rst =reset_polarity_g) then	
+			-- finish_read_pxl	<=	(others => '0');			
+			-- phase_number	<=	phase_0;
+			-- wr_wbm_adr_o	<=	(others => '0');
+			-- wr_wbm_tga_o	<=	(others => '0');
+			-- wr_wbm_dat_o	<=	(others => '0');
+			-- wr_wbm_cyc_o	<=	'0';
+			-- wr_wbm_stb_o	<=	'0';
+			-- wr_wbm_we_o		<=	'0';
+			-- wr_wbm_tgc_o	<=	'0';
+			-- rd_wbm_tga_o 	<=	(others => '0');	
+			-- rd_wbm_cyc_o	<=	'0';	
+			-- rd_wbm_stb_o	<=	'0';
+			-- rd_wbm_adr_o	<=	(others => '0');	
+			-- rd_wbm_tga_o	<=	(others => '0');	
+			-- rd_wbm_cyc_o	<=	'0';
+			-- rd_wbm_tgc_o	<=	'0';
+			-- rd_wbm_stb_o	<=	'0';
+			-- finish_read_pxl	<=	(others => '0');							
+			-- finish_image	<=	'0';
+			
+		-- elsif rising_edge(sys_clk)  then	
+			-- case phase_number is		
+				
+				-- when phase_0 =>
+					-- finish_read_pxl<="00";   			--reset read pixel counter 
+					-- if ((en_read_proc='1') and (finish_read_pxl /="11"))  then
+						-- phase_number	<= 	phase_1;
+					-- else
+						-- phase_number	<= 	phase_0;
+						-- rd_wbm_tga_o 	<=	"0000000000";	
+						-- rd_wbm_cyc_o	<=	'0';	
+						-- rd_wbm_stb_o	<=	'0';
+						-- wr_wbm_adr_o	<=	(others => '0');
+						-- wr_wbm_tga_o	<=	(others => '0');
+						-- wr_wbm_dat_o	<=	(others => '0');
+						-- wr_wbm_cyc_o	<=	'0';
+						-- wr_wbm_stb_o	<=	'0';
+						-- wr_wbm_we_o		<=	'0';
+						-- wr_wbm_tgc_o	<=	'0';
+					-- end if;
+				-- when phase_1 =>
+						-- --write 0x80 to Type register
+						-- wr_wbm_adr_o	<=	"0000001101";
+						-- wr_wbm_tga_o	<=	(others => '0');
+						-- wr_wbm_dat_o	<=	"10000000";
+						-- wr_wbm_cyc_o	<=	'1';
+						-- wr_wbm_stb_o	<=	'1';
+						-- wr_wbm_we_o		<=	'1';
+						-- wr_wbm_tgc_o	<=	'1';
+						-- phase_number <= phase_2a;
+
+				-- when phase_2a =>
+					-- --write address to DBG_address_register(0x2) - bottom bits of address
+					-- wr_wbm_adr_o	<=	"0000000010";
+					-- wr_wbm_dat_o	<=	addr_calc_top_addr(7 downto 0);	--address from addr_calc
+					-- phase_number <=	phase_2b;
+
+				-- when phase_2b =>
+					-- --write address to DBG_address_register(0x3) - top bits of address
+					-- wr_wbm_adr_o	<=	"0000000011";
+					-- wr_wbm_dat_o	<=	addr_calc_top_addr(15 downto 8); --address from addr_calc
+					-- phase_number <=	phase_3;
+								
+				-- when phase_3 =>
+					-- --write 0x81 to Type register
+					-- wr_wbm_adr_o	<=	"0000001101";
+					-- wr_wbm_dat_o	<=	"10000001";
+					-- phase_number <=	phase_4;
+				-- when phase_4 =>
+					-- rd_wbm_tga_o 	<=	"0000000010";	
+					-- rd_wbm_cyc_o	<=	'1';	
+					-- rd_wbm_stb_o	<=	'1';
+					-- if (rd_wbm_ack_i='1') then		--recieve ack on read
+						-- finish_read_pxl	<= "01";	-- finish first pixels pair
+						
+						-- phase_number	<=	phase_5;
+					-- else
+						-- finish_read_pxl	<=	"00";
+						-- phase_number		<=	phase_4;
+					-- end if;	
+				
+				-- when phase_5 =>
+						-- --terminate read req
+						-- rd_wbm_tga_o 	<=	"0000000000";	
+						-- rd_wbm_cyc_o	<=	'0';	
+						-- rd_wbm_stb_o	<=	'0';
+						-- --write 0x80 to Type register
+						-- wr_wbm_adr_o	<=	"0000001101";
+						-- wr_wbm_tga_o	<=	(others => '0');
+						-- wr_wbm_dat_o	<=	"10000000";
+						-- wr_wbm_cyc_o	<=	'1';
+						-- wr_wbm_stb_o	<=	'1';
+						-- wr_wbm_we_o		<=	'1';
+						-- wr_wbm_tgc_o	<=	'1';
+						-- phase_number <= phase_6a;
+				-- when phase_6a =>
+					-- --write address to DBG_address_register(0x2) - bottom bits of address
+					-- wr_wbm_adr_o	<=	"0000000010";
+					-- wr_wbm_dat_o	<=	addr_calc_bottom_addr(7 downto 0);--address from addr_calc
+					-- phase_number <=	phase_6b;
+
+				-- when phase_6b =>
+					-- --write address to DBG_address_register(0x3) - top bits of address
+					-- wr_wbm_adr_o	<=	"0000000011";
+					-- wr_wbm_dat_o	<=	addr_calc_bottom_addr(15 downto 8);--address from addr_calc
+					-- phase_number <=	phase_7;
+				-- when phase_7 =>
+					-- --write 0x81 to Type register
+					-- wr_wbm_adr_o	<=	"0000001101";
+					-- wr_wbm_dat_o	<=	"10000001";
+					-- phase_number <=	phase_8;
+				-- when phase_8 =>
+					-- rd_wbm_tga_o 	<=	"0000000010";	
+					-- rd_wbm_cyc_o	<=	'1';	
+					-- rd_wbm_stb_o	<=	'1';
+					-- if (rd_wbm_ack_i='1') then			-- recieve ack on read
+						-- finish_read_pxl	<= "11";		-- finish second pixels pair
+						-- phase_number	<=	phase_0;
+					-- else
+						-- finish_read_pxl	<=	"01";
+						-- phase_number		<=	phase_8;
+					-- end if;							
+				
+				-- when others =>
+					-- report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected in read sdram process" severity error;
+				-- end case;	
+		-- end if;	
+	-- end process read_from_SDRAM;
+	---------------------------------------------------------------------------------------
+------------------------------	bilinear process	-----------------------------------
+-----------------------------------------------------------------------------------------
+---- THE process will cotrol the  bilinear interpolation execution using the bilinear.vhd block
+---- reminder: input 4 pixels, output 1 pixel
+--
+-----------------------------------------------------------------------------------------	
+--bili_proc : process (sys_clk,sys_rst)			
+--	begin
+--		if (sys_rst =reset_polarity_g) then	
+--			
+--		elsif rising_edge(sys_clk) then
+--			if (en_bili_proc='1') then
+--				bili_tl_pixel 	<=	tl_pixel ;
+--				bili_tr_pixel 	<=	tr_pixel; 
+--				bili_bl_pixel 	<=	bl_pixel ;
+--				bili_br_pixel 	<=	br_pixel ;
+--				bili_delta_row	<=  delta_row;
+--				bili_delta_col	<=  delta_col;
+--				--bili_req_trig	<= '1';
+--			bili_pixel_valid		:	in std_logic;				--valid signal for index
+--			bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic	
+--			
+--			
+--		end if;	
+--	end process bili_proc;
+
 ---------------------------------------------------------------------------------------
 ----------------------------	coordinate process	-----------------------------------
 ---------------------------------------------------------------------------------------
@@ -447,14 +506,8 @@ coord_proc : process (sys_clk,sys_rst)
 				finish_image <='1';
 			end if;
 		end if;	
-	end process coord_proc;
-	-------------------Wire coordinates to out ports
-	
-	row_idx_out_proc:
-	row_idx_out<=row_idx_sig;
-	
-	col_idx_out_proc:
-	col_idx_out<=col_idx_sig;
+end process coord_proc;
+
 							
 --	###########################		Instances		##############################	--
 
