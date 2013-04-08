@@ -29,7 +29,9 @@ entity img_man_top is
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 128;	--800 active pixels
 				img_ver_pixels_g	:	positive					:= 96;	--600 active lines
-				trig_frac_size_g	: 	positive					:= 7 
+				trig_frac_size_g	: 	positive					:= 7 ;
+				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
+				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
 			);
 	port	(
 				--Clock and Reset
@@ -82,13 +84,12 @@ architecture rtl_img_man_top of img_man_top is
 	constant reg_width_c		:	positive 	:= 8;	--Width of registers
 	constant param_reg_depth_c	:	positive 	:= 2;	--Depth of registers 2*8 = 16 bits
 	constant reg_addr_width_c	:	positive 	:= 5;	--Width of registers' address
-	constant type_reg_addr_c	:	natural		:= 1;	--Type register address
-	constant cos_reg_addr_c		:	natural		:= 20;	--Cosine of Angle register address	
-	constant sin_reg_addr_c		:	natural		:= 22;	--Sine of Angle register address
-	constant x_start_reg_addr_c	:	natural		:= 14;	--x_start register address
-	constant y_start_reg_addr_c	:	natural		:= 16;	--y_start register address
-	constant zoom_reg_addr_c	:	natural		:= 18;	--Zoom register address
-
+	constant type_reg_addr_c	:	natural		:= 16;	--Type register address
+	constant x_start_reg_addr_c	:	natural		:= 17;	--x_start register address
+	constant y_start_reg_addr_c	:	natural		:= 19;	--y_start register address
+	constant zoom_reg_addr_c	:	natural		:= 21;	--Zoom register address
+	constant cos_reg_addr_c		:	natural		:= 23;	--Cosine of Angle register address	
+	constant sin_reg_addr_c		:	natural		:= 25;	--Sine of Angle register address
 --	###########################		Components		##############################	--
 
 component gen_reg
@@ -165,7 +166,7 @@ component addr_calc is
 				y_size_out_g			:	positive 	:= 800;				-- number of columns  in the output image
 				trig_frac_size_g		:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
 				pipe_depth_g			:	positive	:= 12;				-- 
-				valid_setup_g			:	positive	:= 5
+				valid_setup_g			:	positive	:= 10
 			);
 	port	(
 				
@@ -191,6 +192,7 @@ component addr_calc is
 				data_valid_out		:	out std_logic;		--data valid indicator
 				
 				--CLK, RESET, ENABLE
+				enable					:	in std_logic;    	--enable unit port           
 				unit_finish			:	out std_logic;                              --signal indicating addr_calc is finished
 				trigger_unit			:	in std_logic;                               --enable signal for addr_calc
 				system_clk				:	in std_logic;							--SDRAM clock
@@ -203,7 +205,9 @@ component img_man_manager is
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
 				img_hor_pixels_g	:	positive					:= 128;	--128 pixel in a coloum
-				img_ver_pixels_g	:	positive					:= 96	--96 pixels in a row
+				img_ver_pixels_g	:	positive					:= 96;	--96 pixels in a row
+				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
+				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row				
 			);
 	port	(
 				--Clock and Reset 
@@ -226,6 +230,7 @@ component img_man_manager is
 
 				addr_unit_finish		:	in std_logic;                              --signal indicating addr_calc is finished
 				addr_trigger_unit		:	out std_logic;                               --enable signal for addr_calc
+				addr_enable				:	out std_logic;  
 				
 			--	-- bilinear
 			--	bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
@@ -350,7 +355,7 @@ signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);
 	signal im_addr_data_valid_out	:	std_logic;		--data valid indicator 
 	signal im_addr_unit_finish		:	 std_logic;                              --signal indicating addr_calc is finished
 	signal im_addr_trigger_unit		:	 std_logic;                               --enable signal for addr_calc
-
+	signal im_addr_enable			:	 std_logic;    
 --- garbage signals - to be deleted
 signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
 signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
@@ -490,7 +495,7 @@ begin
 			addr_data_valid_out		=>  im_addr_data_valid_out,	--from address calculator 											
 			addr_unit_finish		=>  im_addr_unit_finish,	--from address calculator
 			addr_trigger_unit		=>  im_addr_trigger_unit,	
-			
+			addr_enable				=>	im_addr_enable,
 			
 			
 			-- Wishbone Master (mem_ctrl_wr)
@@ -527,20 +532,26 @@ begin
 				y_size_out_g			=> 800,				-- number of columns  in the output image
 				trig_frac_size_g		=> 7,				-- number of digits after dot = resolution of fracture (binary)
 				pipe_depth_g			=> 12,				-- 
-				valid_setup_g			=> 5
+				valid_setup_g			=> 10
 	)
 	port map(
-			zoom_factor			=>	"000000001",
-			--zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
-			sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
-			--cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
-			cos_teta			=>	"010000000",                    
+			
+			-- zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			-- sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			-- cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
+			-- x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
+			-- y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
-			x_crop_start	 	=>	"00000000001",
-			y_crop_start		=>	"00000000001",
-			--x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
-			--y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
+			
+			zoom_factor			=>	"000100000",
+			sin_teta			=>	"000000000",
+			cos_teta			=>	"010000000",                    
+			x_crop_start	 	=>	"00000011110",
+			y_crop_start		=>	"00000011101",
+			--row_idx_in			=>	"00100101101",
+			--col_idx_in			=>	"00100101101",
+			
 			ram_start_add_in	=> (others => '0'),
 			                     
             tl_out				=> im_addr_tl_out,
@@ -554,6 +565,7 @@ begin
 			data_valid_out		=> im_addr_data_valid_out,
 			                    
 			--CLK, RESET, ENABLE
+			enable				=> im_addr_enable,    	--enable unit port           
 			unit_finish			=> im_addr_unit_finish, 
 			trigger_unit		=> im_addr_trigger_unit,
 			system_clk			=> system_clk,
