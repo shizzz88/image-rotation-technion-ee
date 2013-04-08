@@ -11,7 +11,7 @@
 --			Number		Date		Name					Description			
 --			1.00		27.3.2012	Ran&Uri					creation
 --			1.01		3.6.2012	Ran&Uri					organize, separte processes, add enable input and total valid output port.
---			1.02		 
+--			1.02		08.04.2013	uri						change valid bit, valid counts valid_setup_g cycles after trigger and rises for one cycle 
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 		check optimal sine and cosine fraction resolution - now its 2 decimal digit resolution [0 downto -7]
@@ -19,6 +19,7 @@
 --			(3)			singular cases - teta =90,180,270,0 
 --			(4)			fix size_calc_proc Process	
 --			(5)			improve "convert [i,j] matrix form addreses to SDRAM address" to simple +1,+128
+--			(6)			delete unneccesery output ports, top right and bottom left and all corresponding signals and calculations
 ----------------------------------------------------------------------------------------------
 --                       MATH Functionality- EXPLAINED
 --
@@ -67,7 +68,7 @@ entity addr_calc is
 			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size_g			:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
 			pipe_depth_g				:	positive	:= 12;				-- 
-			valid_setup_g				:	positive	:= 5
+			valid_setup_g				:	positive	:= 10
 			);
 	port	(
 				
@@ -92,7 +93,8 @@ entity addr_calc is
 				data_valid_out		:	out std_logic;		--data valid indicator
 				
 				--CLK, RESET, ENABLE
-				unit_finish			:	out std_logic;                              --signal indicating addr_calc is finished
+				enable					:	in std_logic;    	--enable unit port           
+				unit_finish				:	out std_logic;                              --signal indicating addr_calc is finished
 				trigger_unit			:	in std_logic;                               --enable signal for addr_calc
 				system_clk				:	in std_logic;							--SDRAM clock
 				system_rst				:	in std_logic							--Reset (133MHz)
@@ -193,7 +195,7 @@ signal br_out_phase_1 : std_logic_vector (19 downto 0);				--pipeline signals fo
 
 --valid proc signals
 signal pipe_counter				: integer range 0 to pipe_depth_g-1;		--pipe counter
-signal first_time_count			: boolean ; 							    -- indicates if this is the first time we count to pipe length
+signal en_valid_count			: std_logic;							    -- indicates if this is the first time we count to pipe length
 signal valid_counter			: integer range 0 to valid_setup_g-1;		--valid counter
 signal	data_valid_out_sig		:	 std_logic;
 --unit finish proc signals
@@ -268,15 +270,20 @@ begin
 	if (system_rst = reset_polarity_g) then				--RESET
 		enable_unit<='0';
 	elsif (rising_edge (system_clk))   then 		
-		if 	( trigger_unit='1') then					--wait for trigger
+		if ((not(enable) or unit_finish_sig) ='1') then		--unit_finish_sig is 1 or enable is 0
+			enable_unit <='0';
+		elsif 	( (trigger_unit and enable) ='1') then		-- trigger and enable
 			enable_unit<='1';
-		end if;
-		if (unit_finish_sig='1') then					--unit finish the calc
-			enable_unit<='0';	
+		elsif  (not(trigger_unit) and enable and enable_unit) ='1' then  	--enable after trigger, calc not completed
+			enable_unit<='1';
+			-- if (valid_counter = valid_setup_g-1) then
+				-- en_valid_count <= "11";
+			-- else
+				-- en_valid_count <= "10";
+			-- end if;				
 		end if;
 	end if;	
 end process trig_proc;
-
 ----------------------------------------------------------------------------------------
 	----------------------------		valid_proc Process			------------------------
 	----------------------------------------------------------------------------------------
@@ -286,35 +293,80 @@ end process trig_proc;
 	----------------------------------------------------------------------------------------
 valid_proc: process (system_clk, system_rst)
 begin
-		if (system_rst = reset_polarity_g) then                         --RESET
+	if (system_rst = reset_polarity_g) then                         --RESET
 		data_valid_out_sig <= '0';
-		first_time_count<= true;
 		valid_counter<=0;
-		pipe_counter<=0;
+		en_valid_count <='0';
 	elsif (rising_edge (system_clk))   then  							--rising edge+enable+notRESET
-		if (enable_unit='1')  then
-			if (pipe_counter < pipe_depth_g-1) then                     --counting for the first time
-				pipe_counter <= pipe_counter+1;
-				data_valid_out_sig <= '0';
-			elsif (first_time_count=false) then                         --not counting for the first time :wait for valid_setup_g-1 cycles before 
-																		--because data is inputed every valid_setup_g-1 cycles
-				
-				if (valid_counter =valid_setup_g-1) then                --setup time is over
-					data_valid_out_sig <= '1';
-					valid_counter<=0;
-				else 
-					valid_counter<=valid_counter+1;                     --still in setup time
-					data_valid_out_sig <= '0';
-				end if;
 		
-			elsif (pipe_counter = pipe_depth_g-1) then                  --first time count - latency=pipe_depth_g-1=11
+		if ((not(enable) or unit_finish_sig) ='1') then		--unit_finish_sig is 1 or enable is 0
+			valid_counter <= valid_counter;
+			data_valid_out_sig <= '0';
+		
+		elsif (   not(trigger_unit) and  not(en_valid_count) and enable) ='1' then --wait for trigger
+			valid_counter <= valid_counter;
+			data_valid_out_sig <= '0';
+		
+		elsif 	( (trigger_unit and enable and  not(en_valid_count)) ='1') then		-- trigger and enable
+			valid_counter <= 0;
+			en_valid_count <= '1';
+			data_valid_out_sig <= '0';
+			
+		elsif (   ( en_valid_count and enable) ='1') then  	--enable after trigger, calc not completed
+			if  (valid_counter < valid_setup_g-1) then
+				valid_counter <= valid_counter+1;
+				data_valid_out_sig <= '0';
+				en_valid_count <= '1';
+				
+			elsif(valid_counter = valid_setup_g-1) then		--finished calcl, restart and wait for trigger
+				valid_counter <= 0;
 				data_valid_out_sig <= '1';
-				first_time_count<=false;
-			end if;
+				en_valid_count <='0';
+			end if;	
 		end if;	
+	
 	end if;	
 end process valid_proc;
 data_valid_out<=data_valid_out_sig;                                 --connect data_valid_out port to data_valid_out_sig
+
+----------------------------------------------------------------------------------------
+	-- ----------------------------		valid_proc Process			------------------------
+	-- ----------------------------------------------------------------------------------------
+	-- -- a process indicating when data output is valid
+    -- -- after reset, the proccess counts until pipe_depth_g then data_valid_out_sig='1'
+    -- -- aftewards every valid_setup_g-1 clocks data_valid_out_sig='1'
+	-- ----------------------------------------------------------------------------------------
+-- valid_proc: process (system_clk, system_rst)
+-- begin
+		-- if (system_rst = reset_polarity_g) then                         --RESET
+		-- data_valid_out_sig <= '0';
+		-- en_valid_count<= true;
+		-- valid_counter<=0;
+		-- pipe_counter<=0;
+	-- elsif (rising_edge (system_clk))   then  							--rising edge+enable+notRESET
+		-- if (enable_unit='1')  then
+			-- if (pipe_counter < pipe_depth_g-1) then                     --counting for the first time
+				-- pipe_counter <= pipe_counter+1;
+				-- data_valid_out_sig <= '0';
+			-- elsif (en_valid_count=false) then                         --not counting for the first time :wait for valid_setup_g-1 cycles before 
+																		-- --because data is inputed every valid_setup_g-1 cycles
+				
+				-- if (valid_counter =valid_setup_g-1) then                --setup time is over
+					-- data_valid_out_sig <= '1';
+					-- valid_counter<=0;
+				-- else 
+					-- valid_counter<=valid_counter+1;                     --still in setup time
+					-- data_valid_out_sig <= '0';
+				-- end if;
+		
+			-- elsif (pipe_counter = pipe_depth_g-1) then                  --first time count - latency=pipe_depth_g-1=11
+				-- data_valid_out_sig <= '1';
+				-- en_valid_count<=false;
+			-- end if;
+		-- end if;	
+	-- end if;	
+-- end process valid_proc;
+-- data_valid_out<=data_valid_out_sig;                                 --connect data_valid_out port to data_valid_out_sig
 
 ----------------------------------------------------------------------------------------
 	----------------------------		unit_finish Process			------------------------

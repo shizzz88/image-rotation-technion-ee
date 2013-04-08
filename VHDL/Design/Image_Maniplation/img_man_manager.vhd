@@ -18,7 +18,8 @@
 --			fix	row/col_idx_out	to be generic length
 --			fix phase 2 at read_from_SDRAM to support address length of 2 register (16 bit).
 --			fix top_fsm Read From SDRAM state to support to pixels burst of read.
---			check if index valid is necessary , fix to work according to calc coord proc		
+--			check if index valid is necessary , fix to work according to calc coord proc
+--			write to registers using ack response, wait for ack before next state		
 
 ------------------------------------------------------------------------------------------------
 library ieee;
@@ -30,8 +31,10 @@ entity img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
-				img_hor_pixels_g	:	positive					:= 640;	--640 pixel in a coloum
-				img_ver_pixels_g	:	positive					:= 480	--480 pixels in a row
+				img_hor_pixels_g	:	positive					:= 128;	--640 pixel in a coloum
+				img_ver_pixels_g	:	positive					:= 96;	--480 pixels in a row
+				display_hor_pixels_g	:	positive					:= 800;	--800 pixel in a coloum
+				display_ver_pixels_g	:	positive					:= 600	--600 pixels in a row
 			);
 	port	(
 				--Clock and Reset 
@@ -54,7 +57,7 @@ entity img_man_manager is
 
 				addr_unit_finish		:	in std_logic;                              --signal indicating addr_calc is finished
 				addr_trigger_unit		:	out std_logic;                               --enable signal for addr_calc
-				
+				addr_enable				:	out std_logic;  
 			--	-- bilinear
 			--	bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
 			--	bili_tl_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
@@ -97,9 +100,13 @@ architecture rtl_img_man_manager of img_man_manager is
 
 	------------------------------	Constants	------------------------------------
 	 ----fix to generic
-	constant col_bits_c			:	positive 	:= 10;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
-	constant row_bits_c			:	positive 	:= 10;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
+	constant col_bits_c					:	positive 	:= 10;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
+	constant row_bits_c					:	positive 	:= 10;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
 
+	constant mem_mng_type_reg_addr_c	:	std_logic_vector (9 downto 0)		:= "0000001101";	--Type register address
+	constant mem_mng_dbg_lsb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000010";	--dbg register address
+	constant mem_mng_dbg_msb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000011";	--Type register address
+--	###########################		Components		##############################	--
 	------------------------------	Types	------------------------------------
 	type fsm_states is (
 							fsm_idle_st,			-- Idle - wait to start 
@@ -110,15 +117,15 @@ architecture rtl_img_man_manager of img_man_manager is
 							fsm_WB_to_SDRAM_st		-- Write Back result to SDRAM
 						);
 	type read_states is (	
-							phase_0,
-							phase_1,
-							phase_2a,phase_2b,
-							phase_3, 
-							phase_4,
-							phase_5,
-							phase_6a,phase_6b,
-							phase_7,
-							phase_8
+							read_idle_st,
+							write_type_reg_0x80_1_st,
+							write_dbg_reg_lsb_1_st,write_dbg_reg_msb_1_st,
+							write_type_reg_0x81_1_st, 
+							wait_ack_1_st,
+							write_type_reg_0x80_2_st,
+							write_dbg_reg_lsb_2_st,write_dbg_reg_msb_2_st,
+							write_type_reg_0x81_2_st,
+							wait_ack_2_st
 					);					
 	------------------------------	Signals	------------------------------------
 	signal index_valid		: std_logic; 		--  signal for coordinate incerement process
@@ -144,7 +151,7 @@ architecture rtl_img_man_manager of img_man_manager is
 	--------------------------Read From SDRAM
 	signal finish_read_pxl		:	std_logic_vector (1 downto 0);		--finish Read From SDRAM state
 	signal en_read_proc			:	std_logic;		--start Read From SDRAM state
-    signal phase_number 		:	read_states;
+    signal read_SDRAM_state 		:	read_states;
 	--------------------------bilinear interpolation
 	signal en_bili_proc			:	std_logic;		--start bilinear
 	signal tl_pixel		:	std_logic_vector (7 downto 0);		--top left pixel, first pair
@@ -214,12 +221,12 @@ begin
 					
 					if ((addr_calc_oor and addr_calc_valid) = '1') then		--current index is out of range, WB black
 						en_addr_calc_proc	<="00";
-						cur_st			<=	fsm_WB_to_SDRAM_st;
-					
+						--cur_st			<=	fsm_WB_to_SDRAM_st;
+						cur_st			<=fsm_increment_coord_st;
 					elsif ((not(addr_calc_oor) and addr_calc_valid) ='1') then		--addr_calc is finish, continue to Read from SDRAM
 						cur_st 			<= 	fsm_READ_from_SDRAM_st;
+						--cur_st			<=fsm_increment_coord_st;
 						en_addr_calc_proc	<="00";
-					
 					else
 						cur_st 			<= 	fsm_address_calc_st;					
 					end if;	
@@ -239,16 +246,16 @@ begin
 			-----------------------------bilinear state----------------------
 				when fsm_bilinear_st =>	
 					
-						cur_st 	<= 	fsm_WB_to_SDRAM_st;			--for tb of coordinate process
+					--	cur_st 	<= 	fsm_WB_to_SDRAM_st;			--for tb of coordinate process
 			
 			-----------------------------Write Back to SDRAM state----------------------
 				when fsm_WB_to_SDRAM_st =>
-					if (finish_image ='0') then
-						cur_st 	<= 	fsm_increment_coord_st;		--for tb of coordinate process
-					else
-						cur_st	<=	fsm_idle_st;
-					end if;
-			
+					--if (finish_image ='0') then
+					--	cur_st 	<= 	fsm_increment_coord_st;		--for tb of coordinate process
+					--else
+					--	cur_st	<=	fsm_idle_st;
+					--end if;
+			       
 			-----------------------------Debugg state, catch Unimplemented state
 				when others =>
 					cur_st	<=	fsm_idle_st;
@@ -278,18 +285,21 @@ addr_calc_proc : process (sys_clk,sys_rst)
 			
 			addr_calc_oor		<=  '0';
 			addr_calc_valid		<=  '0' ;
+			addr_enable			<= '0';
 			
 		elsif rising_edge(sys_clk) then
 			--trigger addres calculator
 			if (  en_addr_calc_proc ="01")  then --begin address calculation , send trigger to addr_calc
-				addr_trigger_unit	<=	'1';
-			
+				addr_trigger_unit	<='1';
+				addr_enable			<='1';
 			elsif ( en_addr_calc_proc ="10") then -- calculation in progress ,disable trigger
 				addr_trigger_unit	<=	'0';
-			
+				addr_enable			<='1';
+			elsif ( en_addr_calc_proc ="00") then -- calculation is finished or not begun
+				addr_enable			<='0';
 			end if;	
 			addr_row_idx_in		<=  row_idx_sig;	--from coord calc process to address calc
-			addr_col_idx_in		<=  row_idx_sig;	--from coord calc process to address calc
+			addr_col_idx_in		<=  col_idx_sig;	--from coord calc process to address calc
 			addr_calc_tl		<=  addr_tl_out;
 			addr_calc_bl		<=  addr_bl_out;
 			addr_calc_d_row		<=  addr_delta_row_out;	                
@@ -303,145 +313,146 @@ end process addr_calc_proc;
 
 
 
--- ---------------------------------------------------------------------------------------
--- ----------------------------	read_from_SDRAM process	-----------------------------------
--- ---------------------------------------------------------------------------------------
--- -- the process will manage the read transaction from the sdram
--- -- the read will be executed in 4 phase, 2 phases for each address
--- -- 
--- -- 
--- ---------------------------------------------------------------------------------------	
--- read_from_SDRAM : process (sys_clk,sys_rst)			
-	-- begin
-		-- if (sys_rst =reset_polarity_g) then	
-			-- finish_read_pxl	<=	(others => '0');			
-			-- phase_number	<=	phase_0;
-			-- wr_wbm_adr_o	<=	(others => '0');
-			-- wr_wbm_tga_o	<=	(others => '0');
-			-- wr_wbm_dat_o	<=	(others => '0');
-			-- wr_wbm_cyc_o	<=	'0';
-			-- wr_wbm_stb_o	<=	'0';
-			-- wr_wbm_we_o		<=	'0';
-			-- wr_wbm_tgc_o	<=	'0';
-			-- rd_wbm_tga_o 	<=	(others => '0');	
-			-- rd_wbm_cyc_o	<=	'0';	
-			-- rd_wbm_stb_o	<=	'0';
-			-- rd_wbm_adr_o	<=	(others => '0');	
-			-- rd_wbm_tga_o	<=	(others => '0');	
-			-- rd_wbm_cyc_o	<=	'0';
-			-- rd_wbm_tgc_o	<=	'0';
-			-- rd_wbm_stb_o	<=	'0';
-			-- finish_read_pxl	<=	(others => '0');							
-			-- finish_image	<=	'0';
+---------------------------------------------------------------------------------------
+----------------------------	read_from_SDRAM process	-----------------------------------
+---------------------------------------------------------------------------------------
+-- the process will manage the read transaction from the sdram
+-- the read will be executed in 4 phase, 2 phases for each address
+-- 
+-- 
+---------------------------------------------------------------------------------------	
+read_from_SDRAM : process (sys_clk,sys_rst)			
+	begin
+		if (sys_rst =reset_polarity_g) then	
+			finish_read_pxl	<=	(others => '0');			
+			read_SDRAM_state	<=	read_idle_st;
+			wr_wbm_adr_o	<=	(others => '0');
+			wr_wbm_tga_o	<=	(others => '0');
+			wr_wbm_dat_o	<=	(others => '0');
+			wr_wbm_cyc_o	<=	'0';
+			wr_wbm_stb_o	<=	'0';
+			wr_wbm_we_o		<=	'0';
+			wr_wbm_tgc_o	<=	'0';
+			rd_wbm_tga_o 	<=	(others => '0');	
+			rd_wbm_cyc_o	<=	'0';	
+			rd_wbm_stb_o	<=	'0';
+			rd_wbm_adr_o	<=	(others => '0');	
+			rd_wbm_tga_o	<=	(others => '0');	
+			rd_wbm_cyc_o	<=	'0';
+			rd_wbm_tgc_o	<=	'0';
+			rd_wbm_stb_o	<=	'0';
+			finish_read_pxl	<=	(others => '0');							
+			finish_image	<=	'0';
 			
-		-- elsif rising_edge(sys_clk)  then	
-			-- case phase_number is		
+		elsif rising_edge(sys_clk)  then	
+			case read_SDRAM_state is		
 				
-				-- when phase_0 =>
-					-- finish_read_pxl<="00";   			--reset read pixel counter 
-					-- if ((en_read_proc='1') and (finish_read_pxl /="11"))  then
-						-- phase_number	<= 	phase_1;
-					-- else
-						-- phase_number	<= 	phase_0;
-						-- rd_wbm_tga_o 	<=	"0000000000";	
-						-- rd_wbm_cyc_o	<=	'0';	
-						-- rd_wbm_stb_o	<=	'0';
-						-- wr_wbm_adr_o	<=	(others => '0');
-						-- wr_wbm_tga_o	<=	(others => '0');
-						-- wr_wbm_dat_o	<=	(others => '0');
-						-- wr_wbm_cyc_o	<=	'0';
-						-- wr_wbm_stb_o	<=	'0';
-						-- wr_wbm_we_o		<=	'0';
-						-- wr_wbm_tgc_o	<=	'0';
-					-- end if;
-				-- when phase_1 =>
-						-- --write 0x80 to Type register
-						-- wr_wbm_adr_o	<=	"0000001101";
-						-- wr_wbm_tga_o	<=	(others => '0');
-						-- wr_wbm_dat_o	<=	"10000000";
-						-- wr_wbm_cyc_o	<=	'1';
-						-- wr_wbm_stb_o	<=	'1';
-						-- wr_wbm_we_o		<=	'1';
-						-- wr_wbm_tgc_o	<=	'1';
-						-- phase_number <= phase_2a;
+				when read_idle_st =>
+					finish_read_pxl<="00";   			--reset read pixel counter 
+					if ((en_read_proc='1') and (finish_read_pxl /="11"))  then
+						read_SDRAM_state	<= 	write_type_reg_0x80_1_st;
+					else
+						read_SDRAM_state	<= 	read_idle_st;
+						rd_wbm_tga_o 	<=	"0000000000";	
+						rd_wbm_cyc_o	<=	'0';	
+						rd_wbm_stb_o	<=	'0';
+						wr_wbm_adr_o	<=	(others => '0');
+						wr_wbm_tga_o	<=	(others => '0');
+						wr_wbm_dat_o	<=	(others => '0');
+						wr_wbm_cyc_o	<=	'0';
+						wr_wbm_stb_o	<=	'0';
+						wr_wbm_we_o		<=	'0';
+						wr_wbm_tgc_o	<=	'0';
+					end if;
+				when write_type_reg_0x80_1_st =>
+						--write 0x80 to Type register in mem_mng
+						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						wr_wbm_tga_o	<=	(others => '0');
+						wr_wbm_dat_o	<=	"10000000";
+						wr_wbm_cyc_o	<=	'1';
+						wr_wbm_stb_o	<=	'1';
+						wr_wbm_we_o		<=	'1';
+						wr_wbm_tgc_o	<=	'1';
+						read_SDRAM_state <= write_dbg_reg_lsb_1_st;
 
-				-- when phase_2a =>
-					-- --write address to DBG_address_register(0x2) - bottom bits of address
-					-- wr_wbm_adr_o	<=	"0000000010";
-					-- wr_wbm_dat_o	<=	addr_calc_top_addr(7 downto 0);	--address from addr_calc
-					-- phase_number <=	phase_2b;
+				when write_dbg_reg_lsb_1_st =>
+					--write address to DBG_address_register(0x2) - bottom bits of address in mem_mng
+					wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
+					wr_wbm_dat_o	<=	addr_calc_tl(7 downto 0);	--address from addr_calc
+					read_SDRAM_state <=	write_dbg_reg_msb_1_st;
 
-				-- when phase_2b =>
-					-- --write address to DBG_address_register(0x3) - top bits of address
-					-- wr_wbm_adr_o	<=	"0000000011";
-					-- wr_wbm_dat_o	<=	addr_calc_top_addr(15 downto 8); --address from addr_calc
-					-- phase_number <=	phase_3;
+				when write_dbg_reg_msb_1_st =>
+					--write address to DBG_address_register(0x3) - top bits of address in mem_mng
+					wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
+					wr_wbm_dat_o	<=	addr_calc_tl(15 downto 8); --address from addr_calc
+					read_SDRAM_state <=	write_type_reg_0x81_1_st;
 								
-				-- when phase_3 =>
-					-- --write 0x81 to Type register
-					-- wr_wbm_adr_o	<=	"0000001101";
-					-- wr_wbm_dat_o	<=	"10000001";
-					-- phase_number <=	phase_4;
-				-- when phase_4 =>
-					-- rd_wbm_tga_o 	<=	"0000000010";	
-					-- rd_wbm_cyc_o	<=	'1';	
-					-- rd_wbm_stb_o	<=	'1';
-					-- if (rd_wbm_ack_i='1') then		--recieve ack on read
-						-- finish_read_pxl	<= "01";	-- finish first pixels pair
+				when write_type_reg_0x81_1_st =>
+					--write 0x81 to Type register in mem_mng
+					wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+					wr_wbm_dat_o	<=	"10000001";
+					read_SDRAM_state <=	wait_ack_1_st;
+				when wait_ack_1_st =>
+					rd_wbm_tga_o 	<=	"0000000010";	
+					rd_wbm_cyc_o	<=	'1';	
+					rd_wbm_stb_o	<=	'1';
+					if (rd_wbm_ack_i='1') then		--recieve ack on read
+						finish_read_pxl	<= "01";	-- finish first pixels pair
 						
-						-- phase_number	<=	phase_5;
-					-- else
-						-- finish_read_pxl	<=	"00";
-						-- phase_number		<=	phase_4;
-					-- end if;	
+						read_SDRAM_state	<=	write_type_reg_0x80_2_st;
+					else
+						finish_read_pxl	<=	"00";
+						read_SDRAM_state		<=	wait_ack_1_st;
+					end if;	
 				
-				-- when phase_5 =>
-						-- --terminate read req
-						-- rd_wbm_tga_o 	<=	"0000000000";	
-						-- rd_wbm_cyc_o	<=	'0';	
-						-- rd_wbm_stb_o	<=	'0';
-						-- --write 0x80 to Type register
-						-- wr_wbm_adr_o	<=	"0000001101";
-						-- wr_wbm_tga_o	<=	(others => '0');
-						-- wr_wbm_dat_o	<=	"10000000";
-						-- wr_wbm_cyc_o	<=	'1';
-						-- wr_wbm_stb_o	<=	'1';
-						-- wr_wbm_we_o		<=	'1';
-						-- wr_wbm_tgc_o	<=	'1';
-						-- phase_number <= phase_6a;
-				-- when phase_6a =>
-					-- --write address to DBG_address_register(0x2) - bottom bits of address
-					-- wr_wbm_adr_o	<=	"0000000010";
-					-- wr_wbm_dat_o	<=	addr_calc_bottom_addr(7 downto 0);--address from addr_calc
-					-- phase_number <=	phase_6b;
+				when write_type_reg_0x80_2_st =>
+						--terminate read req
+						rd_wbm_tga_o 	<=	"0000000000";	
+						rd_wbm_cyc_o	<=	'0';	
+						rd_wbm_stb_o	<=	'0';
+						--write 0x80 to Type register
+						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						wr_wbm_tga_o	<=	(others => '0');
+						wr_wbm_dat_o	<=	"10000000";
+						wr_wbm_cyc_o	<=	'1';
+						wr_wbm_stb_o	<=	'1';
+						wr_wbm_we_o		<=	'1';
+						wr_wbm_tgc_o	<=	'1';
+						read_SDRAM_state <= write_dbg_reg_lsb_2_st;
+				when write_dbg_reg_lsb_2_st =>
+					--write address to DBG_address_register(0x2) - bottom bits of address
+					wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
+					wr_wbm_dat_o	<=	addr_calc_bl(7 downto 0);--address from addr_calc
+					read_SDRAM_state <=	write_dbg_reg_msb_2_st;
 
-				-- when phase_6b =>
-					-- --write address to DBG_address_register(0x3) - top bits of address
-					-- wr_wbm_adr_o	<=	"0000000011";
-					-- wr_wbm_dat_o	<=	addr_calc_bottom_addr(15 downto 8);--address from addr_calc
-					-- phase_number <=	phase_7;
-				-- when phase_7 =>
-					-- --write 0x81 to Type register
-					-- wr_wbm_adr_o	<=	"0000001101";
-					-- wr_wbm_dat_o	<=	"10000001";
-					-- phase_number <=	phase_8;
-				-- when phase_8 =>
-					-- rd_wbm_tga_o 	<=	"0000000010";	
-					-- rd_wbm_cyc_o	<=	'1';	
-					-- rd_wbm_stb_o	<=	'1';
-					-- if (rd_wbm_ack_i='1') then			-- recieve ack on read
-						-- finish_read_pxl	<= "11";		-- finish second pixels pair
-						-- phase_number	<=	phase_0;
-					-- else
-						-- finish_read_pxl	<=	"01";
-						-- phase_number		<=	phase_8;
-					-- end if;							
+				when write_dbg_reg_msb_2_st =>
+					--write address to DBG_address_register(0x3) - top bits of address
+					wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
+					wr_wbm_dat_o	<=	addr_calc_bl(15 downto 8);--address from addr_calc
+					read_SDRAM_state <=	write_type_reg_0x81_2_st;
+				when write_type_reg_0x81_2_st =>
+					--write 0x81 to Type register
+					wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+					wr_wbm_dat_o	<=	"10000001";
+					read_SDRAM_state <=	wait_ack_2_st;
+					read_SDRAM_state <=	wait_ack_2_st;
+				when wait_ack_2_st =>
+					rd_wbm_tga_o 	<=	"0000000010";	
+					rd_wbm_cyc_o	<=	'1';	
+					rd_wbm_stb_o	<=	'1';
+					if (rd_wbm_ack_i='1') then			-- recieve ack on read
+						finish_read_pxl	<= "11";		-- finish second pixels pair
+						read_SDRAM_state	<=	read_idle_st;
+					else
+						finish_read_pxl	<=	"01";
+						read_SDRAM_state		<=	wait_ack_2_st;
+					end if;							
 				
-				-- when others =>
-					-- report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected in read sdram process" severity error;
-				-- end case;	
-		-- end if;	
-	-- end process read_from_SDRAM;
+				when others =>
+					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected in read sdram process" severity error;
+				end case;	
+		end if;	
+	end process read_from_SDRAM;
 	---------------------------------------------------------------------------------------
 ------------------------------	bilinear process	-----------------------------------
 -----------------------------------------------------------------------------------------
@@ -492,17 +503,17 @@ coord_proc : process (sys_clk,sys_rst)
 				col_idx_sig(0)<='1';	
 				finish_image <='0';
 			elsif (cur_st=fsm_increment_coord_st)  then	--increment row if possible, else move to new col
-				if (row_idx_sig< img_ver_pixels_g) then --increment row
+				if (row_idx_sig< display_ver_pixels_g) then --increment row
 					row_idx_sig<=row_idx_sig+1;
 					finish_image <='0';
-				else  	--(row_idx_sig == img_ver_pixels_g) -> co is over, move to new col
-					if (col_idx_sig<img_hor_pixels_g) then
+				else  	--(row_idx_sig == display_ver_pixels_g) -> co is over, move to new col
+					if (col_idx_sig<display_hor_pixels_g) then
 						row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
 						row_idx_sig(0)<='1';
 						col_idx_sig<=col_idx_sig+1;
 					end if;	
 				end if;
-			elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=img_hor_pixels_g) and (row_idx_sig=img_ver_pixels_g) then
+			elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=display_hor_pixels_g) and (row_idx_sig=display_ver_pixels_g) then
 				finish_image <='1';
 			end if;
 		end if;	
