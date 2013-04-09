@@ -49,7 +49,7 @@ component mds_top
 				rst_133				:	in std_logic;
 				rst_100				:	in std_logic;
 				rst_40				:	in std_logic;
-				
+				img_trigger 	:	in std_logic;
 				--UART
 				uart_serial_in		:	in std_logic;
 				uart_serial_out		:	out std_logic;
@@ -206,6 +206,7 @@ signal clk_100			:	std_logic := '0';
 signal rst_100			:	std_logic;
 signal clk_40			:	std_logic := '0';
 signal rst_40			:	std_logic;
+signal img_man_trigger 	:	 std_logic;
 --UART
 signal uart_serial_in	:	std_logic;
 signal uart_serial_out	:	std_logic;
@@ -259,6 +260,16 @@ rst_100	<=	'0', '1' after 20 ns;
 rst_proc3:
 rst_40	<=	'0', '1' after 20 ns;
 
+img_man_trigger_proc: process
+begin
+  
+  img_man_trigger <= '0';
+   wait for 55 ms;
+    img_man_trigger <= '1';
+   wait for 10 ns;
+   img_man_trigger <= '0';
+   wait;
+ end process;
 
 uart_gen_inst :  uart_tx_gen_model generic map (
 			file_name_g			=> "p:/uart_tx", 		--File name to be transmitted
@@ -286,6 +297,7 @@ mds_top_inst	: mds_top
                 rst_133	            =>	rst_133,
                 rst_100	            =>	rst_100,
                 rst_40	            =>	rst_40,
+                img_trigger => img_man_trigger,
 				uart_serial_in		=>	uart_serial_in	,
 				uart_serial_out		=>	uart_serial_out	,
 				dram_addr			=>	dram_addr		,
