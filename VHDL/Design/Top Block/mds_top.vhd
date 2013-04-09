@@ -38,7 +38,7 @@ entity mds_top is
 				rst_133				:	in std_logic;
 				rst_100				:	in std_logic;
 				rst_40				:	in std_logic;
-				
+				img_trigger 	:	in std_logic;
 				--Clock and Reset to SDRAM, VESA
 				clk_sdram_out		:	out std_logic;
 				clk_vesa_out		:	out std_logic;
@@ -109,7 +109,8 @@ component img_man_top is
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-
+        req_trig				  :	in std_logic;								-- Trigger for image manipulation to begin,
+        
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
@@ -674,6 +675,7 @@ signal ic_wbs_stall_o	:	std_logic_vector (num_of_wbs_z_c - 1 downto 0);					--Sl
 signal ic_wbs_ack_o		:	std_logic_vector (num_of_wbs_z_c - 1 downto 0);					--Input data has been successfuly acknowledged
 signal ic_wbs_err_o		:	std_logic_vector (num_of_wbs_z_c - 1 downto 0);					--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
 
+
 	-- Signals from image manipulation wbs to intercon Z
 signal img_wbs_dat_o			: std_logic_vector (7 downto 0);		--Data Out for reading registers (8 bits)
 signal img_wbs_stall_o			: std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
@@ -1175,14 +1177,14 @@ tx_path_inst: tx_path
 img_man_top_inst: img_man_top 
 		generic map(
 				reset_polarity_g 	=>	'0',
-				img_hor_pixels_g	 =>640,	--640 active pixels
-				img_ver_pixels_g	=> 480	--480 active lines
+				img_hor_pixels_g	 =>128,	-- active pixels
+				img_ver_pixels_g	=> 96	-- active lines
 			)
 	port map(
 				--Clock and Reset
 				system_clk			=>	clk_100,
 				system_rst			=>	rst_100,
-                                     
+        req_trig				=>  img_trigger,                          
 				-- Wishbone Slave (Fr Registers)
 				wbs_adr_i			=> ic_wbs_adr_i(39 downto 30),
 				wbs_tga_i			=> ic_wbs_tga_i(29 downto 20),
