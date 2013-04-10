@@ -264,11 +264,11 @@ img_man_trigger_proc: process
 begin
   
   img_man_trigger <= '0';
-   wait for 55 ms;
-    img_man_trigger <= '1';
-   wait for 10 ns;
-   img_man_trigger <= '0';
-   wait;
+    wait for 55 ms;
+		img_man_trigger <= '1';
+	wait for 10 ns;
+		img_man_trigger <= '0';
+	wait;
  end process;
 
 uart_gen_inst :  uart_tx_gen_model generic map (
