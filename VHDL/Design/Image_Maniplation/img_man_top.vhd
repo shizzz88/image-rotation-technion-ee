@@ -232,16 +232,16 @@ component img_man_manager is
 				addr_trigger_unit		:	out std_logic;                               --enable signal for addr_calc
 				addr_enable				:	out std_logic;  
 				
-			--	-- bilinear
-			--	bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
-			--	bili_tl_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
-			--	bili_tr_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
-			--	bili_bl_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
-			--	bili_br_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
-			--	bili_delta_row			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-			--	bili_delta_col			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-			--	bili_pixel_valid		:	in std_logic;				--valid signal for index
-			--	bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
+				-- bilinear
+				bili_req_trig			:	out std_logic;				-- Trigger for image manipulation to begin,
+				bili_tl_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
+				bili_tr_pixel			:	out	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
+				bili_bl_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
+				bili_br_pixel           :   out	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
+				bili_delta_row			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				bili_delta_col			:	out	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				bili_pixel_valid		:	in std_logic;				--valid signal for index
+				bili_pixel_res			:	in std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
 				
 				-- Wishbone Master (mem_ctrl_wr)
 				wr_wbm_adr_o		:	out std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -269,6 +269,34 @@ component img_man_manager is
 				
 			);
 end component img_man_manager;
+
+component bilinear is
+	generic (
+				reset_polarity_g		:	std_logic	:= '0';			--Reset active low
+				pipeline_depth_g		:	positive := 4;
+				trig_frac_size_g		:	positive := 7				-- number of digits after dot = resolution of fracture (binary)
+
+			);
+	port	(
+				--Clock and Reset 
+				sys_clk				:	in std_logic;				-- clock
+				sys_rst				:	in std_logic;				-- Reset
+				req_trig			:	in std_logic;				-- Trigger for image manipulation to begin,
+				--from SDRAM
+				tl_pixel			:	in	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
+				tr_pixel			:	in	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
+				bl_pixel            :   in	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
+				br_pixel            :   in	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
+				--from Addr_Calc
+				delta_row			:	in	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+				delta_col			:	in	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+
+				
+				pixel_valid			:	out std_logic;				--valid signal for index
+				pixel_res			:	out std_logic_vector (trig_frac_size_g downto 0) 	--current row index           --fix to generic
+			
+			);
+end component bilinear;
 --	###########################		Signals		##############################	--
 
 -- Logic signals, derived from Wishbone Slave
@@ -356,7 +384,18 @@ signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);
 	signal im_addr_unit_finish		:	 std_logic;                              --signal indicating addr_calc is finished
 	signal im_addr_trigger_unit		:	 std_logic;                               --enable signal for addr_calc
 	signal im_addr_enable			:	 std_logic;    
---- garbage signals - to be deleted
+
+--bilinear
+	signal	bilinear_req_trig			:	std_logic;				-- Trigger for image manipulation to begin,
+	signal	bilinear_tl_pixel			:	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
+	signal	bilinear_tr_pixel			:	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
+	signal	bilinear_bl_pixel           :	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
+	signal	bilinear_br_pixel           :	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
+	signal	bilinear_delta_row			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+	signal	bilinear_delta_col			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+	signal	bilinear_pixel_valid		:	std_logic;				--valid signal for index
+	signal	bilinear_pixel_res			:	std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
+	--- garbage signals - to be deleted
 signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
 signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
 --	###########################		Implementation		##############################	--
@@ -496,7 +535,16 @@ begin
 			addr_unit_finish		=>  im_addr_unit_finish,	--from address calculator
 			addr_trigger_unit		=>  im_addr_trigger_unit,	
 			addr_enable				=>	im_addr_enable,
-			
+			-- bilinear
+			bili_req_trig			=>	 bilinear_req_trig	 ,
+			bili_tl_pixel			=>	 bilinear_tl_pixel	 ,
+			bili_tr_pixel			=>	 bilinear_tr_pixel	 ,
+			bili_bl_pixel           =>	 bilinear_bl_pixel   ,
+			bili_br_pixel           =>	 bilinear_br_pixel   ,
+			bili_delta_row			=>	 bilinear_delta_row	 ,
+			bili_delta_col			=>	 bilinear_delta_col	 ,
+			bili_pixel_valid		=>	 bilinear_pixel_valid,
+			bili_pixel_res			=>	 bilinear_pixel_res	 ,
 			
 			-- Wishbone Master (mem_ctrl_wr)
 			wr_wbm_adr_o		=>	    wr_wbm_adr_o	,
@@ -570,7 +618,34 @@ begin
 			trigger_unit		=> im_addr_trigger_unit,
 			system_clk			=> system_clk,
 			system_rst			=> system_rst
-	);                      
+	); 
+
+	bilinear_inst: bilinear 
+	generic map(
+			reset_polarity_g		=>'0',			--Reset active low
+			pipeline_depth_g		=>4,
+			trig_frac_size_g		=>7				-- number of digits after dot = resolution of fracture (binary)
+
+	)
+	port map(
+			--Clock and Reset 
+			sys_clk				=>	system_clk,				-- clock
+			sys_rst				=>	system_rst,				-- Reset
+			req_trig			=>	bilinear_req_trig,			-- Trigger for image manipulation to begin,
+			--from img_manger
+			tl_pixel			=>        bilinear_tl_pixel,	
+			tr_pixel			=>        bilinear_tr_pixel,	
+			bl_pixel            =>        bilinear_bl_pixel,	
+			br_pixel            =>        bilinear_br_pixel,   
+			--from img_manger                
+			delta_row			=>        bilinear_delta_row,	
+			delta_col			=>        bilinear_delta_col,	
+             --result                     
+			pixel_valid			=>        bilinear_pixel_valid,
+			pixel_res			=>        bilinear_pixel_res	
+			
+	);
+
 	
 	gen_reg_type_inst	:	gen_reg 
 	generic map (
