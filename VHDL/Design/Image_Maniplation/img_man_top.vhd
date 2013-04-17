@@ -24,6 +24,7 @@ use ieee.math_real.all;
 
 library work ;
 
+
 entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
@@ -488,7 +489,15 @@ begin
 	y_start_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	
-
+	reset_proc: process ( system_rst)
+	begin
+		if (system_rst = reset_polarity_g) then
+			wbs_dat_o			<=(others => '0');
+			wbs_stall_o			<='0';						
+			wbs_ack_o			<='0';						
+			wbs_err_o			<='0';		
+		end if	;
+	end process reset_proc;	
 							
 --	---------------------------------------------------------------------------------------
 --	----------------------------	Bank value process	-----------------------------------
@@ -515,7 +524,12 @@ begin
 	
 	img_man_manager_inst : img_man_manager 
 	generic map 
-				(reset_polarity_g => reset_polarity_g)
+				(reset_polarity_g => reset_polarity_g,
+				display_hor_pixels_g=>display_ver_pixels_g,--works for old counter process
+				display_ver_pixels_g=>display_hor_pixels_g
+				--	display_hor_pixels_g=>display_hor_pixels_g,
+				--    display_ver_pixels_g=>display_ver_pixels_g
+				)
 	port map(
 			sys_clk				=>	system_clk,				-- clock
 			sys_rst				=>	system_rst,				-- Reset
@@ -592,11 +606,13 @@ begin
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
-			zoom_factor			=>	"000100000",
-			sin_teta			=>	"000000000",
-			cos_teta			=>	"010000000",                    
-			x_crop_start	 	=>	"00000011110",
-			y_crop_start		=>	"00000011101",
+			zoom_factor			=>	"010000000",
+			-- sin_teta			=>	"000000000",--0 degrees
+			-- cos_teta			=>	"010000000",
+			sin_teta			=>	"001101110",--60 degreed
+			cos_teta			=>	"001000000", 			
+			x_crop_start	 	=>	"00000000001",
+			y_crop_start		=>	"00000000001",
 			--row_idx_in			=>	"00100101101",
 			--col_idx_in			=>	"00100101101",
 			

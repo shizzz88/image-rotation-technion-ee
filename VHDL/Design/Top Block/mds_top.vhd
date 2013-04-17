@@ -102,14 +102,17 @@ constant num_of_wbm_y_c :	natural := 3;	--3 WBM to INTERCON Y	uri ran original 3
 component img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
-				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
-				img_ver_pixels_g	:	positive					:= 480	--480 active lines
+				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
+				img_ver_pixels_g	:	positive					:= 96;	-- active lines
+				trig_frac_size_g	: 	positive					:= 7 ;
+				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
+				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
 			);
 	port	(
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-        req_trig				  :	in std_logic;								-- Trigger for image manipulation to begin,
+				req_trig				  :	in std_logic;								-- Trigger for image manipulation to begin,
         
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -1175,10 +1178,13 @@ tx_path_inst: tx_path
 			);
 
 img_man_top_inst: img_man_top 
-		generic map(
-				reset_polarity_g 	=>	'0',
+	generic map(
+				reset_polarity_g 	 =>	'0',
 				img_hor_pixels_g	 =>128,	-- active pixels
-				img_ver_pixels_g	=> 96	-- active lines
+				img_ver_pixels_g	 => 96,	-- active lines
+				trig_frac_size_g	 => 7,
+				display_hor_pixels_g => 800,	--800 pixel in a coloum
+				display_ver_pixels_g => 600	--600 pixels in a row
 			)
 	port map(
 				--Clock and Reset
