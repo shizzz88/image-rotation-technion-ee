@@ -704,7 +704,7 @@ signal	img_rd_wbm_tga_o 		:   std_logic_vector (9 downto 0);		--Address Tag : Re
 signal	img_rd_wbm_cyc_o		:   std_logic;							--Cycle command from WBM
 signal	img_rd_wbm_tgc_o 		:   std_logic;							--Cycle tag. '1' indicates start of transaction
 signal	img_rd_wbm_stb_o		:   std_logic;							--Strobe command from WBM
-signal	img_rd_wbm_dat_i		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
+signal	img_rd_wbm_dat_i		:  std_logic_vector (7 downto 0);		--Data IN (8 bits)
 signal	img_rd_wbm_stall_i		:	std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 signal	img_rd_wbm_ack_i		:  std_logic;							--Input data has been successfuly acknowledged
 signal	img_rd_wbm_err_i		:  std_logic;	

@@ -110,7 +110,6 @@ architecture rtl_img_man_manager of img_man_manager is
 	constant mem_mng_type_reg_addr_c	:	std_logic_vector (9 downto 0)		:= "0000001101";	--Type register address
 	constant mem_mng_dbg_lsb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000010";	--dbg register address
 	constant mem_mng_dbg_msb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000011";	--Type register address
-	constant read_error_counter_c		:	std_logic_vector (6 downto 0):="1111111";				--number of cycles before skip pixel
 	constant file_name_g				:	string  	:= "img_mang_wb_test.txt";		--out file name
 --	###########################		Components		##############################	--
 	------------------------------	Types	------------------------------------
@@ -165,7 +164,6 @@ architecture rtl_img_man_manager of img_man_manager is
 	signal read_first			:	std_logic;
 	signal rd_adr_o_counter		:	std_logic_vector (9 downto 0);	
 	signal restart_bank		:	std_logic_vector (2 downto 0);
-	signal read_error_counter	:	std_logic_vector (6 downto 0);
 	--------------------------bilinear interpolation
 	signal en_bili_trig	:	std_logic;		-- bilinear
 	signal tl_pixel		:	std_logic_vector (7 downto 0);		--top left pixel, first pair
@@ -419,7 +417,6 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						read_first<='0';
 						rd_adr_o_counter<=	(others => '0');
 						restart_bank	<=	(others => '0');
-						read_error_counter<=	(others => '0');
 					end if;
 			--------------------------------------------------------------------------					
 				when write_type_reg_0x80_1_st =>
@@ -520,48 +517,21 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					if (rd_wbm_stall_i ='0' and rd_wbm_ack_i='0') then 
 						rd_adr_o_counter <= "0000000001";
 					end if;
-					if (read_error_counter=read_error_counter_c) then	--ack timeout
-						read_SDRAM_state <=read_idle_st;
-						finish_read_pxl <="00";
-					else 
-						read_error_counter <=read_error_counter+'1';
-						if (rd_wbm_ack_i='1') then		--recieve ack on read
-							rd_adr_o_counter <= rd_adr_o_counter +'1';
-							-- sample two pixel read from SDRAM
-							if (read_first='0')		then				--ack on top left
-								--rd_wbm_adr_o	<="0000000001"; 		--advance read address
-								tl_pixel	<= rd_wbm_dat_i;	
-								read_first	<='1';
-								read_SDRAM_state  <=wait_ack_1_st;
-							elsif (read_first='1' )	then				--ack on top right
-								--rd_wbm_adr_o	<="0000000010";			--advance read address						
-								tr_pixel	<= rd_wbm_dat_i;	
-								read_first	<='0';
-								read_SDRAM_state	<=	write_type_reg_0x00_1_st;
-								finish_read_pxl	<= "01";	-- finish first pixels pair
-								--write 0x00 to Type register in mem_mng	
-								wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-								wr_wbm_tga_o	<=	(others => '0');
-								wr_wbm_dat_o	<=	"00000000";
-								wr_wbm_cyc_o	<=	'1';
-								wr_wbm_stb_o	<=	'1';
-								wr_wbm_we_o		<=	'1';
-								wr_wbm_tgc_o	<=	'1';
-								rd_wbm_tgc_o	<=	'1';--for restart from start of bank
-								restart_bank	<=	(others => '0');
-							end if;
-						else
-							finish_read_pxl	<=	"00";
-							read_SDRAM_state<=	wait_ack_1_st;
-						end if;	
-					end if;
-			--------------------------------------------------------------------------		
-				when write_type_reg_0x00_1_st	=>
-						read_error_counter	<=	(others => '0');
-						if (rd_wbm_ack_i='1') then
-							rd_adr_o_counter <= rd_adr_o_counter +'1';
-						end if;
-						if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+
+					if (rd_wbm_ack_i='1') then		--recieve ack on read
+						rd_adr_o_counter <= rd_adr_o_counter +'1';
+						-- sample two pixel read from SDRAM
+						if (read_first='0')		then				--ack on top left
+							--rd_wbm_adr_o	<="0000000001"; 		--advance read address
+							tl_pixel	<= rd_wbm_dat_i;	
+							read_first	<='1';
+							read_SDRAM_state  <=wait_ack_1_st;
+						elsif (read_first='1' )	then				--ack on top right
+							--rd_wbm_adr_o	<="0000000010";			--advance read address						
+							tr_pixel	<= rd_wbm_dat_i;	
+							read_first	<='0';
+							read_SDRAM_state	<=	write_type_reg_0x00_1_st;
+							finish_read_pxl	<= "01";	-- finish first pixels pair
 							--write 0x00 to Type register in mem_mng	
 							wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
 							wr_wbm_tga_o	<=	(others => '0');
@@ -570,37 +540,57 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 							wr_wbm_stb_o	<=	'1';
 							wr_wbm_we_o		<=	'1';
 							wr_wbm_tgc_o	<=	'1';
-						elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
-							read_SDRAM_state <= prepare_for_second_pair_st;
-							wr_wbm_adr_o	<=	(others => '0');
-							wr_wbm_tga_o	<=	(others => '0');
-							wr_wbm_dat_o	<=	"00000000";
-							wr_wbm_cyc_o	<=	'0';
-							wr_wbm_stb_o	<=	'0';
-							wr_wbm_we_o		<=	'0';
-							wr_wbm_tgc_o	<=	'0';
-						end if;					
+							rd_wbm_tgc_o	<=	'1';--for restart from start of bank
+							restart_bank	<=	(others => '0');
+						end if;
+					else
+						finish_read_pxl	<=	"00";
+						read_SDRAM_state<=	wait_ack_1_st;
+					end if;	
+			--------------------------------------------------------------------------		
+				when write_type_reg_0x00_1_st	=>
+					if (rd_wbm_ack_i='1') then
+						rd_adr_o_counter <= rd_adr_o_counter +'1';
+					end if;
+					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						--write 0x00 to Type register in mem_mng	
+						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						wr_wbm_tga_o	<=	(others => '0');
+						wr_wbm_dat_o	<=	"00000000";
+						wr_wbm_cyc_o	<=	'1';
+						wr_wbm_stb_o	<=	'1';
+						wr_wbm_we_o		<=	'1';
+						wr_wbm_tgc_o	<=	'1';
+					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						read_SDRAM_state <= prepare_for_second_pair_st;
+						wr_wbm_adr_o	<=	(others => '0');
+						wr_wbm_tga_o	<=	(others => '0');
+						wr_wbm_dat_o	<=	"00000000";
+						wr_wbm_cyc_o	<=	'0';
+						wr_wbm_stb_o	<=	'0';
+						wr_wbm_we_o		<=	'0';
+						wr_wbm_tgc_o	<=	'0';
+					end if;					
 			--------------------------------------------------------------------------		
 				when prepare_for_second_pair_st =>
-						rd_wbm_tgc_o	<=	'1';--for restart from start of bank
-						rd_wbm_tga_o 	<=	"0000000000";	                                  
-						rd_wbm_cyc_o	<=	'1';	                                          
-						rd_wbm_stb_o	<=	'0';                                              
-                                    
-						wr_wbm_adr_o	<=	(others => '0');                                  
-						wr_wbm_tga_o	<=	(others => '0');                                  	
-						wr_wbm_dat_o	<=	(others => '0');                                  
-						wr_wbm_cyc_o	<=	'0';                                              
-						wr_wbm_stb_o	<=	'0';                                              
-						wr_wbm_we_o		<=	'0';                                              
-						wr_wbm_tgc_o	<=	'0';                                              
-						read_error_counter<=	(others => '0');  
-						if (	restart_bank=restart_bank_c) then
-							read_SDRAM_state <= write_type_reg_0x80_2_st;
-						else
-							read_SDRAM_state <= prepare_for_second_pair_st;
-							restart_bank	<=	restart_bank+'1';
-						end if;
+					rd_wbm_tgc_o	<=	'1';--for restart from start of bank
+					rd_wbm_tga_o 	<=	"0000000000";	                                  
+					rd_wbm_cyc_o	<=	'1';	                                          
+					rd_wbm_stb_o	<=	'0';                                              
+                                
+					wr_wbm_adr_o	<=	(others => '0');                                  
+					wr_wbm_tga_o	<=	(others => '0');                                  	
+					wr_wbm_dat_o	<=	(others => '0');                                  
+					wr_wbm_cyc_o	<=	'0';                                              
+					wr_wbm_stb_o	<=	'0';                                              
+					wr_wbm_we_o		<=	'0';                                              
+					wr_wbm_tgc_o	<=	'0';                                              
+					if (	restart_bank=restart_bank_c) then
+						read_SDRAM_state <= write_type_reg_0x80_2_st;
+					else
+						read_SDRAM_state <= prepare_for_second_pair_st;
+						restart_bank	<=	restart_bank+'1';
+					end if;
 			--------------------------------------------------------------------------			
 				when write_type_reg_0x80_2_st => 
 					rd_wbm_tgc_o	<=	'0';
@@ -705,33 +695,27 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					if (rd_wbm_stall_i ='0' and rd_wbm_ack_i='0') then 
 						rd_adr_o_counter <= "0000000001";
 					end if;
-					if (read_error_counter=read_error_counter_c) then      --ack timeout
-						read_SDRAM_state <=read_idle_st;
-						finish_read_pxl <="01";
-					else 
-						read_error_counter <=read_error_counter+'1';
-						if (rd_wbm_ack_i='1') then			-- recieve ack on read
-							rd_adr_o_counter <= rd_adr_o_counter +'1';
-							-- sample two pixel read from SDRAM
-							if (read_first='0')		then					--ack on bottom left
-								finish_read_pxl	<=	"01";
-								read_SDRAM_state		<=	wait_ack_2_st;							
-								bl_pixel	<= rd_wbm_dat_i;	
-								read_first	<='1';
-							elsif (read_first='1')	then					-- ack on bottom right
-								br_pixel	<= rd_wbm_dat_i;	
-								read_first	<='0';
-								finish_read_pxl	<= "11";					-- finish second pixels pair
-								read_SDRAM_state	<=	write_type_reg_0x00_2_st;
-							end if;
-						else
+
+					if (rd_wbm_ack_i='1') then			-- recieve ack on read
+						rd_adr_o_counter <= rd_adr_o_counter +'1';
+						-- sample two pixel read from SDRAM
+						if (read_first='0')		then					--ack on bottom left
 							finish_read_pxl	<=	"01";
-							read_SDRAM_state		<=	wait_ack_2_st;
-						end if;							
-					end if;
+							read_SDRAM_state		<=	wait_ack_2_st;							
+							bl_pixel	<= rd_wbm_dat_i;	
+							read_first	<='1';
+						elsif (read_first='1')	then					-- ack on bottom right
+							br_pixel	<= rd_wbm_dat_i;	
+							read_first	<='0';
+							finish_read_pxl	<= "11";					-- finish second pixels pair
+							read_SDRAM_state	<=	write_type_reg_0x00_2_st;
+						end if;
+					else
+						finish_read_pxl	<=	"01";
+						read_SDRAM_state		<=	wait_ack_2_st;
+					end if;							
 			--------------------------------------------------------------------------		
 				when write_type_reg_0x00_2_st	=>
-						read_error_counter <=	(others => '0');
 						if (rd_wbm_ack_i='1') then			-- recieve ack on read
 							rd_adr_o_counter <= rd_adr_o_counter +'1';
 						end if;
@@ -807,10 +791,17 @@ bili_proc : process (sys_clk,sys_rst)
 
 			
 		elsif rising_edge(sys_clk) then
+			--ugly undefined problem fix
 			-- if (tl_pixel/="XXXXXXXX") then
 				-- bili_tl_pixel	<=  tl_pixel;
 			-- else
 				-- bili_tl_pixel	<=  tr_pixel;
+			-- end if;
+			
+			-- if (bl_pixel/="XXXXXXXX") then
+				-- bili_bl_pixel	<=  bl_pixel;
+			-- else
+				-- bili_bl_pixel	<=  br_pixel;
 			-- end if;
 			bili_tl_pixel	<=  tl_pixel;
 			bili_tr_pixel	<=  tr_pixel;

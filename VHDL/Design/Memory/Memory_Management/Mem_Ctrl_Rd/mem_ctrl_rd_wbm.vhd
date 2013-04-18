@@ -189,7 +189,7 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 			wbm_cur_st		<= wbm_idle_st;
             wbm_tga_o		<= (others => '0');
 			cur_rd_addr		<= (others => '0');
-			ram_addr_in_i	<= (others => '0');
+			ram_addr_in_i	<= (others => '0');  
 			ram_words_left	<= (others => '0');
             wbm_cyc_internal<= '0';
 			wbm_stb_internal<= '0';
@@ -204,7 +204,7 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 					wbm_tga_o		<= (others => '0');
 					wbm_cyc_internal<= '0';
 					wbm_stb_internal<= '0';
-					ram_addr_in_i	<= (others => '0');
+					ram_addr_in_i	<= (others => '0'); 
 					ram_words_cnt	<= (others => '0');
 
 					ram_words_left	<= ram_words_in;		--Latch number of words in RAM
@@ -311,7 +311,8 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 							ram_words_cnt	<= ram_words_cnt;
 						end if;
 					end if;
-					
+
+							
 				when wbm_wait_burst_st =>
 
 					cur_rd_addr		<= cur_rd_addr;
@@ -382,7 +383,8 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 					wbm_tga_o		<= (others => '0');
 					wbm_cyc_internal<= '0';
 					wbm_stb_internal<= '0';
-					ram_addr_in_i	<= (others => '0');
+					ram_addr_in_i	<= (others => '0'); 
+					
 					ram_words_left	<= ram_words_left;
 					ram_words_cnt	<= (others => '0');
 
