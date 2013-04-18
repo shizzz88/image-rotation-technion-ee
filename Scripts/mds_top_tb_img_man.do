@@ -26,5 +26,5 @@ add wave  -radix hexadecimal  -group Image_Manipulation_Top -group Manager sim:/
 add wave  -radix hexadecimal  -group Image_Manipulation_Top -group Address_Calculator sim:/mds_top_tb/mds_top_inst/img_man_top_inst/addr_calc_inst/*
 add wave  -radix hexadecimal  -group Image_Manipulation_Top -group Bilinear sim:/mds_top_tb/mds_top_inst/img_man_top_inst/bilinear_inst/*
 
-run 125 ms
+run 100 ms
 

@@ -489,16 +489,7 @@ begin
 	y_start_reg_rd_en(0)	<=	'1' when (conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c) and (reg_rd_en = '1')
 						else '0';
 	
-	reset_proc: process ( system_rst)
-	begin
-		if (system_rst = reset_polarity_g) then
-			wbs_dat_o			<=(others => '0');
-			wbs_stall_o			<='0';						
-			wbs_ack_o			<='0';						
-			wbs_err_o			<='0';		
-		end if	;
-	end process reset_proc;	
-							
+
 --	---------------------------------------------------------------------------------------
 --	----------------------------	Bank value process	-----------------------------------
 --	---------------------------------------------------------------------------------------
