@@ -598,10 +598,12 @@ begin
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
 			zoom_factor			=>	"010000000",
-			-- sin_teta			=>	"000000000",--0 degrees
-			-- cos_teta			=>	"010000000",
-			sin_teta			=>	"001101110",--60 degreed
-			cos_teta			=>	"001000000", 			
+			 sin_teta			=>	"000000000",--0 degrees
+			 cos_teta			=>	"010000000",
+			--sin_teta			=>	"001101110",--60 degree
+			--cos_teta			=>	"001000000",
+			--sin_teta			=>	"010000000",--90 degree
+			--cos_teta			=>	"000000000",
 			x_crop_start	 	=>	"00000000001",
 			y_crop_start		=>	"00000000001",
 			--row_idx_in			=>	"00100101101",

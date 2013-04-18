@@ -791,18 +791,6 @@ bili_proc : process (sys_clk,sys_rst)
 
 			
 		elsif rising_edge(sys_clk) then
-			--ugly undefined problem fix
-			-- if (tl_pixel/="XXXXXXXX") then
-				-- bili_tl_pixel	<=  tl_pixel;
-			-- else
-				-- bili_tl_pixel	<=  tr_pixel;
-			-- end if;
-			
-			-- if (bl_pixel/="XXXXXXXX") then
-				-- bili_bl_pixel	<=  bl_pixel;
-			-- else
-				-- bili_bl_pixel	<=  br_pixel;
-			-- end if;
 			bili_tl_pixel	<=  tl_pixel;
 			bili_tr_pixel	<=  tr_pixel;
 			bili_bl_pixel   <=  bl_pixel;
