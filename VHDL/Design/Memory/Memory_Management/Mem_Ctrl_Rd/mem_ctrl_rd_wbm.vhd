@@ -21,6 +21,7 @@
 -- Revision:
 --			Number		Date		Name					Description			
 --			1.00		19.4.2011	Beeri Schreiber			Creation
+--			1.1			19.4.2013	Uri and Ran				ram_ready_sr_proc updated to 4 stage shift register to support debug mode for image manipulation
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
@@ -109,7 +110,7 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
   ---------------------------------  Signals	----------------------------------
 	--General signals
 	signal ram_ready_i		:	std_logic;							--Internal RAM Ready
-	signal ram_ready_sr		:	std_logic_vector (3 downto 0);		--Shift Register of RAM_Ready_i
+	signal ram_ready_sr		:	std_logic_vector (4 downto 0);		--Shift Register of RAM_Ready_i
 	signal ack_i_cnt		:	natural range 0 to 256;				--Number of expected WBM_ACK_I
 	signal err_i_status		:	std_logic;							--WBM_ERR_I has been received
 	signal neg_cyc_bool		:	boolean;							--TRUE: Negate NOW (At this clock) WBM_CYC_O, FALSE otherwise
@@ -554,8 +555,8 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 		if (rst = reset_polarity_g) then
 			ram_ready_sr		<= (others => '0');
 		elsif rising_edge (clk_i) then
-			ram_ready_sr (2 downto 0)	<= ram_ready_sr (3 downto 1);
-			ram_ready_sr (3)			<= ram_ready_i;
+			ram_ready_sr (3 downto 0)	<= ram_ready_sr (4 downto 1);
+			ram_ready_sr (4)			<= ram_ready_i;
 		end if;
 	end process ram_ready_sr_proc;
 

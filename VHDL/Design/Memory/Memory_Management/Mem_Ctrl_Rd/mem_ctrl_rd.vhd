@@ -249,9 +249,6 @@ end component mem_ctrl_rd_wbm;
 	-- Hanshake with RAM
 	signal ram_addr_out		:	std_logic_vector (9 downto 0);		--Current read address from RAM
 	--signal ram_aout_val		:	std_logic;							--Read address from RAM is valid
-		
-	signal ram_addr_in1		:	std_logic_vector (8 downto 0);		--Write address to RAM
-
 	signal ram_addr_in		:	std_logic_vector (8 downto 0);		--Write address to RAM
 	signal ram_data_in		:	std_logic_vector (15 downto 0);		--Data to RAM (Before swap)
 	signal ram_data_in_swap	:	std_logic_vector (15 downto 0);		--Data to RAM (Swapped)
@@ -259,15 +256,6 @@ end component mem_ctrl_rd_wbm;
 	signal ram_din_valid	:	std_logic;							--'1' when data to RAM is valid
 	signal ram_rst			:	std_logic;							--RAM Reset
 	
-	
-	-------------------------cheat debug mode-----------------------
-	signal 	wbs_ack_o_local		: std_logic;
-	signal  second_pair 		: std_logic;
-	signal	first_done			:	std_logic;
-	signal  wbs_dat_o_local		:std_logic_vector (7 downto 0);
-	signal  first_pixel			:std_logic_vector (7 downto 0);
-	signal  second_pixel		:std_logic_vector (7 downto 0);
-
   ---------------------------------  Implementation	------------------------------
   begin
 	--Process to RAM Reset
@@ -278,11 +266,7 @@ end component mem_ctrl_rd_wbm;
 	--Swap output data so MSB will be written first
 	ram_data_out_swap_proc:
 	ram_data_in_swap(15 downto 0)	<=	ram_data_in (7 downto 0) & ram_data_in (15 downto 8);
-  
-  -- change ram start address for debug mode
-  dbg_ram_addr_proc:
-  --ram_addr_in1<= "000000001" when (type_reg_wbm(0))='1' else 	 ram_addr_in;
-  ram_addr_in1<=ram_addr_in;
+
 	--Generic RAM: 16 bits input, 8 bits output
 	ram1_inst: 	altera_16to8_dc_ram
 				port map
@@ -292,7 +276,7 @@ end component mem_ctrl_rd_wbm;
 					rdaddress	=>	ram_addr_out,
 					rdclock		=>	clk_sys,
 					--rden		=>	ram_aout_val,
-					wraddress	=>	ram_addr_in1 ,
+					wraddress	=>	ram_addr_in,
 					wrclock		=>	clk_sdram,
 					wren		=>	ram_din_valid,
 					q			=>	ram_dout
@@ -313,9 +297,9 @@ end component mem_ctrl_rd_wbm;
 					wbs_cyc_i	    =>	wbs_cyc_i	,
 					wbs_tgc_i	    =>	wbs_tgc_i	,
 					wbs_stb_i	    =>	wbs_stb_i	,
-					wbs_dat_o	    =>	wbs_dat_o_local	,
+					wbs_dat_o	    =>	wbs_dat_o	,
 					wbs_stall_o	    =>	wbs_stall_o	,
-					wbs_ack_o	    =>	wbs_ack_o_local	,
+					wbs_ack_o	    =>	wbs_ack_o	,
 					wbs_err_o	    =>	wbs_err_o	,
 					                
 					type_reg		=>	type_reg,
@@ -508,37 +492,5 @@ end component mem_ctrl_rd_wbm;
 		end if;
 	end process ram_ready_flt_proc;
 	
-	---------------------------------------------------------------------------------
-	wbs_ack_o<=wbs_ack_o_local;
-	debug_skip_ram_proc: process (clk_sys, rst_sdram) 	
-	begin
-		if  (rst_sys = reset_polarity_g) then
-			second_pair<='0';
-			first_done<='0';
-			second_pixel<=	(others => '0');
-			first_pixel<=	(others => '0');
-		elsif rising_edge (clk_sys) then
-			if (type_reg(0)='1' and type_reg(7)='1' ) then		--debug mode image manipulation
-				if (wbm_ack_i ='1' and second_pair='0') then--skip first pair of pixels
-					second_pair		<='1';
-				
-				elsif (wbm_ack_i ='1' and second_pair='1') then	
-					first_pixel		<=wbm_dat_i(7 downto 0);
-					second_pixel	<=wbm_dat_i(15 downto 8);
-					second_pair		<='0';
-				end if;
-				
-				if (wbs_ack_o_local='1' and first_done='0')	then
-					wbs_dat_o <= first_pixel;
-					first_done<='1';
-				elsif (wbs_ack_o_local='1' and first_done='1')	then
-					wbs_dat_o <=second_pixel;
-					first_done<='0';
-				end if;	
-			else --not debug mode
-				wbs_dat_o<=wbs_dat_o_local;
-			end if	;
-		end if;	
-	end process	debug_skip_ram_proc	;
 		
 end architecture rtl_mem_ctrl_rd;
