@@ -597,15 +597,15 @@ begin
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
-			zoom_factor			=>	"010000000",
-			 sin_teta			=>	"000000000",--0 degrees
-			 cos_teta			=>	"010000000",
-			--sin_teta			=>	"001101110",--60 degree
-			--cos_teta			=>	"001000000",
+			zoom_factor			=>	"000100000",--0.25 zoom
+			 --sin_teta			=>	"000000000",--0 degrees
+			 --cos_teta			=>	"010000000",
+			sin_teta			=>	"001101110",--60 degree
+			cos_teta			=>	"001000000",
 			--sin_teta			=>	"010000000",--90 degree
 			--cos_teta			=>	"000000000",
-			x_crop_start	 	=>	"00000000001",
-			y_crop_start		=>	"00000000001",
+			x_crop_start	 	=>	"00000001001",
+			y_crop_start		=>	"00000010001",
 			--row_idx_in			=>	"00100101101",
 			--col_idx_in			=>	"00100101101",
 			

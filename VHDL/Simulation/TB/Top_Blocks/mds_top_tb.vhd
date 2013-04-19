@@ -22,9 +22,9 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top_tb is
 	generic (
-			uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
-			--uart_tx_delay_g		:	positive	:= 1333333333;			--Clock cycles between two transmissions
-			file_max_idx_g		:	positive 	:= 2				-- uri ran Maximum file index
+			--uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
+			uart_tx_delay_g		:	positive	:= 1333333333;			--Clock cycles between two transmissions
+			file_max_idx_g		:	positive 	:= 1				-- uri ran Maximum file index
 		);
 end entity mds_top_tb;
 
@@ -261,16 +261,16 @@ rst_100	<=	'0', '1' after 20 ns;
 rst_proc3:
 rst_40	<=	'0', '1' after 20 ns;
 
---img_man_trigger_proc: process
---begin
---  
---  img_man_trigger <= '0';
---    wait for 5 ms;
---		img_man_trigger <= '1';
---	wait for 10 ns;
---		img_man_trigger <= '0';
---	wait;
--- end process;
+img_man_trigger_proc: process
+begin
+ 
+ img_man_trigger <= '0';
+   wait for 30 ms;
+		img_man_trigger <= '1';
+	wait for 10 ns;
+		img_man_trigger <= '0';
+	wait;
+end process;
 
 uart_gen_inst :  uart_tx_gen_model generic map (
 			file_name_g			=> "p:/uart_tx", 		--File name to be transmitted

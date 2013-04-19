@@ -346,8 +346,19 @@ addr_calc_proc : process (sys_clk,sys_rst)
 			end if;	
 			addr_row_idx_in		<=  row_idx_sig;	--from coord calc process to address calc
 			addr_col_idx_in		<=  col_idx_sig;	--from coord calc process to address calc
-			addr_calc_tl		<=  '0' & addr_tl_out(22 downto 1);
-			addr_calc_bl		<=  '0' & addr_bl_out(22 downto 1);
+			--debbug
+			if (addr_tl_out(8 downto 1)= "11111111") then
+				addr_calc_tl		<=  '0' & addr_tl_out(22 downto 2)& '0';
+			else
+				addr_calc_tl		<=  '0' & addr_tl_out(22 downto 1);
+			end if;
+			if (addr_bl_out(8 downto 1)= "11111111") then
+				addr_calc_bl		<=  '0' & addr_bl_out(22 downto 2)& '0';
+			else
+				addr_calc_bl		<=  '0' & addr_bl_out(22 downto 1);
+			end if;
+			--addr_calc_tl		<=  '0' & addr_tl_out(22 downto 1);
+			--addr_calc_bl		<=  '0' & addr_bl_out(22 downto 1);
 			addr_calc_d_row		<=  addr_delta_row_out;	                
 			addr_calc_d_col		<=  addr_delta_col_out; 
 			addr_calc_oor		<=  addr_out_of_range;
@@ -507,7 +518,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						wr_wbm_we_o		<=	'0';
 						wr_wbm_tgc_o	<=	'0';							
 						read_first<='0';
-					end if;						
+					end if;	
 			--------------------------------------------------------------------------			
 				when wait_ack_1_st =>
 					rd_wbm_tga_o 	<=	"0000000010";	
@@ -517,8 +528,9 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					if (rd_wbm_stall_i ='0' and rd_wbm_ack_i='0') then 
 						rd_adr_o_counter <= "0000000001";
 					end if;
+					
 
-					if (rd_wbm_ack_i='1') then		--recieve ack on read
+					if (rd_wbm_ack_i='1') then		--recieve ack on read						
 						rd_adr_o_counter <= rd_adr_o_counter +'1';
 						-- sample two pixel read from SDRAM
 						if (read_first='0')		then				--ack on top left
@@ -546,7 +558,8 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					else
 						finish_read_pxl	<=	"00";
 						read_SDRAM_state<=	wait_ack_1_st;
-					end if;	
+					end if;
+					
 			--------------------------------------------------------------------------		
 				when write_type_reg_0x00_1_st	=>
 					if (rd_wbm_ack_i='1') then
@@ -685,7 +698,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						wr_wbm_we_o		<=	'0';
 						wr_wbm_tgc_o	<=	'0';							
 						read_first<='0';
-					end if;		
+					end if;
 			--------------------------------------------------------------------------	
 				when wait_ack_2_st =>
 					rd_wbm_tga_o 	<=	"0000000010";	
@@ -696,7 +709,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						rd_adr_o_counter <= "0000000001";
 					end if;
 
-					if (rd_wbm_ack_i='1') then			-- recieve ack on read
+					if (rd_wbm_ack_i='1') then			-- recieve ack on read						
 						rd_adr_o_counter <= rd_adr_o_counter +'1';
 						-- sample two pixel read from SDRAM
 						if (read_first='0')		then					--ack on bottom left
@@ -713,7 +726,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					else
 						finish_read_pxl	<=	"01";
 						read_SDRAM_state		<=	wait_ack_2_st;
-					end if;							
+					end if;
 			--------------------------------------------------------------------------		
 				when write_type_reg_0x00_2_st	=>
 						if (rd_wbm_ack_i='1') then			-- recieve ack on read
@@ -817,38 +830,7 @@ bili_proc : process (sys_clk,sys_rst)
 -- reset will set the coordinates at (0,0)
 -- init will set the coordinates at (1,1)
 ---------------------------------------------------------------------------------------	
--- --new correct process - row build - not working
--- coord_proc : process (sys_clk,sys_rst)			
-	-- begin
-		-- if (sys_rst =reset_polarity_g) then	
-			-- finish_image <='0';
-			-- row_idx_sig <=(others => '0');
-			-- col_idx_sig <=(others => '0');
-		-- elsif rising_edge(sys_clk) then
-			-- if (cur_st=fsm_idle_st) then 						--initialize row and col counter
-				-- row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');				--row starts with 0d1
-				-- row_idx_sig(0)<='1';					
-				-- col_idx_sig<=(others => '0');			--col starts with 0d0 
-				-- finish_image <='0';
-			-- elsif (cur_st=fsm_increment_coord_st)  then			--increment row if possible, else move to new col
-				-- if (col_idx_sig<display_hor_pixels_g) then
-						-- col_idx_sig<=col_idx_sig+1;
-						-- finish_image <='0';
-				-- else
-					-- if (row_idx_sig< display_ver_pixels_g) then --increment row
-						-- col_idx_sig(col_idx_sig'left downto 1) <=(others => '0');
-						-- col_idx_sig(0)<='1';
-						-- row_idx_sig<=row_idx_sig+1;
-					-- end if;	
-				-- end if;
-			-- elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=display_hor_pixels_g) and (row_idx_sig=display_ver_pixels_g) then
-				-- finish_image <='1';
-			-- end if;
-		-- end if;	
--- end process coord_proc;
-
--- old process
--- coloum build - working display_hor_pixels_g=600  		display_ver_pixels_g=800
+--new correct process - row build - not working
 coord_proc : process (sys_clk,sys_rst)			
 	begin
 		if (sys_rst =reset_polarity_g) then	
@@ -856,27 +838,58 @@ coord_proc : process (sys_clk,sys_rst)
 			row_idx_sig <=(others => '0');
 			col_idx_sig <=(others => '0');
 		elsif rising_edge(sys_clk) then
-			if (cur_st=fsm_idle_st) then 				--initialize row and col counter
-				row_idx_sig <=(others => '0');
-				col_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --col starts with 0d1 
-				col_idx_sig(0)<='1';	
+			if (cur_st=fsm_idle_st) then 						--initialize row and col counter
+				row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');				--row starts with 0d1
+				row_idx_sig(0)<='1';					
+				col_idx_sig<=(others => '0');			--col starts with 0d0 
 				finish_image <='0';
-			elsif (cur_st=fsm_increment_coord_st)  then	--increment row if possible, else move to new col
-				if (row_idx_sig< display_ver_pixels_g) then --increment row
-					row_idx_sig<=row_idx_sig+1;
-					finish_image <='0';
-				else  	--(row_idx_sig == display_ver_pixels_g) -> co is over, move to new col
-					if (col_idx_sig<display_hor_pixels_g) then
-						row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
-						row_idx_sig(0)<='1';
+			elsif (cur_st=fsm_increment_coord_st)  then			--increment row if possible, else move to new col
+				if (col_idx_sig<display_hor_pixels_g) then
 						col_idx_sig<=col_idx_sig+1;
+						finish_image <='0';
+				else
+					if (row_idx_sig< display_ver_pixels_g) then --increment row
+						col_idx_sig(col_idx_sig'left downto 1) <=(others => '0');
+						col_idx_sig(0)<='1';
+						row_idx_sig<=row_idx_sig+1;
 					end if;	
 				end if;
 			elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=display_hor_pixels_g) and (row_idx_sig=display_ver_pixels_g) then
 				finish_image <='1';
 			end if;
 		end if;	
-end process coord_proc;							
+end process coord_proc;
+
+-- -- old process
+-- -- coloum build - working display_hor_pixels_g=600  		display_ver_pixels_g=800
+-- coord_proc : process (sys_clk,sys_rst)			
+	-- begin
+		-- if (sys_rst =reset_polarity_g) then	
+			-- finish_image <='0';
+			-- row_idx_sig <=(others => '0');
+			-- col_idx_sig <=(others => '0');
+		-- elsif rising_edge(sys_clk) then
+			-- if (cur_st=fsm_idle_st) then 				--initialize row and col counter
+				-- row_idx_sig <=(others => '0');
+				-- col_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --col starts with 0d1 
+				-- col_idx_sig(0)<='1';	
+				-- finish_image <='0';
+			-- elsif (cur_st=fsm_increment_coord_st)  then	--increment row if possible, else move to new col
+				-- if (row_idx_sig< display_ver_pixels_g) then --increment row
+					-- row_idx_sig<=row_idx_sig+1;
+					-- finish_image <='0';
+				-- else  	--(row_idx_sig == display_ver_pixels_g) -> co is over, move to new col
+					-- if (col_idx_sig<display_hor_pixels_g) then
+						-- row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
+						-- row_idx_sig(0)<='1';
+						-- col_idx_sig<=col_idx_sig+1;
+					-- end if;	
+				-- end if;
+			-- elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=display_hor_pixels_g) and (row_idx_sig=display_ver_pixels_g) then
+				-- finish_image <='1';
+			-- end if;
+		-- end if;	
+-- end process coord_proc;							
 --	###########################		Instances		##############################	--
 
 
