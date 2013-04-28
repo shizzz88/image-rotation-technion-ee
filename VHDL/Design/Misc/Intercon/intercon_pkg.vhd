@@ -11,6 +11,7 @@
 -- Revision :
 --			Number		Date		Name				Description
 --			1.00		23.04.2012	Beeri Schreiber		Creation
+--			1.1			28.04.2013	Uri Tsipin			added support for image manipulation registers
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
@@ -51,7 +52,9 @@ package body intercon_pkg is
 							
 						when 9 | 10 | 11 | 12 | 15 =>	--tx_path
 							return 2;
-							
+						when 16| 17| 19| 21| 23| 25 => 	--image_manipulation
+							return 3;
+						
 						when others =>
 							report "INTERCON (" & id & "): Unknown INTERCON address: 0x" & integer'image(adrint)
 							severity failure;

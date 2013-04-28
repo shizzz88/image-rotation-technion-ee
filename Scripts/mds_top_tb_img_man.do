@@ -45,9 +45,6 @@ configure wave -timelineunits ps
 update
 WaveRestoreZoom {0 ps} {5250 us}
 
-run 53 ms
-force -freeze sim:/mds_top_tb/mds_top_inst/mem_mng_inst/bank_switch 1 0
-run 7.5 ns
-noforce sim:/mds_top_tb/mds_top_inst/mem_mng_inst/bank_switch
-run 14 ms
+run 83 ms
+
 
