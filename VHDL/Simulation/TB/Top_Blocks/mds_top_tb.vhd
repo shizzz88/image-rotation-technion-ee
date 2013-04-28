@@ -266,7 +266,7 @@ img_man_trigger_proc: process
 begin
  
  img_man_trigger <= '0';
-   wait for 51 ms;
+   wait for 28 ms;
 		img_man_trigger <= '1';
 	wait for 10 ns;
 		img_man_trigger <= '0';

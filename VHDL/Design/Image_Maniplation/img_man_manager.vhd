@@ -117,14 +117,16 @@ architecture rtl_img_man_manager of img_man_manager is
     constant col_start	                :	signed(col_bits_c downto 0):= to_signed( col_start_int,col_bits_c+1);	
     constant col_end	                :	signed(col_bits_c downto 0):= to_signed( col_end_int,  col_bits_c+1);
 
-		constant restart_bank_c				:	std_logic_vector (2 downto 0) 	:= "110";--number of cycles for restart enable 
+	constant restart_bank_c				:	std_logic_vector (2 downto 0) 	:= "110";--number of cycles for restart enable 
 
 	constant mem_mng_type_reg_addr_c	:	std_logic_vector (9 downto 0)		:= "0000001101";	--Type register address
-	constant mem_mng_dbg_lsb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000010";	--dbg register address
-	constant mem_mng_dbg_msb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000011";	--Type register address
+	constant mem_mng_dbg_lsb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000010";	--dbg register address(ls Byte)
+	constant mem_mng_dbg_msb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000011";	--dbg register address(2nd Byte)
+	constant mem_mng_dbg_bank_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000100";	--dbg register address(bank Byte)
+
 	constant file_name_g				:	string  	:= "img_mang_wb_test.txt";		--out file name
 
-	constant wb_burst_length_c			:	std_logic_vector 	:= "0011111111"; --length of burst for write back to SDRAM (0xFF)(0d255)
+	constant wb_burst_length_c			:	std_logic_vector 	(9 downto 0):= "1111111111";--"0011111111"; --length of burst for write back to SDRAM (0xFF)(0d255)
 	--	###########################		Components		##############################	--
 component ram_generic is
 	generic (
@@ -226,15 +228,15 @@ end component ram_generic;
 	--------------------------WB to SDRAM
 	signal RAM_is_full	: std_logic;	
 	signal wb_start_address		:std_logic_vector(22 downto 0);
-	signal ram_addr_counter		:std_logic_vector(7 downto 0);
+	signal ram_addr_counter		:std_logic_vector(wb_burst_length_c'left downto 0);
 	file out_file				: TEXT open write_mode is file_name_g;
 	signal write_SDRAM_state 	:	write_states;
-	signal wr_adr_o				:std_logic_vector(9 downto 0);
+	signal wr_adr_o				:std_logic_vector(wb_burst_length_c'left downto 0);
 	signal en_write_proc        : std_logic;	
 	signal finish_write_proc	: std_logic;
 
-	signal ram_addr_in 			:std_logic_vector(7 downto 0);	
-	signal ram_addr_out 		:std_logic_vector(7 downto 0);
+	signal ram_addr_in 			:std_logic_vector(wb_burst_length_c'left downto 0);	
+	signal ram_addr_out 		:std_logic_vector(wb_burst_length_c'left downto 0);
 	signal ram_addr_out_valid	:std_logic;
 	signal ram_din			    :std_logic_vector(7 downto 0);
 	signal ram_din_valid		:std_logic;
@@ -294,6 +296,7 @@ wr_wbm_tgc_o	<=  w_wr_wbm_tgc_o	 when en_write_proc='1' else    r_wr_wbm_tgc_o	;
 			------------------------------Idle State--------------------------------- --
 				when fsm_idle_st =>
 					if (req_trig='1')  then
+						report "Start of Image Manipulation  Time: " & time'image(now) severity note;
 						cur_st	<= 	fsm_increment_coord_st;
 					else
 						cur_st 	<= 	fsm_idle_st;	
@@ -304,6 +307,7 @@ wr_wbm_tgc_o	<=  w_wr_wbm_tgc_o	 when en_write_proc='1' else    r_wr_wbm_tgc_o	;
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
 					if (finish_image = '1') then  			-- image is complete, back to idle
+						report "End of Image Manipulation  Time: " & time'image(now) severity note;
 						cur_st	<=	fsm_idle_st;
 					else
 						cur_st 	<= 	fsm_address_calc_st;	-- finish calculate index 
@@ -410,7 +414,7 @@ wr_wbm_tgc_o	<=  w_wr_wbm_tgc_o	 when en_write_proc='1' else    r_wr_wbm_tgc_o	;
 				when write_idle_st =>
 				
 					if ((en_write_proc='1') and (finish_write_proc ='0') )  then
-						write_SDRAM_state	<= 	write_wb_addr_lsb_st;
+						write_SDRAM_state	<= 	write_type_reg_0x01_1_st;
 						--finish_write_proc	<='0';
 					else
 						finish_write_proc	<='0';
@@ -448,59 +452,60 @@ wr_wbm_tgc_o	<=  w_wr_wbm_tgc_o	 when en_write_proc='1' else    r_wr_wbm_tgc_o	;
 						-- w_wr_wbm_tgc_o	<=	'0';
 						
 					-- end if;					
-			--------------------------------------------------------------------------	
-				when write_wb_addr_lsb_st =>
-					--write address to DBG_address_register(0x2) - bottom bits of address in mem_mng
-					 if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
-						write_SDRAM_state <= write_wb_addr_lsb_st;
-						w_wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
-						w_wr_wbm_dat_o	<=	wb_start_address_delay(7 downto 0);	--address from addr_calc
-						w_wr_wbm_tga_o	<=	(others => '0');
-						w_wr_wbm_cyc_o	<=	'1';
-						w_wr_wbm_stb_o	<=	'1';
-						w_wr_wbm_we_o		<=	'1';
-						w_wr_wbm_tgc_o	<=	'1';
-					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
-						write_SDRAM_state <= write_wb_addr_msb_st;
-						w_wr_wbm_adr_o	<=	(others => '0');
-						w_wr_wbm_tga_o	<=	(others => '0');
-						w_wr_wbm_dat_o	<=	"00000000";
-						w_wr_wbm_cyc_o	<=	'0';
-						w_wr_wbm_stb_o	<=	'0';
-						w_wr_wbm_we_o		<=	'0';
-						w_wr_wbm_tgc_o	<=	'0';							
-					end if;							
-			--------------------------------------------------------------------------		
-				when write_wb_addr_msb_st =>
-					--write address to DBG_address_register(0x3) - top bits of address in mem_mng
-					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
-						write_SDRAM_state <= write_wb_addr_msb_st;
-						w_wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
-						w_wr_wbm_dat_o	<=	wb_start_address_delay(15 downto 8); --address from addr_calc
-						w_wr_wbm_tga_o	<=	(others => '0');
-						w_wr_wbm_cyc_o	<=	'1';
-						w_wr_wbm_stb_o	<=	'1';
-						w_wr_wbm_we_o		<=	'1';
-						w_wr_wbm_tgc_o	<=	'1';
-					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
-						write_SDRAM_state <= write_type_reg_0x01_1_st;
-						w_wr_wbm_adr_o	<=	(others => '0');
-						w_wr_wbm_tga_o	<=	(others => '0');
-						w_wr_wbm_dat_o	<=	"00000000";
-						w_wr_wbm_cyc_o	<=	'0';
-						w_wr_wbm_stb_o	<=	'0';
-						w_wr_wbm_we_o		<=	'0';
-						w_wr_wbm_tgc_o	<=	'0';							
+			-- --------------------------------------------------------------------------	
+				-- when write_wb_addr_lsb_st =>
+					-- --write address to DBG_address_register(0x2) - bottom bits of address in mem_mng
+					 -- if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						-- write_SDRAM_state <= write_wb_addr_lsb_st;
+						-- w_wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
+						-- w_wr_wbm_dat_o	<=	wb_start_address_delay(7 downto 0);	--address from addr_calc
+						-- w_wr_wbm_tga_o	<=	(others => '0');
+						-- w_wr_wbm_cyc_o	<=	'1';
+						-- w_wr_wbm_stb_o	<=	'1';
+						-- w_wr_wbm_we_o		<=	'1';
+						-- w_wr_wbm_tgc_o	<=	'1';
+					-- elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						-- write_SDRAM_state <= write_wb_addr_msb_st;
+						-- w_wr_wbm_adr_o	<=	(others => '0');
+						-- w_wr_wbm_tga_o	<=	(others => '0');
+						-- w_wr_wbm_dat_o	<=	"00000000";
+						-- w_wr_wbm_cyc_o	<=	'0';
+						-- w_wr_wbm_stb_o	<=	'0';
+						-- w_wr_wbm_we_o		<=	'0';
+						-- w_wr_wbm_tgc_o	<=	'0';							
+					-- end if;							
+			-- --------------------------------------------------------------------------		
+				-- when write_wb_addr_msb_st =>
+					-- --write address to DBG_address_register(0x3) - top bits of address in mem_mng
+					-- if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						-- write_SDRAM_state <= write_wb_addr_msb_st;
+						-- w_wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
+						-- w_wr_wbm_dat_o	<=	wb_start_address_delay(15 downto 8); --address from addr_calc
+						-- w_wr_wbm_tga_o	<=	(others => '0');
+						-- w_wr_wbm_cyc_o	<=	'1';
+						-- w_wr_wbm_stb_o	<=	'1';
+						-- w_wr_wbm_we_o		<=	'1';
+						-- w_wr_wbm_tgc_o	<=	'1';
+					-- elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						-- write_SDRAM_state <= write_type_reg_0x01_1_st;
+						-- w_wr_wbm_adr_o	<=	(others => '0');
+						-- w_wr_wbm_tga_o	<=	(others => '0');
+						-- w_wr_wbm_dat_o	<=	"00000000";
+						-- w_wr_wbm_cyc_o	<=	'0';
+						-- w_wr_wbm_stb_o	<=	'0';
+						-- w_wr_wbm_we_o		<=	'0';
+						-- w_wr_wbm_tgc_o	<=	'0';							
 
-					end if;
+					-- end if;
 	
-			--------------------------------------------------------------------------					
+			--------------------------------------------------------------------------				
+	
 				when write_type_reg_0x01_1_st =>
 					--write 0x01 to Type register in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						write_SDRAM_state <= write_type_reg_0x01_1_st;
 						w_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-						w_wr_wbm_dat_o	<=	"00000001";
+						w_wr_wbm_dat_o	<=	"00000000";
 						w_wr_wbm_tga_o	<=	(others => '0');
 						w_wr_wbm_cyc_o	<=	'1';
 						w_wr_wbm_stb_o	<=	'1';
@@ -562,13 +567,14 @@ wr_wbm_tgc_o	<=  w_wr_wbm_tgc_o	 when en_write_proc='1' else    r_wr_wbm_tgc_o	;
 					w_wr_wbm_we_o	<=	'1';
 					w_wr_wbm_tgc_o	<=	'0';
 					
-					ram_addr_out		<=wr_adr_o(7 downto 0);
+					ram_addr_out		<=wr_adr_o;
 				
 				
 				when prep_st => 
+						finish_write_proc	<='1';
 						if (wr_wbm_stall_i='1') then
 							write_SDRAM_state <= write_idle_st;
-							finish_write_proc	<='1';
+							
 						else
 							finish_write_proc	<='0';
 						end if;
@@ -1153,7 +1159,8 @@ bili_proc : process (sys_clk,sys_rst)
 				end if;
 			elsif (cur_st=fsm_WB_to_SDRAM_st)  then
 				if (ram_addr_counter=wb_burst_length_c) then
-					ram_addr_counter			<=	(others => '0');		
+					ram_addr_counter			<=	(others => '0');
+					RAM_is_full	<=  '0';
 				end if;
 			end if;		
 		end if;
@@ -1186,7 +1193,6 @@ bili_proc : process (sys_clk,sys_rst)
 -- reset will set the coordinates at (0,0)
 -- init will set the coordinates at (row_start,col_start)
 ---------------------------------------------------------------------------------------	
---new correct process - row build - not working
 coord_proc : process (sys_clk,sys_rst)			
 	begin                                                                                                                     
 		if (sys_rst =reset_polarity_g) then	                                                                                  
@@ -1222,7 +1228,7 @@ wb_ram_inst: ram_generic
 	generic map(
 				reset_polarity_g	=>'0',
 				width_in_g			=> 8,	--Width of data
-				addr_bits_g			=>8,	--Depth of data	(2^8 = 256 addresses)
+				addr_bits_g			=>wb_burst_length_c'left+1,	--Depth of data	(2^8 = 256 addresses)
 				power2_out_g		=>0,	--Output width is multiplied by this power factor (2^1). In case of 2: output will be (2^2*8=) 32 bits wide
 				power_sign_g		=>1 	-- '-1' => output width > input width ; '1' => input width > output width
 			)
