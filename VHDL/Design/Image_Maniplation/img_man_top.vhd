@@ -267,7 +267,6 @@ component img_man_manager is
 				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
 				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
-				
 			);
 end component img_man_manager;
 
@@ -399,6 +398,7 @@ signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);
 	--- garbage signals - to be deleted
 signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
 signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
+signal 	bank_value						:	 std_logic_vector (1 downto 0);
 --	###########################		Implementation		##############################	--
 begin	
 	
@@ -421,12 +421,12 @@ begin
 	--WBS_ACK_O
 	wbs_ack_o_proc:
 	wbs_ack_o	<= 	wbs_reg_ack_o when (wbs_reg_cyc = '1')
-						else wbs_cmp_ack_o;
+						else '0';--wbs_cmp_ack_o;
 	
 	--WBS_STALL_O
 	wbs_stall_o_proc:
 	wbs_stall_o	<=	wbs_reg_stall_o when (wbs_reg_cyc = '1')
-						else wbs_cmp_stall_o;
+						else '1';--wbs_cmp_stall_o;
 	
 	--MUX, to route addressed register data to the WBS
 	wbs_reg_dout_proc:
@@ -516,10 +516,9 @@ begin
 	img_man_manager_inst : img_man_manager 
 	generic map 
 				(reset_polarity_g => reset_polarity_g,
-				display_hor_pixels_g=>display_ver_pixels_g,--works for old counter process
-				display_ver_pixels_g=>display_hor_pixels_g
-				--	display_hor_pixels_g=>display_hor_pixels_g,
-				--    display_ver_pixels_g=>display_ver_pixels_g
+				display_hor_pixels_g=>display_hor_pixels_g,
+				display_ver_pixels_g=>display_ver_pixels_g
+
 				)
 	port map(
 			sys_clk				=>	system_clk,				-- clock
@@ -574,6 +573,7 @@ begin
 			rd_wbm_stall_i		=>	    rd_wbm_stall_i	,
 			rd_wbm_ack_i		=>      rd_wbm_ack_i	,
 			rd_wbm_err_i		=>      rd_wbm_err_i	
+			
 	);
 	
 	addr_calc_inst	:	addr_calc	
@@ -597,17 +597,16 @@ begin
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
-			zoom_factor			=>	"000100000",--0.25 zoom
-			 --sin_teta			=>	"000000000",--0 degrees
-			 --cos_teta			=>	"010000000",
-			sin_teta			=>	"001101110",--60 degree
-			cos_teta			=>	"001000000",
-			--sin_teta			=>	"010000000",--90 degree
-			--cos_teta			=>	"000000000",
-			x_crop_start	 	=>	"00000001001",
-			y_crop_start		=>	"00000010001",
-			--row_idx_in			=>	"00100101101",
-			--col_idx_in			=>	"00100101101",
+			zoom_factor			=>	"010000000",--	1 ZOOM
+			 --sin_teta			=>	"000000000",--	0  degrees
+			 --cos_teta			=>	"010000000",	
+			--sin_teta			=>	"001101110",--	60 degree
+			--cos_teta			=>	"001000000",	
+			sin_teta			=>	"010000000",--	90 degree
+			cos_teta			=>	"000000000",
+			x_crop_start	 	=>	"00000000001",
+			y_crop_start		=>	"00000000001",
+
 			
 			ram_start_add_in	=> (others => '0'),
 			                     

@@ -9,7 +9,8 @@ vcom VHDL/Design/Image_Maniplation/img_man_manager.vhd
 vcom VHDL/Simulation/TB/Image_Manipulation/img_man_manager_tb.vhd
 vsim -t ps -novopt work.img_man_manager_tb
 add wave sim:/img_man_manager_tb/img_man_manager_inst/*
-run 150 ns
+r
+un 150 ns
 ##read test
 #run 250 ns
 ## ack number 1
