@@ -15,11 +15,10 @@
 ------------------------------------------------------------------------------------------------
 -- TO DO:
 --			fix constants to be derived from generics, don't forget addr_calc.vhd
---			fix	row/col_idx_out	to be generic length
---			fix phase 2 at read_from_SDRAM to support address length of 2 register (16 bit).
+--			fix	row/col_idx_out	to be generic length		
 --			fix top_fsm Read From SDRAM state to support to pixels burst of read.
 --			check if index valid is necessary , fix to work according to calc coord proc
---			write to registers using ack response, wait for ack before next state		
+--					
 
 ------------------------------------------------------------------------------------------------
 library ieee;
@@ -27,8 +26,10 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
+
 use std.textio.all;
 use work.txt_util.all;
+use work.ram_generic_pkg.all;
 
 entity img_man_manager is
 	generic (
@@ -95,7 +96,6 @@ entity img_man_manager is
 				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
 				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
-				
 			);
 end entity img_man_manager;
 
@@ -105,13 +105,47 @@ architecture rtl_img_man_manager of img_man_manager is
 	 ----fix to generic
 	constant col_bits_c					:	positive 	:= 10;--integer(ceil(log(real(img_hor_pixels_g)) / log(2.0))) ; --Width of registers for coloum index
 	constant row_bits_c					:	positive 	:= 10;--integer(ceil(log(real(img_ver_pixels_g)) / log(2.0))) ; --Width of registers for row index
-	constant restart_bank_c				:	std_logic_vector (2 downto 0) 	:= "110";--number of cycles for restart enable 
 	
+	constant row_start_int				:	positive:=	(display_ver_pixels_g-img_ver_pixels_g)/2; --row start index of ouput frame region of Interest
+	constant row_end_int				:	positive:=	row_start_int+img_ver_pixels_g;                --row end index of ouput frame region of Interest
+	constant col_start_int				:	positive:=	(display_hor_pixels_g-img_hor_pixels_g)/2;--col start index of ouput frame region of Interest
+	constant col_end_int				:	positive:=	col_start_int+img_hor_pixels_g;                --col end index of ouput frame region of Interest
+
+	
+	constant row_start	                :	signed(row_bits_c downto 0):= to_signed( row_start_int,row_bits_c+1);	
+	constant row_end	                :	signed(row_bits_c downto 0):= to_signed( row_end_int,  row_bits_c+1);
+    constant col_start	                :	signed(col_bits_c downto 0):= to_signed( col_start_int,col_bits_c+1);	
+    constant col_end	                :	signed(col_bits_c downto 0):= to_signed( col_end_int,  col_bits_c+1);
+
+		constant restart_bank_c				:	std_logic_vector (2 downto 0) 	:= "110";--number of cycles for restart enable 
+
 	constant mem_mng_type_reg_addr_c	:	std_logic_vector (9 downto 0)		:= "0000001101";	--Type register address
 	constant mem_mng_dbg_lsb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000010";	--dbg register address
 	constant mem_mng_dbg_msb_reg_addr_c		:	std_logic_vector (9 downto 0)		:= "0000000011";	--Type register address
 	constant file_name_g				:	string  	:= "img_mang_wb_test.txt";		--out file name
---	###########################		Components		##############################	--
+
+	constant wb_burst_length_c			:	std_logic_vector 	:= "0011111111"; --length of burst for write back to SDRAM (0xFF)(0d255)
+	--	###########################		Components		##############################	--
+component ram_generic is
+	generic (
+				reset_polarity_g	:	std_logic 				:= '0';	--'0' - Active Low Reset, '1' Active High Reset
+				width_in_g			:	positive 				:= 8;	--Width of data
+				addr_bits_g			:	positive 				:= 10;	--Depth of data	(2^10 = 1024 addresses)
+				power2_out_g		:	natural 				:= 1;	--Output width is multiplied by this power factor (2^1). In case of 2: output will be (2^2*8=) 32 bits wide
+				power_sign_g		:	integer range -1 to 1 	:= 1 	-- '-1' => output width > input width ; '1' => input width > output width
+			);
+	port	(
+				clk			:	in std_logic;									--System clock
+				rst			:	in std_logic;									--System Reset
+				addr_in		:	in std_logic_vector (addr_bits_g - 1 downto 0); --Input address
+				addr_out	:	in std_logic_vector ((addr_bits_g - power2_out_g*power_sign_g) - 1 downto 0); 		--Output address
+				aout_valid	:	in std_logic;									--Output address is valid
+				data_in		:	in std_logic_vector (width_in_g - 1 downto 0);	--Input data
+				din_valid	:	in std_logic; 									--Input data valid
+				data_out	:	out std_logic_vector (data_wcalc(width_in_g, power2_out_g, power_sign_g) - 1 downto 0);	--Output data
+				dout_valid	:	out std_logic 									--Output data valid
+			);
+end component ram_generic;	
 	------------------------------	Types	------------------------------------
 	type fsm_states is (
 							fsm_idle_st,			-- Idle - wait to start 
@@ -119,6 +153,7 @@ architecture rtl_img_man_manager of img_man_manager is
 							fsm_address_calc_st,	-- send coordinates to Address Calc, if out of range WB BLACK_PIXEL(0) else continue
 							fsm_READ_from_SDRAM_st, -- read 4 pixels from SDRAM according to result of addr_calc
 							fsm_bilinear_st,		-- do a bilinear interpolation between the 4 pixels
+							result_to_RAM_st,		--write result to ram (0 when out of range , bilinear output when in range)
 							fsm_WB_to_SDRAM_st		-- Write Back result to SDRAM
 						);
 	type read_states is (	
@@ -135,6 +170,16 @@ architecture rtl_img_man_manager of img_man_manager is
 							restart_sdram_after_read,
 							write_type_reg_0x00_1_st,
 							write_type_reg_0x00_2_st
+					);
+	type write_states is (	
+							write_idle_st,
+							write_wb_addr_lsb_st,
+							write_wb_addr_msb_st,
+							write_type_reg_0x01_1_st,
+							write_burst_st,
+							prep_st,
+							prepare_RAM_st,
+							write_type_reg_0x00_1_st -- disable debug mode, so the banks will changed back							
 					);					
 	------------------------------	Signals	------------------------------------
 	signal index_valid		: std_logic; 		--  signal for coordinate incerement process
@@ -151,7 +196,6 @@ architecture rtl_img_man_manager of img_man_manager is
 	signal en_addr_calc_proc				:	std_logic_vector (1 downto 0);	
 	signal addr_calc_oor			:	std_logic;		--address calculator result is out of range (oor)
 	signal addr_calc_valid			:	std_logic;		--address calculator result is valid
-	--signal addr_calc_finish_st		:	std_logic;		--finish address calculate state
 	signal addr_calc_tl				:	std_logic_vector (22 downto 0);
 	signal addr_calc_bl				:	std_logic_vector (22 downto 0);
 	signal addr_calc_d_row			:   std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
@@ -160,44 +204,78 @@ architecture rtl_img_man_manager of img_man_manager is
 	--------------------------Read From SDRAM
 	signal finish_read_pxl		:	std_logic_vector (1 downto 0);		--finish Read From SDRAM state
 	signal en_read_proc			:	std_logic;		--start Read From SDRAM state
-    signal read_SDRAM_state 		:	read_states;
+    signal read_SDRAM_state 	:	read_states;
 	signal read_first			:	std_logic;
 	signal rd_adr_o_counter		:	std_logic_vector (9 downto 0);	
-	signal restart_bank		:	std_logic_vector (2 downto 0);
+	signal restart_bank			:	std_logic_vector (2 downto 0);
+	signal	r_wr_wbm_adr_o		:	 std_logic_vector (9 downto 0);		--Address in internal RAM
+	signal	r_wr_wbm_tga_o		:	 std_logic_vector (9 downto 0);		--Burst Length
+	signal	r_wr_wbm_dat_o		:	 std_logic_vector (7 downto 0);		--Data In (8 bits)
+	signal	r_wr_wbm_cyc_o		:	 std_logic;							--Cycle command from WBM
+	signal	r_wr_wbm_stb_o		:	 std_logic;							--Strobe command from WBM
+	signal	r_wr_wbm_we_o			:	 std_logic;							--Write Enable
+	signal	r_wr_wbm_tgc_o		:	 std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
 	--------------------------bilinear interpolation
-	signal en_bili_trig	:	std_logic;		-- bilinear
-	signal tl_pixel		:	std_logic_vector (7 downto 0);		--top left pixel, first pair
-	signal tr_pixel		:	std_logic_vector (7 downto 0);		--top right pixel, first pair
-	signal bl_pixel		:	std_logic_vector (7 downto 0);		--bottom left pixel, second pair
-	signal br_pixel		:	std_logic_vector (7 downto 0);		--bottom right pixel, second pair
-	signal pixel_res	:   std_logic_vector (trig_frac_size_g downto 0); 
-	--signal delta_row		:	std_logic_vector(trig_frac_size_g-1 downto 0);	
-	--signal delta_col		:	std_logic_vector(trig_frac_size_g-1 downto 0);		
-	--signal finish_bilinear_st	:	std_logic;	--finish bilinear intepolation state
+	signal en_bili_trig			:	std_logic;		-- bilinear
+	signal tl_pixel				:	std_logic_vector (7 downto 0);		--top left pixel, first pair
+	signal tr_pixel				:	std_logic_vector (7 downto 0);		--top right pixel, first pair
+	signal bl_pixel				:	std_logic_vector (7 downto 0);		--bottom left pixel, second pair
+	signal br_pixel				:	std_logic_vector (7 downto 0);		--bottom right pixel, second pair
+	signal pixel_res			:   std_logic_vector (trig_frac_size_g downto 0); 
+	
 	--------------------------WB to SDRAM
-	--signal finish_WB_st			:	std_logic;		--finish Write Back to SDRAM state
+	signal RAM_is_full	: std_logic;	
+	signal wb_start_address		:std_logic_vector(22 downto 0);
+	signal ram_addr_counter		:std_logic_vector(7 downto 0);
 	file out_file				: TEXT open write_mode is file_name_g;
+	signal write_SDRAM_state 	:	write_states;
+	signal wr_adr_o				:std_logic_vector(9 downto 0);
+	signal en_write_proc        : std_logic;	
+	signal finish_write_proc	: std_logic;
+
+	signal ram_addr_in 			:std_logic_vector(7 downto 0);	
+	signal ram_addr_out 		:std_logic_vector(7 downto 0);
+	signal ram_addr_out_valid	:std_logic;
+	signal ram_din			    :std_logic_vector(7 downto 0);
+	signal ram_din_valid		:std_logic;
+	signal ram_dout	            :std_logic_vector(7 downto 0);
+	signal ram_dout_valid 		:std_logic;
+	
+	signal	w_wr_wbm_adr_o		:	 std_logic_vector (9 downto 0);		--Address in internal RAM
+	signal	w_wr_wbm_tga_o		:	 std_logic_vector (9 downto 0);		--Burst Length
+	signal	w_wr_wbm_dat_o		:	 std_logic_vector (7 downto 0);		--Data In (8 bits)
+	signal	w_wr_wbm_cyc_o		:	 std_logic;							--Cycle command from WBM
+	signal	w_wr_wbm_stb_o		:	 std_logic;							--Strobe command from WBM
+	signal	w_wr_wbm_we_o			:	 std_logic;							--Write Enable
+	signal	w_wr_wbm_tgc_o		:	 std_logic;							--Cycle tag: '0' = Write to components, '1' = Write to registers
+	signal  wb_start_address_delay      :std_logic_vector(22 downto 0);
+	
+	
+	
 	--	###########################		Implementation		##############################	--
 begin	
 wire_proc:
 rd_wbm_adr_o<= rd_adr_o_counter;
-----------------------------------------------------------------------------------------
-----------------------------		index valid  Processes			------------------------
-----------------------------------------------------------------------------------------
-----------------------------    the process controls when index output is valid    ------------------------
-----------------------------------------------------------------------------------------
-	index_valid_proc: process (sys_clk, sys_rst)
-	begin
-		if (sys_rst = reset_polarity_g) then
-			index_valid <= '0';
-		elsif rising_edge (sys_clk) then	
-			if (cur_st=fsm_increment_coord_st and finish_image='0') then
-				index_valid		<= '1';
-			else
-				index_valid		<= '0';
-			end if;	
-		end if;
-	end process index_valid_proc;	
+
+mux_wr_wbm_signals:
+wr_wbm_adr_o	<=  wr_adr_o when (en_write_proc='1' and (write_SDRAM_state=write_burst_st or write_SDRAM_state=prep_st))
+					else w_wr_wbm_adr_o	 when  (en_write_proc='1') 
+					else    r_wr_wbm_adr_o	;
+
+wr_wbm_tga_o	<=  w_wr_wbm_tga_o	 when en_write_proc='1' else    r_wr_wbm_tga_o	;
+wr_wbm_dat_o	<=  w_wr_wbm_dat_o	 when en_write_proc='1' else    r_wr_wbm_dat_o	;
+wr_wbm_cyc_o	<=  w_wr_wbm_cyc_o	 when en_write_proc='1' else    r_wr_wbm_cyc_o	;
+wr_wbm_stb_o	<=  w_wr_wbm_stb_o	 when en_write_proc='1' else    r_wr_wbm_stb_o	;
+wr_wbm_we_o		<=  w_wr_wbm_we_o	 when en_write_proc='1' else    r_wr_wbm_we_o	;
+wr_wbm_tgc_o	<=  w_wr_wbm_tgc_o	 when en_write_proc='1' else    r_wr_wbm_tgc_o	;
+
+-- wr_wbm_dat_i	<=  w_wr_wbm_dat_i	 when en_write_proc='1' else    r_wr_wbm_dat_i	;
+-- wr_wbm_stall_i	<=  w_wr_wbm_stall_i when en_write_proc='1' else    r_wr_wbm_stall_i;
+-- wr_wbm_ack_i	<=  w_wr_wbm_ack_i	 when en_write_proc='1' else    r_wr_wbm_ack_i	;
+-- wr_wbm_err_i	<=  w_wr_wbm_err_i	 when en_write_proc='1' else    r_wr_wbm_err_i	;
+
+
+
 ----------------------------------------------------------------------------------------
 ----------------------------		fsm_proc Process			------------------------
 ----------------------------------------------------------------------------------------
@@ -206,12 +284,11 @@ rd_wbm_adr_o<= rd_adr_o_counter;
 	fsm_proc: process (sys_clk, sys_rst)
 	begin
 		if (sys_rst = reset_polarity_g) then
-			cur_st		<=	fsm_idle_st;
-			en_read_proc <=	'0';
-			en_addr_calc_proc	<="00";
-			en_bili_trig	<='0';
-			pixel_res	<=(others => '0');
-			
+			cur_st					<=	fsm_idle_st;
+			en_read_proc 			<=	'0';
+			en_addr_calc_proc		<="00";
+			en_bili_trig			<='0';
+			pixel_res				<=(others => '0');
 		elsif rising_edge (sys_clk) then
 			case cur_st is
 			------------------------------Idle State--------------------------------- --
@@ -220,7 +297,9 @@ rd_wbm_adr_o<= rd_adr_o_counter;
 						cur_st	<= 	fsm_increment_coord_st;
 					else
 						cur_st 	<= 	fsm_idle_st;	
-					end if;				
+					end if;
+					
+
 			
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
@@ -230,14 +309,13 @@ rd_wbm_adr_o<= rd_adr_o_counter;
 						cur_st 	<= 	fsm_address_calc_st;	-- finish calculate index 
 						en_addr_calc_proc		<="01";		-- trigger addr_calc
 					end if;
-			
+					
 			-----------------------------Address calculate state----------------------						
 				when fsm_address_calc_st =>
 					en_addr_calc_proc		<="10";							--diable  addr_calc trigger
-					
 					if ((addr_calc_oor and addr_calc_valid) = '1') then		--current index is out of range, WB black
 						en_addr_calc_proc	<="00";
-						cur_st			<=	fsm_WB_to_SDRAM_st;
+						cur_st			<=	result_to_RAM_st;
 					elsif ((not(addr_calc_oor) and addr_calc_valid) ='1') then		--addr_calc is finish, continue to Read from SDRAM
 						cur_st 			<= 	fsm_READ_from_SDRAM_st;
 						--cur_st			<=fsm_increment_coord_st;
@@ -267,16 +345,37 @@ rd_wbm_adr_o<= rd_adr_o_counter;
 					if (bili_pixel_valid='0') then
 						cur_st 	<= 	fsm_bilinear_st;
 					elsif (bili_pixel_valid='1') then
-						cur_st 	<= 	fsm_WB_to_SDRAM_st;			
+							cur_st 	<= 	result_to_RAM_st;		
 					end if;
+			-----------------------------write result to RAM state----------------------	
+				when result_to_RAM_st	=>
+					if (addr_calc_oor='0') then
+						ram_din	<= pixel_res;
+					else 
+						ram_din	<= (others => '0');	
+					end if;
+					
+					ram_addr_in<=ram_addr_counter;
+					ram_din_valid<='1';	
+					
+					if (RAM_is_full='1') then --ram is full
+						cur_st 	<= 	fsm_WB_to_SDRAM_st;	
+					else
+						cur_st 	<= 	fsm_increment_coord_st;	
+					end if;
+
 			-----------------------------Write Back to SDRAM state----------------------
 				when fsm_WB_to_SDRAM_st =>
-					--if (finish_image ='0') then
-						cur_st 	<= 	fsm_increment_coord_st;		
-					--else
-						--cur_st	<=	fsm_idle_st;
-					--end if;
-			       
+
+
+					
+					if (finish_write_proc ='1') then
+						 cur_st 	<= 	fsm_increment_coord_st;
+						en_write_proc<='0';
+					else 	
+						 cur_st 	<= fsm_WB_to_SDRAM_st;
+						 en_write_proc<='1';
+			        end if;
 			-----------------------------Debugg state, catch Unimplemented state
 				when others =>
 					cur_st	<=	fsm_idle_st;
@@ -284,6 +383,210 @@ rd_wbm_adr_o<= rd_adr_o_counter;
 				end case;
 		end if;
 	end process fsm_proc;
+	----------------------------------------------------------------------------------------
+----------------------------		Write Back  Processes			------------------------
+----------------------------------------------------------------------------------------
+----------------------------    the process writes ram contents to SDRAM     ------------------------
+----------------------------------------------------------------------------------------
+	wb_start_address_delay<=wb_start_address-"11111111";
+	
+	write_back_proc: process (sys_clk, sys_rst)
+	begin
+		if (sys_rst = reset_polarity_g) then
+			wr_adr_o			<=(others => '0');
+			finish_write_proc	<='0';	
+			w_wr_wbm_adr_o		<=	(others => '0');
+			w_wr_wbm_tga_o		<=	(others => '0');
+			w_wr_wbm_dat_o		<=	(others => '0');
+			w_wr_wbm_cyc_o		<=	'0';
+			w_wr_wbm_stb_o		<=	'0';
+			w_wr_wbm_we_o		<=	'0';
+			w_wr_wbm_tgc_o		<=	'0';			
+		elsif rising_edge (sys_clk) then	
+				
+				
+				case write_SDRAM_state is		
+			--------------------------------------------------------------------------	
+				when write_idle_st =>
+				
+					if ((en_write_proc='1') and (finish_write_proc ='0') )  then
+						write_SDRAM_state	<= 	write_wb_addr_lsb_st;
+						--finish_write_proc	<='0';
+					else
+						finish_write_proc	<='0';
+						write_SDRAM_state	<= 	write_idle_st;
+						w_wr_wbm_adr_o		<=	(others => '0');
+						w_wr_wbm_tga_o		<=	(others => '0');
+						w_wr_wbm_dat_o		<=	(others => '0');
+						w_wr_wbm_cyc_o		<=	'0';
+						w_wr_wbm_stb_o		<=	'0';
+						w_wr_wbm_we_o		<=	'0';
+						w_wr_wbm_tgc_o		<=	'0';
+						wr_adr_o			<=(others => '0');
+						
+					end if;	
+			--------------------------------------------------------------------------	
+				-- when write_type_reg_0x00_1_st => 
+					-- --write 0x00 to Type register in mem_mng
+					-- if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						-- write_SDRAM_state <= write_type_reg_0x00_1_st;
+						-- w_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						-- w_wr_wbm_dat_o	<=	"00000000";
+						-- w_wr_wbm_tga_o	<=	(others => '0');
+						-- w_wr_wbm_cyc_o	<=	'1';
+						-- w_wr_wbm_stb_o	<=	'1';
+						-- w_wr_wbm_we_o	<=	'1';
+						-- w_wr_wbm_tgc_o	<=	'1';
+					-- elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						-- write_SDRAM_state <= write_wb_addr_lsb_st;
+						-- w_wr_wbm_adr_o	<=	(others => '0');
+						-- w_wr_wbm_tga_o	<=	(others => '0');
+						-- w_wr_wbm_dat_o	<=	"00000000";
+						-- w_wr_wbm_cyc_o	<=	'0';
+						-- w_wr_wbm_stb_o	<=	'0';
+						-- w_wr_wbm_we_o		<=	'0';
+						-- w_wr_wbm_tgc_o	<=	'0';
+						
+					-- end if;					
+			--------------------------------------------------------------------------	
+				when write_wb_addr_lsb_st =>
+					--write address to DBG_address_register(0x2) - bottom bits of address in mem_mng
+					 if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						write_SDRAM_state <= write_wb_addr_lsb_st;
+						w_wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
+						w_wr_wbm_dat_o	<=	wb_start_address_delay(7 downto 0);	--address from addr_calc
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_cyc_o	<=	'1';
+						w_wr_wbm_stb_o	<=	'1';
+						w_wr_wbm_we_o		<=	'1';
+						w_wr_wbm_tgc_o	<=	'1';
+					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						write_SDRAM_state <= write_wb_addr_msb_st;
+						w_wr_wbm_adr_o	<=	(others => '0');
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_dat_o	<=	"00000000";
+						w_wr_wbm_cyc_o	<=	'0';
+						w_wr_wbm_stb_o	<=	'0';
+						w_wr_wbm_we_o		<=	'0';
+						w_wr_wbm_tgc_o	<=	'0';							
+					end if;							
+			--------------------------------------------------------------------------		
+				when write_wb_addr_msb_st =>
+					--write address to DBG_address_register(0x3) - top bits of address in mem_mng
+					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						write_SDRAM_state <= write_wb_addr_msb_st;
+						w_wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
+						w_wr_wbm_dat_o	<=	wb_start_address_delay(15 downto 8); --address from addr_calc
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_cyc_o	<=	'1';
+						w_wr_wbm_stb_o	<=	'1';
+						w_wr_wbm_we_o		<=	'1';
+						w_wr_wbm_tgc_o	<=	'1';
+					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						write_SDRAM_state <= write_type_reg_0x01_1_st;
+						w_wr_wbm_adr_o	<=	(others => '0');
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_dat_o	<=	"00000000";
+						w_wr_wbm_cyc_o	<=	'0';
+						w_wr_wbm_stb_o	<=	'0';
+						w_wr_wbm_we_o		<=	'0';
+						w_wr_wbm_tgc_o	<=	'0';							
+
+					end if;
+	
+			--------------------------------------------------------------------------					
+				when write_type_reg_0x01_1_st =>
+					--write 0x01 to Type register in mem_mng
+					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
+						write_SDRAM_state <= write_type_reg_0x01_1_st;
+						w_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						w_wr_wbm_dat_o	<=	"00000001";
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_cyc_o	<=	'1';
+						w_wr_wbm_stb_o	<=	'1';
+						w_wr_wbm_we_o	<=	'1';
+						w_wr_wbm_tgc_o	<=	'1';
+					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						write_SDRAM_state <= write_burst_st;
+						w_wr_wbm_adr_o	<=	(others => '0');
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_dat_o	<=	"00000000";
+						w_wr_wbm_cyc_o	<=	'0';
+						w_wr_wbm_stb_o	<=	'0';
+						w_wr_wbm_we_o		<=	'0';
+						w_wr_wbm_tgc_o	<=	'0';
+					end if;
+					    -- ram_addr_out_valid	<='1';
+					    -- ram_addr_out		<=(others => '0');
+                        wr_adr_o			<=(others => '0');
+		                -- w_wr_wbm_dat_o		<=	ram_dout;
+							--------------------------------------------------------------------------					
+				-- when prepare_RAM_st =>	
+					-- --prepare first data from ram
+						-- ram_addr_out_valid	<='1';
+						-- ram_addr_out		<=(others => '0');
+						-- wr_adr_o			<=(others => '0');
+						-- if (ram_dout_valid='1') then
+							-- w_wr_wbm_dat_o		<=	ram_dout;
+							-- write_SDRAM_state <= write_burst_st;
+						-- else
+							-- w_wr_wbm_dat_o		<=	(others => '0');
+							-- write_SDRAM_state <= prepare_RAM_st;
+						-- end if;
+		--------------------------------------------------------------------------					
+				when write_burst_st =>
+					--write ram contents to SDRAM 
+					
+					ram_addr_out_valid	<='1';
+
+					if 	(wr_wbm_stall_i='0' and  wr_wbm_ack_i='0')then
+						wr_adr_o			<=	"0000000001";
+					elsif ( wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
+						
+						if 	(wr_adr_o=wb_burst_length_c) then
+							write_SDRAM_state 	<= prep_st;
+							--finish_write_proc	<='1';
+							wr_adr_o			<=wr_adr_o+'1';
+						else
+							wr_adr_o			<=wr_adr_o+'1';
+							--finish_write_proc	<='0';
+							write_SDRAM_state <= write_burst_st;
+						end if;
+					end if;
+					
+					
+					w_wr_wbm_dat_o	<=	ram_dout;
+					w_wr_wbm_tga_o	<=	wb_burst_length_c;
+					w_wr_wbm_cyc_o	<=	'1';
+					w_wr_wbm_stb_o	<=	'1';
+					w_wr_wbm_we_o	<=	'1';
+					w_wr_wbm_tgc_o	<=	'0';
+					
+					ram_addr_out		<=wr_adr_o(7 downto 0);
+				
+				
+				when prep_st => 
+						if (wr_wbm_stall_i='1') then
+							write_SDRAM_state <= write_idle_st;
+							finish_write_proc	<='1';
+						else
+							finish_write_proc	<='0';
+						end if;
+						
+						w_wr_wbm_adr_o	<=	(others => '0');
+						w_wr_wbm_tga_o	<=	(others => '0');
+						w_wr_wbm_dat_o	<=	"00000000";
+						w_wr_wbm_cyc_o	<=	'0';
+						w_wr_wbm_stb_o	<=	'0';
+						w_wr_wbm_we_o	<=	'0';
+						w_wr_wbm_tgc_o	<=	'0';							
+						
+
+				when others =>
+					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected in write sdram process" severity error;
+				end case;				
+		end if;
+	end process write_back_proc;	
 ---------------------------------------------------------------------------------------
 ----------------------------	writeProcess process	-----------------------------------
 ---------------------------------------------------------------------------------------
@@ -297,7 +600,7 @@ rd_wbm_adr_o<= rd_adr_o_counter;
 
     if rising_edge(sys_clk) then
 
-		IF (cur_st=fsm_WB_to_SDRAM_st) THEN
+		IF (cur_st=result_to_RAM_st) THEN
 			--print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
 			--print tl,tr,bl,br,delta_row,delta_col (decimal) , out_of_range //str((row_idx_sig))& " "&str((col_idx_sig))& 
 			if (addr_calc_oor='0') then
@@ -384,13 +687,6 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 		if (sys_rst =reset_polarity_g) then	
 			finish_read_pxl		<=	(others => '0');			
 			read_SDRAM_state	<=	read_idle_st;
-			wr_wbm_adr_o		<=	(others => '0');
-			wr_wbm_tga_o		<=	(others => '0');
-			wr_wbm_dat_o		<=	(others => '0');
-			wr_wbm_cyc_o		<=	'0';
-			wr_wbm_stb_o		<=	'0';
-			wr_wbm_we_o			<=	'0';
-			wr_wbm_tgc_o		<=	'0';
 			rd_wbm_tga_o 		<=	(others => '0');	
 			rd_wbm_cyc_o		<=	'0';	
 			rd_wbm_stb_o		<=	'0';
@@ -399,13 +695,19 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 			rd_wbm_cyc_o		<=	'0';
 			rd_wbm_tgc_o		<=	'0';
 			finish_read_pxl		<=	(others => '0');							
-			finish_image		<=	'0';
 			tl_pixel			<=	(others => '0');
 			tr_pixel			<=	(others => '0'); 
 			bl_pixel			<=	(others => '0');
 			br_pixel			<=	(others => '0');
 			rd_adr_o_counter	<=	(others => '0');
 			restart_bank	<=	(others => '0');
+			r_wr_wbm_adr_o	<=	(others => '0');
+			r_wr_wbm_tga_o	<=	(others => '0');
+			r_wr_wbm_dat_o	<=	"00000000";
+			r_wr_wbm_cyc_o	<=	'0';
+			r_wr_wbm_stb_o	<=	'0';
+			r_wr_wbm_we_o		<=	'0';
+			r_wr_wbm_tgc_o	<=	'0';
 		elsif rising_edge(sys_clk)  then	
 			case read_SDRAM_state is		
 			--------------------------------------------------------------------------	
@@ -418,82 +720,82 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						rd_wbm_tga_o 	<=	"0000000000";	
 						rd_wbm_cyc_o	<=	'0';	
 						rd_wbm_stb_o	<=	'0';
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';
 						read_first<='0';
 						rd_adr_o_counter<=	(others => '0');
 						restart_bank	<=	(others => '0');
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';
 					end if;
 			--------------------------------------------------------------------------					
 				when write_type_reg_0x80_1_st =>
 						--write 0x80 to Type register in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_type_reg_0x80_1_st;
-						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"10000000";
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"10000000";
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= write_dbg_reg_lsb_1_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';						
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';						
 					end if;
 			--------------------------------------------------------------------------	
 				when write_dbg_reg_lsb_1_st =>
 					--write address to DBG_address_register(0x2) - bottom bits of address in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_dbg_reg_lsb_1_st;
-						wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
-						wr_wbm_dat_o	<=	addr_calc_tl(7 downto 0);	--address from addr_calc
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
+						r_wr_wbm_dat_o	<=	addr_calc_tl(7 downto 0);	--address from addr_calc
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= write_dbg_reg_msb_1_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';							
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';							
 					end if;							
 			--------------------------------------------------------------------------		
 				when write_dbg_reg_msb_1_st =>
 					--write address to DBG_address_register(0x3) - top bits of address in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_dbg_reg_msb_1_st;
-						wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
-						wr_wbm_dat_o	<=	addr_calc_tl(15 downto 8); --address from addr_calc
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
+						r_wr_wbm_dat_o	<=	addr_calc_tl(15 downto 8); --address from addr_calc
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= write_type_reg_0x81_1_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';							
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';							
 
 					end if;	
 			--------------------------------------------------------------------------					
@@ -501,22 +803,22 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					--write 0x81 to Type register in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_type_reg_0x81_1_st;
-						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-						wr_wbm_dat_o	<=	"10000001";
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						r_wr_wbm_dat_o	<=	"10000001";
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= wait_ack_1_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';							
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';							
 						read_first<='0';
 					end if;	
 			--------------------------------------------------------------------------			
@@ -545,13 +847,13 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 							read_SDRAM_state	<=	write_type_reg_0x00_1_st;
 							finish_read_pxl	<= "01";	-- finish first pixels pair
 							--write 0x00 to Type register in mem_mng	
-							wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-							wr_wbm_tga_o	<=	(others => '0');
-							wr_wbm_dat_o	<=	"00000000";
-							wr_wbm_cyc_o	<=	'1';
-							wr_wbm_stb_o	<=	'1';
-							wr_wbm_we_o		<=	'1';
-							wr_wbm_tgc_o	<=	'1';
+							r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+							r_wr_wbm_tga_o	<=	(others => '0');
+							r_wr_wbm_dat_o	<=	"00000000";
+							r_wr_wbm_cyc_o	<=	'1';
+							r_wr_wbm_stb_o	<=	'1';
+							r_wr_wbm_we_o		<=	'1';
+							r_wr_wbm_tgc_o	<=	'1';
 							rd_wbm_tgc_o	<=	'1';--for restart from start of bank
 							restart_bank	<=	(others => '0');
 						end if;
@@ -567,22 +869,22 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					end if;
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						--write 0x00 to Type register in mem_mng	
-						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= prepare_for_second_pair_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';
 					end if;					
 			--------------------------------------------------------------------------		
 				when prepare_for_second_pair_st =>
@@ -591,13 +893,13 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					rd_wbm_cyc_o	<=	'1';	                                          
 					rd_wbm_stb_o	<=	'0';                                              
                                 
-					wr_wbm_adr_o	<=	(others => '0');                                  
-					wr_wbm_tga_o	<=	(others => '0');                                  	
-					wr_wbm_dat_o	<=	(others => '0');                                  
-					wr_wbm_cyc_o	<=	'0';                                              
-					wr_wbm_stb_o	<=	'0';                                              
-					wr_wbm_we_o		<=	'0';                                              
-					wr_wbm_tgc_o	<=	'0';                                              
+					r_wr_wbm_adr_o	<=	(others => '0');                                  
+					r_wr_wbm_tga_o	<=	(others => '0');                                  	
+					r_wr_wbm_dat_o	<=	(others => '0');                                  
+					r_wr_wbm_cyc_o	<=	'0';                                              
+					r_wr_wbm_stb_o	<=	'0';                                              
+					r_wr_wbm_we_o		<=	'0';                                              
+					r_wr_wbm_tgc_o	<=	'0';                                              
 					if (	restart_bank=restart_bank_c) then
 						read_SDRAM_state <= write_type_reg_0x80_2_st;
 					else
@@ -614,66 +916,66 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					--write 0x80 to Type register in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_type_reg_0x80_2_st;
-						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"10000000";
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"10000000";
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= write_dbg_reg_lsb_2_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';						
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';						
 					end if;
 			--------------------------------------------------------------------------
 				when write_dbg_reg_lsb_2_st =>
 					--write address to DBG_address_register(0x2) - bottom bits of address in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_dbg_reg_lsb_2_st;
-						wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
-						wr_wbm_dat_o	<=	addr_calc_bl(7 downto 0);	--address from addr_calc
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_dbg_lsb_reg_addr_c;
+						r_wr_wbm_dat_o	<=	addr_calc_bl(7 downto 0);	--address from addr_calc
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= write_dbg_reg_msb_2_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';							
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';							
 					end if;	
 			--------------------------------------------------------------------------		
 				when write_dbg_reg_msb_2_st =>
 					--write address to DBG_address_register(0x3) - top bits of address in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_dbg_reg_msb_2_st;
-						wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
-						wr_wbm_dat_o	<=	addr_calc_bl(15 downto 8); --address from addr_calc
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_dbg_msb_reg_addr_c;
+						r_wr_wbm_dat_o	<=	addr_calc_bl(15 downto 8); --address from addr_calc
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= write_type_reg_0x81_2_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';							
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';							
 
 					end if;
 			--------------------------------------------------------------------------	
@@ -681,22 +983,22 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					--write 0x81 to Type register in mem_mng
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_type_reg_0x81_2_st;
-						wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-						wr_wbm_dat_o	<=	"10000001";
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_cyc_o	<=	'1';
-						wr_wbm_stb_o	<=	'1';
-						wr_wbm_we_o		<=	'1';
-						wr_wbm_tgc_o	<=	'1';
+						r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+						r_wr_wbm_dat_o	<=	"10000001";
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_cyc_o	<=	'1';
+						r_wr_wbm_stb_o	<=	'1';
+						r_wr_wbm_we_o		<=	'1';
+						r_wr_wbm_tgc_o	<=	'1';
 					elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 						read_SDRAM_state <= wait_ack_2_st;
-						wr_wbm_adr_o	<=	(others => '0');
-						wr_wbm_tga_o	<=	(others => '0');
-						wr_wbm_dat_o	<=	"00000000";
-						wr_wbm_cyc_o	<=	'0';
-						wr_wbm_stb_o	<=	'0';
-						wr_wbm_we_o		<=	'0';
-						wr_wbm_tgc_o	<=	'0';							
+						r_wr_wbm_adr_o	<=	(others => '0');
+						r_wr_wbm_tga_o	<=	(others => '0');
+						r_wr_wbm_dat_o	<=	"00000000";
+						r_wr_wbm_cyc_o	<=	'0';
+						r_wr_wbm_stb_o	<=	'0';
+						r_wr_wbm_we_o		<=	'0';
+						r_wr_wbm_tgc_o	<=	'0';							
 						read_first<='0';
 					end if;
 			--------------------------------------------------------------------------	
@@ -720,7 +1022,6 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						elsif (read_first='1')	then					-- ack on bottom right
 							br_pixel	<= rd_wbm_dat_i;	
 							read_first	<='0';
-							finish_read_pxl	<= "11";					-- finish second pixels pair
 							read_SDRAM_state	<=	write_type_reg_0x00_2_st;
 						end if;
 					else
@@ -734,37 +1035,38 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						end if;
 						if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 							--write 0x00 to Type register in mem_mng	
-							wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
-							wr_wbm_tga_o	<=	(others => '0');
-							wr_wbm_dat_o	<=	"00000000";
-							wr_wbm_cyc_o	<=	'1';
-							wr_wbm_stb_o	<=	'1';
-							wr_wbm_we_o		<=	'1';
-							wr_wbm_tgc_o	<=	'1';
+							r_wr_wbm_adr_o	<=	mem_mng_type_reg_addr_c;
+							r_wr_wbm_tga_o	<=	(others => '0');
+							r_wr_wbm_dat_o	<=	"00000000";
+							r_wr_wbm_cyc_o	<=	'1';
+							r_wr_wbm_stb_o	<=	'1';
+							r_wr_wbm_we_o		<=	'1';
+							r_wr_wbm_tgc_o	<=	'1';
 						elsif (wr_wbm_stall_i='0' and wr_wbm_ack_i='1') then
 							read_SDRAM_state <= restart_sdram_after_read;
-							wr_wbm_adr_o	<=	(others => '0');
-							wr_wbm_tga_o	<=	(others => '0');
-							wr_wbm_dat_o	<=	"00000000";
-							wr_wbm_cyc_o	<=	'0';
-							wr_wbm_stb_o	<=	'0';
-							wr_wbm_we_o		<=	'0';
-							wr_wbm_tgc_o	<=	'0';
+							r_wr_wbm_adr_o	<=	(others => '0');
+							r_wr_wbm_tga_o	<=	(others => '0');
+							r_wr_wbm_dat_o	<=	"00000000";
+							r_wr_wbm_cyc_o	<=	'0';
+							r_wr_wbm_stb_o	<=	'0';
+							r_wr_wbm_we_o		<=	'0';
+							r_wr_wbm_tgc_o	<=	'0';
 						end if;				
 			--------------------------------------------------------------------------	
 				when restart_sdram_after_read	=>
-					wr_wbm_adr_o	<=	(others => '0');
-					wr_wbm_tga_o	<=	(others => '0');
-					wr_wbm_dat_o	<=	"00000000";
-					wr_wbm_cyc_o	<=	'0';
-					wr_wbm_stb_o	<=	'0';
-					wr_wbm_we_o		<=	'0';
-					wr_wbm_tgc_o	<=	'0';				
+					r_wr_wbm_adr_o	<=	(others => '0');
+					r_wr_wbm_tga_o	<=	(others => '0');
+					r_wr_wbm_dat_o	<=	"00000000";
+					r_wr_wbm_cyc_o	<=	'0';
+					r_wr_wbm_stb_o	<=	'0';
+					r_wr_wbm_we_o		<=	'0';
+					r_wr_wbm_tgc_o	<=	'0';				
 					rd_wbm_stb_o	<=	'0';						
 
 					if (restart_bank=restart_bank_c) then
 						rd_wbm_tgc_o	<=	'0';--end restart from start of bank
-						rd_wbm_cyc_o	<=	'0';			
+						rd_wbm_cyc_o	<=	'0';
+						finish_read_pxl	<= "11";					-- finish second pixels pair
 						read_SDRAM_state <= read_idle_st;
 						rd_adr_o_counter <= (others=>'0');
 					else
@@ -821,76 +1123,119 @@ bili_proc : process (sys_clk,sys_rst)
 			
 		end if;	
 	end process bili_proc;
+----------------------------------------------------------------------------------------
+----------------------------		write_burst_counter  Processes			------------------------
+----------------------------------------------------------------------------------------
+----------------------------    the process counts from 0 upto  wb_burst_length_c   ------------------------
+----------------------------    when the process reaches wb_burst_length_c, it sends a trigger and restarts		  ---------------------
+----------------------------------------------------------------------------------------
+		write_burst_counter_proc: process (sys_clk, sys_rst)
+	begin
+		if (sys_rst = reset_polarity_g) then
+			ram_addr_counter <= (others => '0');
+			RAM_is_full	<=  '0';
+			wb_start_address <= (others => '0');
+		elsif rising_edge (sys_clk) then	
+			
+			if (cur_st=fsm_idle_st) then 						
+				ram_addr_counter	<= (others => '0');
+				RAM_is_full	<=  '0';
+				wb_start_address <= (others => '0');
+			
+			elsif (cur_st=result_to_RAM_st)  then	
+				
+				if (ram_addr_counter=wb_burst_length_c) then
+					wb_start_address	<=	wb_start_address+wb_burst_length_c;
+					RAM_is_full	<=  '1';	
+				else
+					ram_addr_counter			<=ram_addr_counter	+ '1';
+					RAM_is_full	<=  '0';
+				end if;
+			elsif (cur_st=fsm_WB_to_SDRAM_st)  then
+				if (ram_addr_counter=wb_burst_length_c) then
+					ram_addr_counter			<=	(others => '0');		
+				end if;
+			end if;		
+		end if;
+	end process write_burst_counter_proc;
+		
 
+
+	----------------------------------------------------------------------------------------
+----------------------------		index valid  Processes			------------------------
+----------------------------------------------------------------------------------------
+----------------------------    the process controls when index output is valid    ------------------------
+----------------------------------------------------------------------------------------
+	index_valid_proc: process (sys_clk, sys_rst)
+	begin
+		if (sys_rst = reset_polarity_g) then
+			index_valid <= '0';
+		elsif rising_edge (sys_clk) then	
+			if (cur_st=fsm_increment_coord_st and finish_image='0') then
+				index_valid		<= '1';
+			else
+				index_valid		<= '0';
+			end if;	
+		end if;
+	end process index_valid_proc;	
 ---------------------------------------------------------------------------------------
 ----------------------------	coordinate process	-----------------------------------
 ---------------------------------------------------------------------------------------
 -- THE process will advance the row/col indexes until end of image
 -- when image is over a flag will rise - finish_image
 -- reset will set the coordinates at (0,0)
--- init will set the coordinates at (1,1)
+-- init will set the coordinates at (row_start,col_start)
 ---------------------------------------------------------------------------------------	
 --new correct process - row build - not working
 coord_proc : process (sys_clk,sys_rst)			
-	begin
-		if (sys_rst =reset_polarity_g) then	
-			finish_image <='0';
-			row_idx_sig <=(others => '0');
+	begin                                                                                                                     
+		if (sys_rst =reset_polarity_g) then	                                                                                  
+			finish_image <='0';                                                                                               
+			row_idx_sig <=(others => '0');                                                                                    
 			col_idx_sig <=(others => '0');
 		elsif rising_edge(sys_clk) then
 			if (cur_st=fsm_idle_st) then 						--initialize row and col counter
-				row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');				--row starts with 0d1
-				row_idx_sig(0)<='1';					
-				col_idx_sig<=(others => '0');			--col starts with 0d0 
+				row_idx_sig<=row_start;
+				col_idx_sig<= col_start	;
+				
 				finish_image <='0';
-			elsif (cur_st=fsm_increment_coord_st)  then			--increment row if possible, else move to new col
-				if (col_idx_sig<display_hor_pixels_g) then
+			
+			elsif (cur_st=fsm_increment_coord_st)  then			
+				if (col_idx_sig<col_end) then				--increment col if possible else move to new row
 						col_idx_sig<=col_idx_sig+1;
 						finish_image <='0';
 				else
-					if (row_idx_sig< display_ver_pixels_g) then --increment row
-						col_idx_sig(col_idx_sig'left downto 1) <=(others => '0');
-						col_idx_sig(0)<='1';
+					if (row_idx_sig< row_end) then 			--increment row if possible else picture is over
+                        col_idx_sig<= col_start	;
 						row_idx_sig<=row_idx_sig+1;
 					end if;	
 				end if;
-			elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=display_hor_pixels_g) and (row_idx_sig=display_ver_pixels_g) then
+			elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=col_end) and (row_idx_sig=row_end) then
 				finish_image <='1';
 			end if;
 		end if;	
 end process coord_proc;
 
--- -- old process
--- -- coloum build - working display_hor_pixels_g=600  		display_ver_pixels_g=800
--- coord_proc : process (sys_clk,sys_rst)			
-	-- begin
-		-- if (sys_rst =reset_polarity_g) then	
-			-- finish_image <='0';
-			-- row_idx_sig <=(others => '0');
-			-- col_idx_sig <=(others => '0');
-		-- elsif rising_edge(sys_clk) then
-			-- if (cur_st=fsm_idle_st) then 				--initialize row and col counter
-				-- row_idx_sig <=(others => '0');
-				-- col_idx_sig(row_idx_sig'left downto 1) <=(others => '0');  --col starts with 0d1 
-				-- col_idx_sig(0)<='1';	
-				-- finish_image <='0';
-			-- elsif (cur_st=fsm_increment_coord_st)  then	--increment row if possible, else move to new col
-				-- if (row_idx_sig< display_ver_pixels_g) then --increment row
-					-- row_idx_sig<=row_idx_sig+1;
-					-- finish_image <='0';
-				-- else  	--(row_idx_sig == display_ver_pixels_g) -> co is over, move to new col
-					-- if (col_idx_sig<display_hor_pixels_g) then
-						-- row_idx_sig(row_idx_sig'left downto 1) <=(others => '0');
-						-- row_idx_sig(0)<='1';
-						-- col_idx_sig<=col_idx_sig+1;
-					-- end if;	
-				-- end if;
-			-- elsif (cur_st=fsm_address_calc_st) and (col_idx_sig=display_hor_pixels_g) and (row_idx_sig=display_ver_pixels_g) then
-				-- finish_image <='1';
-			-- end if;
-		-- end if;	
--- end process coord_proc;							
 --	###########################		Instances		##############################	--
 
-
+wb_ram_inst: ram_generic
+	generic map(
+				reset_polarity_g	=>'0',
+				width_in_g			=> 8,	--Width of data
+				addr_bits_g			=>8,	--Depth of data	(2^8 = 256 addresses)
+				power2_out_g		=>0,	--Output width is multiplied by this power factor (2^1). In case of 2: output will be (2^2*8=) 32 bits wide
+				power_sign_g		=>1 	-- '-1' => output width > input width ; '1' => input width > output width
+			)
+	port map(
+				clk			=>	sys_clk,										--System clock
+				rst			=>	sys_rst,										--System Reset
+				addr_in		=>	ram_addr_in, 								--Input address from write_burst_counter_proc
+				addr_out	=>	ram_addr_out, 		--Output address
+				aout_valid	=>	ram_addr_out_valid,									--Output address is valid
+				data_in		=>	ram_din,										--Input data from bilinear stage
+				din_valid	=>	ram_din_valid,									--Input data valid
+				data_out	=>	ram_dout,	--Output data
+				dout_valid	=>	ram_dout_valid 									--Output data valid
+			);
+	
 end architecture rtl_img_man_manager;

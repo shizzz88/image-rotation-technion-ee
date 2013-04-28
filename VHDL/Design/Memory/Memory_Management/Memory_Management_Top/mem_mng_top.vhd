@@ -396,7 +396,6 @@ signal dbg_reg_dout			:	std_logic_vector (dbg_reg_depth_c * reg_width_c - 1 down
 signal dbg_reg_dout_valid	:	std_logic_vector (dbg_reg_depth_c - 1 downto 0);					--Output data is valid
 
 --	###########################		Implementation		##############################	--
-
 begin	
 	
 	--Cycle is active for registers
@@ -463,24 +462,26 @@ begin
 	dbg_reg_rd_en(0)	<=	'1' when (conv_integer(wr_wbs_adr_i (reg_addr_width_c - 1 downto 0)) = dbg_reg_addr_c) and (reg_rd_en = '1')
 							else '0';
 							
+
 	---------------------------------------------------------------------------------------
 	----------------------------	Bank value process	-----------------------------------
 	---------------------------------------------------------------------------------------
 	-- The process switches between the two double banks when fine image has been received.
 	---------------------------------------------------------------------------------------
-	bank_val_proc: process (clk_sdram, rst_sdram)
+	bank_val_proc: process (clk_sdram, rst_sdram,type_reg_dout(0))
 	begin
 		if (rst_sdram = reset_polarity_g) then
 			wr_bank_val <= '0';
 			rd_bank_val <= '1';
 		elsif rising_edge (clk_sdram) then
-			if (bank_switch = '1') then
-				wr_bank_val <= not wr_bank_val;
-				rd_bank_val <= not rd_bank_val;
-			else
-				wr_bank_val <= wr_bank_val;
-				rd_bank_val <= rd_bank_val;
-			end if;
+
+				if (bank_switch = '1') then
+					wr_bank_val <= not wr_bank_val;
+					rd_bank_val <= not rd_bank_val;
+				else
+					wr_bank_val <= wr_bank_val;
+					rd_bank_val <= rd_bank_val;
+				end if;
 		end if;
 	end process bank_val_proc;
 	

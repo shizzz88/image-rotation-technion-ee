@@ -95,7 +95,7 @@ architecture rtl_mds_top of mds_top is
 constant num_of_wbs_z_c	:	natural := 4;	--4 WBS to INTERCON Z	uri ran original 3
 constant num_of_wbm_z_c :	natural := 3;	--3 WBM to INTERCON Z uri ran original 2
 constant num_of_wbs_y_c	:	natural := 1;	--1 WBS to INTERCON Y
-constant num_of_wbm_y_c :	natural := 3;	--3 WBM to INTERCON Y	uri ran original 3
+constant num_of_wbm_y_c :	natural := 3;	--3 WBM to INTERCON Y	uri ran original 2
 
 --#############################	Components	##############################################--
 
@@ -150,7 +150,6 @@ component img_man_top is
 				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
 				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
-				
 			);
 end component img_man_top;
 
@@ -1106,7 +1105,7 @@ sdr_ctrl :	sdram_controller  port map
 		dram_ldqm	=>  dram_ldqm	,
 		dram_udqm	=>  dram_udqm	,
 		dram_ras_n	=>  dram_ras_n	,
-		dram_we_n	=>  dram_we_n	,                     	
+		dram_we_n	=>  dram_we_n	,                     	      
 		wbs_adr_i	=>  wbm_adr_o,                                 	
 		wbs_dat_i	=>  wbm_dat_o,          
 		wbs_we_i	=>  wbm_we_o,           
@@ -1227,7 +1226,6 @@ img_man_top_inst: img_man_top
 				rd_wbm_stall_i		=>  img_rd_wbm_stall_i,
 				rd_wbm_ack_i		=>  img_rd_wbm_ack_i,
 				rd_wbm_err_i		=>  img_rd_wbm_err_i
-				
 			);
 		
 -----------------------------	Debug Ports	-----------------------

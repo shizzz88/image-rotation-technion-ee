@@ -22,8 +22,9 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top_tb is
 	generic (
-			--uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
-			uart_tx_delay_g		:	positive	:= 1333333333;			--Clock cycles between two transmissions
+--original			uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
+			uart_tx_delay_g		:	positive	:= 1000000;			--Clock cycles between two transmissions
+			
 			file_max_idx_g		:	positive 	:= 1				-- uri ran Maximum file index
 		);
 end entity mds_top_tb;
@@ -265,7 +266,7 @@ img_man_trigger_proc: process
 begin
  
  img_man_trigger <= '0';
-   wait for 30 ms;
+   wait for 51 ms;
 		img_man_trigger <= '1';
 	wait for 10 ns;
 		img_man_trigger <= '0';
