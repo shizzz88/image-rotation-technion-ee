@@ -778,15 +778,15 @@ clk_vesa_out	<=	clk_40;
 
 --Connects WBS DATA to INTERCON. 
 ic_wbs_dat_o_proc:
-ic_wbs_dat_o	<=	img_wbs_dat_o & tx_icz_wbs_dat_o & disp_rx_wbm_dat_i & mem_rx_wbm_dat_i  ;
+ic_wbs_dat_o	<=	img_wbs_dat_o &  tx_icz_wbs_dat_o&disp_rx_wbm_dat_i & mem_rx_wbm_dat_i  ;
 
 --Connects WBS ACK to INTERCON. 
 ic_wbs_ack_o_proc:
-ic_wbs_ack_o	<=	img_wbs_ack_o & 	tx_icz_wbs_ack_o & disp_rx_wbm_ack_i & mem_rx_wbm_ack_i ;
+ic_wbs_ack_o	<=	img_wbs_ack_o &tx_icz_wbs_ack_o & disp_rx_wbm_ack_i & mem_rx_wbm_ack_i ;
 
 --Connects WBS ERR to INTERCON. 
 ic_wbs_err_o_proc:
-ic_wbs_err_o	<=	img_wbs_err_o & tx_icz_wbs_err_o & disp_rx_wbm_err_i & mem_rx_wbm_err_i ;
+ic_wbs_err_o	<=	 img_wbs_err_o &tx_icz_wbs_err_o & disp_rx_wbm_err_i & mem_rx_wbm_err_i ;
 
 --Connects WBS STALL to INTERCON. 
 ic_wbs_stall_o_proc:

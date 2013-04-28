@@ -301,27 +301,17 @@ end component bilinear;
 
 -- Logic signals, derived from Wishbone Slave
 signal wbs_reg_cyc			:	std_logic;						--'1': Cycle to register is active
-signal wbs_cmp_cyc			:	std_logic;						--'1': Cycle to component is active
+--signal wbs_cmp_cyc			:	std_logic;						--'1': Cycle to component is active
 signal wbs_reg_dout			:	std_logic_vector (7 downto 0);	--Output data from Registers
 signal wbs_reg_dout_valid	:	std_logic;						--Dout valid for registers
 signal wbs_reg_din_ack    	:   std_logic;						--Din has been acknowledeged by registers
-signal wbs_cmp_ack_o		:	std_logic;						--WBS_ACK_O from component
+--signal wbs_cmp_ack_o		:	std_logic;						--WBS_ACK_O from component
 signal wbs_reg_ack_o		:	std_logic;						--WBS_ACK_O from registers
-signal wbs_cmp_stall_o		:	std_logic;						--WBS_STALL_O from component
+--signal wbs_cmp_stall_o		:	std_logic;						--WBS_STALL_O from component
 signal wbs_reg_stall_o		:	std_logic;						--WBS_STALL_O from registers
-signal wbs_cmp_stb			:	std_logic;						--WBS_STB_O to component
+--signal wbs_cmp_stb			:	std_logic;						--WBS_STB_O to component
 signal wbs_reg_stb			:	std_logic;						--WBS_STB_O to registers
 
----- Wishbone Master signals from Mem_Ctrl_Rd to Arbiter
---signal rd_wbm_adr_o			:	std_logic_vector (21 downto 0);		--Address (Bank, Row, Col)	
---signal rd_wbm_dat_i			:   std_logic_vector (15 downto 0);		--Data In (16 bits)
---signal rd_wbm_we_o			:	std_logic;							--Write Enable
---signal rd_wbm_tga_o			:   std_logic_vector (7 downto 0);		--Address Tag : Read/write burst length-1 (0 represents 1 word, FF represents 256 words)
---signal rd_wbm_cyc_o			:   std_logic;							--Cycle Command to interface
---signal rd_wbm_stb_o			:   std_logic;							--Strobe Command to interface
---signal rd_wbm_stall_i			:	std_logic;							--Slave is not ready to receive new data
---signal rd_wbm_err_i			:   std_logic;							--Error flag: OOR Burst. Burst length is greater that 256-column address
---signal rd_wbm_ack_i			:   std_logic;							--When Read Burst: DATA bus must be valid in this cycle
 
 --Signals to registers
 signal reg_addr				:	std_logic_vector (reg_addr_width_c - 1 downto 0);	--Address to register. Relevant only when addr_en_g = true
@@ -368,65 +358,79 @@ signal zoom_reg_dout_valid		:	std_logic_vector (param_reg_depth_c - 1 downto 0);
 
 --from img_manager
 	
-	signal	index_valid_sig	            : std_logic;			
-	signal	row_idx_out_sig	            : signed (10 downto 0);
-	signal	col_idx_out_sig	            : signed (10 downto 0);
-	signal	manipulation_trig			: std_logic;	
-	-- img_manager to addr_calc
-	signal im_addr_row_idx_in			:	 signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
-	signal im_addr_col_idx_in			:	 signed (10 downto 0);		--the current column index of the output image
-	signal im_addr_tl_out				:	std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
-	signal im_addr_bl_out				:	std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
-	signal im_addr_delta_row_out		:	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-	signal im_addr_delta_col_out		:	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-	signal im_addr_out_of_range		:	std_logic;		--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
-	signal im_addr_data_valid_out	:	std_logic;		--data valid indicator 
-	signal im_addr_unit_finish		:	 std_logic;                              --signal indicating addr_calc is finished
-	signal im_addr_trigger_unit		:	 std_logic;                               --enable signal for addr_calc
-	signal im_addr_enable			:	 std_logic;    
+	--signal	index_valid_sig	            : std_logic;			
+	--signal	row_idx_out_sig	            : signed (10 downto 0);
+	--signal	col_idx_out_sig	            : signed (10 downto 0);
+	--signal	manipulation_trig			: std_logic;	
+	
+-- img_manager to addr_calc
+signal im_addr_row_idx_in			:	 signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
+signal im_addr_col_idx_in			:	 signed (10 downto 0);		--the current column index of the output image
+signal im_addr_tl_out				:	std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
+signal im_addr_bl_out				:	std_logic_vector (22 downto 0);		--bottom left pixel address in SDRAM
+signal im_addr_delta_row_out		:	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+signal im_addr_delta_col_out		:	std_logic_vector		(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+signal im_addr_out_of_range		:	std_logic;		--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
+signal im_addr_data_valid_out	:	std_logic;		--data valid indicator 
+signal im_addr_unit_finish		:	 std_logic;                              --signal indicating addr_calc is finished
+signal im_addr_trigger_unit		:	 std_logic;                               --enable signal for addr_calc
+signal im_addr_enable			:	 std_logic;    
 
 --bilinear
-	signal	bilinear_req_trig			:	std_logic;				-- Trigger for image manipulation to begin,
-	signal	bilinear_tl_pixel			:	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
-	signal	bilinear_tr_pixel			:	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
-	signal	bilinear_bl_pixel           :	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
-	signal	bilinear_br_pixel           :	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
-	signal	bilinear_delta_row			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-	signal	bilinear_delta_col			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
-	signal	bilinear_pixel_valid		:	std_logic;				--valid signal for index
-	signal	bilinear_pixel_res			:	std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
-	--- garbage signals - to be deleted
+signal	bilinear_req_trig			:	std_logic;				-- Trigger for image manipulation to begin,
+signal	bilinear_tl_pixel			:	std_logic_vector(trig_frac_size_g downto 0);		--top left pixel
+signal	bilinear_tr_pixel			:	std_logic_vector(trig_frac_size_g downto 0);		--top right pixel
+signal	bilinear_bl_pixel           :	std_logic_vector(trig_frac_size_g downto 0);		--bottom left pixel
+signal	bilinear_br_pixel           :	std_logic_vector(trig_frac_size_g downto 0);		--bottom right pixel
+signal	bilinear_delta_row			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+signal	bilinear_delta_col			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
+signal	bilinear_pixel_valid		:	std_logic;				--valid signal for index
+signal	bilinear_pixel_res			:	std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
+--- garbage signals 
 signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
 signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
-signal 	bank_value						:	 std_logic_vector (1 downto 0);
 --	###########################		Implementation		##############################	--
 begin	
 	
+	unused_ports:
+	wbs_err_o<='0';
+	
+	
 	--Cycle is active for registers
 	wbs_reg_cyc_proc:
-	wbs_reg_cyc	<=	wbs_cyc_i and wbs_tgc_i;
+	wbs_reg_cyc	<=	wbs_cyc_i and (wbs_tgc_i) when
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = type_reg_addr_c) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c + 1) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = x_start_reg_addr_c ) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c + 1) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = y_start_reg_addr_c ) or				
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c +1) or				
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = zoom_reg_addr_c ) or					
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c +1) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = cos_reg_addr_c ) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c +1) or
+						(conv_integer(wbs_adr_i (reg_addr_width_c - 1 downto 0)) = sin_reg_addr_c ) 							
+						else '0';
 	
 	--Cycle is active for components
-	wbs_cmp_cyc_proc:
-	wbs_cmp_cyc	<=	wbs_cyc_i and (not wbs_tgc_i);
+	--wbs_cmp_cyc_proc:
+	--wbs_cmp_cyc	<=	wbs_cyc_i and (not wbs_tgc_i);
 	
 	--Strobe is active for registers
 	wbs_reg_stb_proc:
-	wbs_reg_stb	<=	wbs_stb_i and wbs_tgc_i;
+	wbs_reg_stb	<=	wbs_stb_i and (wbs_tgc_i);
 	
 	--Strobe is active for components
-	wbs_cmp_stb_proc:
-	wbs_cmp_stb	<=	wbs_stb_i and (not wbs_tgc_i);
+	--wbs_cmp_stb_proc:
+	--wbs_cmp_stb	<=	wbs_stb_i and (not wbs_tgc_i);
 	
 	--WBS_ACK_O
 	wbs_ack_o_proc:
-	wbs_ack_o	<= 	wbs_reg_ack_o when (wbs_reg_cyc = '1')
-						else '0';--wbs_cmp_ack_o;
+	wbs_ack_o	<= 	wbs_reg_ack_o ;--when (wbs_reg_cyc = '1') else wbs_cmp_ack_o;
 	
 	--WBS_STALL_O
 	wbs_stall_o_proc:
-	wbs_stall_o	<=	wbs_reg_stall_o when (wbs_reg_cyc = '1')
-						else '1';--wbs_cmp_stall_o;
+	wbs_stall_o	<=	wbs_reg_stall_o; --when (wbs_reg_cyc = '1')else wbs_cmp_stall_o;
 	
 	--MUX, to route addressed register data to the WBS
 	wbs_reg_dout_proc:
@@ -490,26 +494,7 @@ begin
 						else '0';
 	
 
---	---------------------------------------------------------------------------------------
---	----------------------------	Bank value process	-----------------------------------
---	---------------------------------------------------------------------------------------
---	-- The process switches between the two double banks when fine image has been received.
---	---------------------------------------------------------------------------------------
---	bank_val_proc: process (system_clk, system_rst)
---	begin
---		if (system_rst = reset_polarity_g) then
---			bank_val <= '0';
---			rd_bank_val <= '1';
---		elsif rising_edge (system_clk) then
---			if (bank_switch = '1') then
---				bank_val <= not bank_val;
---				rd_bank_val <= not rd_bank_val;
---			else
---				bank_val <= bank_val;
---				rd_bank_val <= rd_bank_val;
---			end if;
---		end if;
---	end process bank_val_proc;
+
 	
 --	###########################		Instances		##############################	--
 	
@@ -589,19 +574,19 @@ begin
 	)
 	port map(
 			
-			-- zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
-			-- sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
-			-- cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
-			-- x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
-			-- y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
+			--zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			--sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			--cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
+			--x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
+			--y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
-			zoom_factor			=>	"010000000",--	1 ZOOM
-			 --sin_teta			=>	"000000000",--	0  degrees
-			 --cos_teta			=>	"010000000",	
-			sin_teta			=>	"001101110",--	60 degree
-			cos_teta			=>	"001000000",	
+			zoom_factor			=>	"000100000",--	 ZOOM
+			sin_teta			=>	"000000000",--	0  degrees
+			cos_teta			=>	"010000000",	
+			--sin_teta			=>	"001101110",--	60 degree
+			--cos_teta			=>	"001000000",	
 			--sin_teta			=>	"010000000",--	90 degree
 			--cos_teta			=>	"000000000",
 			x_crop_start	 	=>	"00000000001",
