@@ -22,6 +22,7 @@
 --			Number		Date		Name					Description			
 --			1.00		19.4.2011	Beeri Schreiber			Creation
 --			1.1			19.4.2013	Uri and Ran				ram_ready_sr_proc updated to 4 stage shift register to support debug mode for image manipulation
+--			1.11		29.4.2013 	Uri						wbm_adr_o_proc edited to read from half of bank in normal	
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
@@ -140,6 +141,8 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 	--State machines
 	signal wbm_cur_st		:	wbm_states;
 	
+	signal cur_rd_addr_temp		:	std_logic_vector(21 downto 0);		--Current read address from SDRAM
+
   ---------------------------------  Implementation	------------------------------
   begin
 	
@@ -170,9 +173,14 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 	wbm_we_o_proc:
 	wbm_we_o 	<= '0';
 	
+	
+	
 	--Address out to SDRAM (WBM_ADR_O)
 	wbm_adr_o_proc:
-	wbm_adr_o	<= 	cur_rd_addr ; 
+	wbm_adr_o(21)			<= 	cur_rd_addr_temp(21);
+	wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
+	wbm_adr_o(19 downto 0)	<= 	cur_rd_addr_temp(19 downto 0) ;
+	cur_rd_addr_temp <=cur_rd_addr;
 	
 	--############################################################################--
 	--						Start of Wishbone Master							  --

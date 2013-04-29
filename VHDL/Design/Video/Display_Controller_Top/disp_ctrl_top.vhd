@@ -112,6 +112,8 @@ entity disp_ctrl_top is
 				hsync				:	out std_logic;										--HSync Signal
 				vsync				:	out std_logic;										--VSync Signal
 				
+				--Enable image transmission port
+				image_tx_en			:		in std_logic;									--Image transmitter is enabled
 				--Debug Port
 				dbg_type_reg		:	out std_logic_vector (7 downto 0)					--Type Register Value
 			);
@@ -814,7 +816,7 @@ vesa_gen_ctrl_inst 	:	vesa_gen_ctrl generic map(
 							right_frame	=>	right_frame,
 							lower_frame	=>	lower_frame,
 							vesa_en		=>	'1',
-							image_tx_en	=>	'1',
+							image_tx_en	=>	image_tx_en,
 							data_valid	=>	vesa_data_valid,
 							req_data	=>	vesa_req_data,
 							pixels_req	=>	pixels_req,
