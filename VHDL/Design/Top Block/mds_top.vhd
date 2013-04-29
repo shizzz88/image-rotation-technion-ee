@@ -112,8 +112,9 @@ component img_man_top is
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-				req_trig				  :	in std_logic;								-- Trigger for image manipulation to begin,
-        
+				req_trig				 :	in std_logic;								-- Trigger for image manipulation to begin,
+				image_tx_en				:	out std_logic;							--enable image transmission
+
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
@@ -557,6 +558,8 @@ component disp_ctrl_top is
 				hsync				:	out std_logic;										--HSync Signal
 				vsync				:	out std_logic;										--VSync Signal
 
+				--Enable image transmission port
+				image_tx_en			:		in std_logic;									--Image transmitter is enabled
 				--Debug Ports
 				dbg_type_reg		:	out std_logic_vector (7 downto 0)					--Type Register Value
 			);
@@ -710,7 +713,8 @@ signal	img_rd_wbm_err_i		:  std_logic;
 
 signal	img_rd_wbm_dat_o		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
 signal	img_rd_wbm_we_o			:  std_logic;	
-
+		--Signals from image manipulation 
+signal	img_image_tx_en			:  std_logic;					--enable image transmission
 	-- Wishbone Master (RX Block)
 signal rx_wbm_adr_o		:	std_logic_vector (9 downto 0);		--Address in internal RAM
 signal rx_wbm_tga_o		:	std_logic_vector (9 downto 0);		--Burst Length
@@ -1088,6 +1092,7 @@ disp_ctrl_inst :	 disp_ctrl_top
 				blank		=>	blank,		
 				hsync		=>	hsync,		
 				vsync		=>	vsync,
+				image_tx_en =>  img_image_tx_en,
 				dbg_type_reg=>	dbg_type_reg_disp
 			);
 
@@ -1189,7 +1194,8 @@ img_man_top_inst: img_man_top
 				--Clock and Reset
 				system_clk			=>	clk_100,
 				system_rst			=>	rst_100,
-        req_trig				=>  img_trigger,                          
+				req_trig			=>  img_trigger,
+				image_tx_en			=>  img_image_tx_en,
 				-- Wishbone Slave (Fr Registers)
 				wbs_adr_i			=> ic_wbs_adr_i(39 downto 30),
 				wbs_tga_i			=> ic_wbs_tga_i(29 downto 20),

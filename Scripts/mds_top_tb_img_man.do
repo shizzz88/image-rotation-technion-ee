@@ -21,8 +21,6 @@ add wave  -radix hexadecimal -group mem_mng -group ctrl_rd -group wbs sim:/mds_t
 
 add wave -radix hexadecimal  -group mds_top -group TOP sim:/mds_top_tb/mds_top_inst/*
 
-add wave -radix hexadecimal  -group SDRAM_ctrl  sim:/mds_top_tb/mds_top_inst/sdr_ctrl/*
-
 add wave  -radix hexadecimal  -group Image_Manipulation_Top -group Top sim:/mds_top_tb/mds_top_inst/img_man_top_inst/*
 add wave  -radix hexadecimal  -group Image_Manipulation_Top -group Manager sim:/mds_top_tb/mds_top_inst/img_man_top_inst/img_man_manager_inst/*
 add wave  -radix hexadecimal  -group Image_Manipulation_Top -group Address_Calculator sim:/mds_top_tb/mds_top_inst/img_man_top_inst/addr_calc_inst/*
@@ -45,6 +43,6 @@ configure wave -timelineunits ps
 update
 WaveRestoreZoom {0 ps} {5250 us}
 
-run 83 ms
+run 63 ms
 
 

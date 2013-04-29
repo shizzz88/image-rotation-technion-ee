@@ -38,7 +38,9 @@ entity img_man_top is
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-				req_trig				:	in std_logic;								-- Trigger for image manipulation to begin,
+				req_trig				:	in std_logic;							-- Trigger for image manipulation to begin,
+				image_tx_en				:	out std_logic;							--enable image transmission
+				
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
@@ -194,7 +196,7 @@ component addr_calc is
 				
 				--CLK, RESET, ENABLE
 				enable					:	in std_logic;    	--enable unit port           
-				unit_finish			:	out std_logic;                              --signal indicating addr_calc is finished
+				unit_finish				:	out std_logic;                              --signal indicating addr_calc is finished
 				trigger_unit			:	in std_logic;                               --enable signal for addr_calc
 				system_clk				:	in std_logic;							--SDRAM clock
 				system_rst				:	in std_logic							--Reset (133MHz)
@@ -215,7 +217,8 @@ component img_man_manager is
 				sys_clk				:	in std_logic;								-- clock
 				sys_rst				:	in std_logic;								-- Reset					
 				req_trig			:	in std_logic;								-- Trigger for image manipulation to begin,
-					
+				image_tx_en			:	out std_logic;							--enable image transmission
+	
 				-- addr_calc					
 				
 				addr_row_idx_in			:	out signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
@@ -392,6 +395,7 @@ signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
 --	###########################		Implementation		##############################	--
 begin	
 	
+	
 	unused_ports:
 	wbs_err_o<='0';
 	
@@ -509,7 +513,7 @@ begin
 			sys_clk				=>	system_clk,				-- clock
 			sys_rst				=>	system_rst,				-- Reset
 			req_trig			=>	req_trig,		-- Trigger for image manipulation to begin,
-            
+            image_tx_en			=>	image_tx_en,
 			--from addr_calc
 			
 			
@@ -582,7 +586,7 @@ begin
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
-			zoom_factor			=>	"000100000",--	 ZOOM
+			zoom_factor			=>	"010000000",--	 ZOOM
 			sin_teta			=>	"000000000",--	0  degrees
 			cos_teta			=>	"010000000",	
 			--sin_teta			=>	"001101110",--	60 degree
