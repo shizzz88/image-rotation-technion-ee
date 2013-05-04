@@ -28,9 +28,13 @@ use work.txt_util.all;
 entity addr_calc_tb is
 	generic
 		(	
+						reset_polarity_g		:	std_logic	:= '0';			--Reset active low
+
 			file_name_g				:	string  	:= "test_modelsim.txt";		--out file name
-			x_size_out				:	positive 	:= 600;				-- number of rows  in theoutput image
-			y_size_out				:	positive 	:= 800;				-- number of columns  in the output image
+			x_size_in_g				:	positive 	:= 96;		
+			y_size_in_g				:	positive 	:= 128;		
+			x_size_out_g				:	positive 	:= 600;
+			y_size_out_g				:	positive 	:= 800;
 			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture (binary)
 			
 		);
@@ -71,6 +75,7 @@ component addr_calc
 				delta_row_out		:	out	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
 				delta_col_out		:	out	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
 				
+				enable					:	in std_logic;    	--enable unit port           
 				unit_finish			:	out std_logic;
 				out_of_range		:	out std_logic;							--asserts '1' while the input calculated pixel is out of range (negative value or exceeding img size after crop
 				data_valid_out			:	out std_logic;		--data valid indicator
@@ -119,9 +124,10 @@ signal				out_of_range_sig		:	std_logic;							--asserts '1' while the input cal
 signal				data_valid_out_sig		:	std_logic;					
 signal				delta_row_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);				--	 needed for bilinear interpolation
 signal				delta_col_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);
-                                                                     
-signal 				trigger					:	std_logic;	                                                                        
 
+signal 				trigger					:	std_logic;
+signal 				en_unit					:	std_logic;	 	                                                                        
+signal				start_tb				:std_logic;
 ----------------------------------------------------------------------  READ PROCESS	-------------------------------------------------------------------------
  SIGNAL    newValueRead     : BOOLEAN := FALSE;
  SIGNAL    newValueToSave   : BOOLEAN := FALSE;
@@ -130,39 +136,49 @@ signal 				trigger					:	std_logic;
  SIGNAL    lineNumber       : INTEGER:=1;  -- add line number to output file
  
  file out_file				: TEXT open write_mode is file_name_g;
---####################################################################################
+----------------------------------------------------------------------------------------------
+
+type fsm_states is (
+							fsm_idle_st,			-- Idle - wait to start 
+							fsm_trigger_st,
+							fsm_increment_coord_st,	-- increment coordinate by 1, if line is over move to next line
+							fsm_address_calc_st	-- send coordinates to Address Calc, if out of range WB BLACK_PIXEL(0) else continue
+
+						);
+signal curr_st		: fsm_states;					
+ --####################################################################################
 ---------------------------		process + inst	-----------------------------------------
 begin
 
-clk_133_proc:
-system_clk	<=	not system_clk after 3.75 ns;
+clk_100_proc:
+system_clk	<=	not system_clk after 5 ns;
 
 
 
-rst_133_proc:
+rst_100_proc:
 system_rst	<=	'0', '1' after 100 ns;
 
-trigger_proc:
-trigger <=	'0', '1' after 100 ns, '0' after 107.5 ns;
+start_tb_proc:
+start_tb <=	'0', '1' after 100 ns, '0' after 110 ns;
 
 --assign constant signal values
 --------------------------	ZOOM (from 256, not 128)!!!	-------------------------------------------------------------------
---zoom_factor_sig			<=	"001000000";				--zoom factor=0.5 (x1)
-zoom_factor_sig			<=	"000100000";				--zoom factor=0.25 (x2)
+zoom_factor_sig			<=	"010000000";				--zoom factor=1 (x1)
+--zoom_factor_sig			<=	"000100000";				--zoom factor=0.25 (x2)
 --zoom_factor_sig			<=	"000010000";				--zoom factor=0.125 (x4)
 --zoom_factor_sig			<=	"000001000";				--zoom factor=0.0625 (x8)
---zoom_factor_sig			<=	"000000100";				--zoom factor=0.0625 (x16)
+--zoom_factor_sig			<=	"000000100";				--zoom factor= (x16)
 
 
 --------------------------	ANGLE (from 256, not 128)!!!	-------------------------------------------------------------------
 --sin_teta_sig		    <=  "001101111";				--teta=60 deg
 --cos_teta_sig		    <=  "001000000";
---sin_teta_sig		    <=  "000000000";				--teta=0 deg
---cos_teta_sig		    <=  "010000000";
+sin_teta_sig		    <=  "000000000";				--teta=0 deg
+cos_teta_sig		    <=  "010000000";
 --sin_teta_sig		    <=  "001110100";				--teta=153 deg
 --cos_teta_sig		    <=  "100011100";
-sin_teta_sig		    <=  "100000000";				--teta=90 deg
-cos_teta_sig		    <=  "000000000";
+-- sin_teta_sig		    <=  "100000000";				--teta=90 deg
+-- cos_teta_sig		    <=  "000000000";
 --sin_teta_sig		    <=  "010110101";				--teta=45 deg
 --cos_teta_sig		    <=  "010110101";
 --sin_teta_sig		    <=  "000000000";				--teta=180 deg
@@ -178,62 +194,82 @@ cos_teta_sig		    <=  "000000000";
 --y_crop_start_sig	    <=  "00000011101";  			--y_crop=29 
 --x_crop_start_sig	    <=  "00000001010"; 				--x_crop=10
 --y_crop_start_sig	    <=  "00000001010";  			--y_crop=10
-x_crop_start_sig	    <=  "00000101101"; 				--x_crop=45
-y_crop_start_sig	    <=  "00000101000";  			--y_crop=40                   
+-- x_crop_start_sig	    <=  "00000101101"; 				--x_crop=45
+-- y_crop_start_sig	    <=  "00000101000";  			--y_crop=40  
+x_crop_start_sig	    <=  "00000000001"; 				--x_crop=45
+y_crop_start_sig	    <=  "00000000001";  			--y_crop=40                   
 ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0                           
 
 -- row_idx_sig <= to_signed(301,11);		--row,col =301
 -- col_idx_sig <= to_signed(301,11);
 
-test_proc : process (system_clk)			--test 800*600
-	variable row_cnt : natural := 1;
-	variable col_cnt : natural := 0;
-	variable flag	 : natural := 1;
+fsm_proc: process (system_clk, system_rst)
+	variable row_cnt : natural := (x_size_out_g-x_size_in_g)/2;
+	variable col_cnt : natural := (y_size_out_g-y_size_in_g)/2;
+	variable row_cnt_final_val : natural := row_cnt+x_size_in_g;
+	variable col_cnt_final_val : natural := col_cnt+y_size_in_g;
 	begin
-		if (system_rst ='1') then	
-		if rising_edge(system_clk) then
-			flag:=flag+4;
-			if (col_cnt<800) and (flag mod 5 =0)   then	
-				col_cnt:=col_cnt+1;
-			elsif (col_cnt=800) then
-				col_cnt:=0;
-				row_cnt:=row_cnt+1;
-			end if;
+		if (system_rst = reset_polarity_g) then
+				trigger<='0';
+				en_unit<='0';
+				curr_st<=fsm_idle_st;
+		elsif rising_edge (system_clk) then
+			case curr_st is
+			------------------------------Idle State--------------------------------- --
+				when fsm_idle_st =>
+					if(start_tb='1') then
+						en_unit <='1';
+						curr_st 	<= 	fsm_trigger_st;
+					end if;	
+            -----------------------------fsm_trigger_st-------------------------------
+				when fsm_trigger_st=>
+					trigger<='1';
+					curr_st 	<= 	fsm_address_calc_st;
+			-----------------------------Address calculate state----------------------						
+				when fsm_address_calc_st =>
+					trigger<='0';
+					if (data_valid_out_sig='1') then
+						curr_st<=fsm_increment_coord_st;						
+					end if;	
 			
+			-----------------------------Increment coordinate state----------------------	
+				when fsm_increment_coord_st	=>				
+					if (col_cnt=col_cnt_final_val)   then	
+						row_cnt:=row_cnt+1;
+						col_cnt:=(y_size_out_g-y_size_in_g)/2;
+						curr_st<=fsm_trigger_st;
+
+					elsif (row_cnt<=row_cnt_final_val) then
+						col_cnt:=col_cnt+1;
+						curr_st<=fsm_trigger_st;
+
+					else
+						curr_st<=fsm_idle_st;
+					end if;
+
+
+			-----------------------------Debugg state, catch Unimplemented state
+				when others =>
+					curr_st	<=	fsm_idle_st;
+					report "Time: " & time'image(now) & "Image Man Manager : Unimplemented state has been detected" severity error;
+				end case;
 			row_idx_sig <= to_signed(row_cnt,11);
 			col_idx_sig <= to_signed(col_cnt,11);
 		end if;
-		end if;
-	end process test_proc;
+	end process fsm_proc;
 	
-	
-	-- test_proc : process (system_clk)			--test one row
-	-- variable row_cnt : natural := 301;
-	-- variable col_cnt : natural :=0;
-	-- variable flag	 : natural := 1;
-	-- begin
-		-- if (system_rst ='1') then	
-		-- if rising_edge(system_clk) then
 
-			-- flag:=flag+4;
-			-- if (col_cnt<800) and (flag mod 5 =0)   then	
-				-- col_cnt:=col_cnt+1;
-			-- end if;
-			
-			-- row_idx_sig <= to_signed(row_cnt,11);
-			-- col_idx_sig <= to_signed(col_cnt,11);
-		-- end if;
-		-- end if;
-	-- end process test_proc;
+	
+	
     
     
 addr_calc_inst :	 addr_calc				
 			generic map(
 			reset_polarity_g		=> '0',		--Reset active low
-			x_size_in_g				=> 96,			-- number of rows  in the input image
-			y_size_in_g				=> 128,				-- number of columns  in the input image
-			x_size_out_g				=> 600,				-- number of rows  in theoutput image
-			y_size_out_g				=> 800,				-- number of columns  in the output image
+			x_size_in_g				=> x_size_in_g,				-- number of rows  in the input image
+			y_size_in_g				=> y_size_in_g,				-- number of columns  in the input image
+			x_size_out_g			=> x_size_out_g,				-- number of rows  in theoutput image
+			y_size_out_g			=> y_size_out_g,				-- number of columns  in the output image
 			trig_frac_size_g			=> 7,			-- number of digits after dot = resolution of fracture (binary)
 			pipe_depth_g				=> 12,
 			valid_setup_g				=> 5
@@ -263,7 +299,9 @@ addr_calc_inst :	 addr_calc
 				delta_row_out   =>	delta_row_out_sig,
 				delta_col_out   =>	delta_col_out_sig,			
 				data_valid_out 	=> data_valid_out_sig,
-				trigger_unit		=> trigger				
+				trigger_unit	=> trigger,
+				enable				=>en_unit    	--enable unit port           
+
 			);
 
 print(out_file, "col row tl tr bl br d_row d_col oor");
