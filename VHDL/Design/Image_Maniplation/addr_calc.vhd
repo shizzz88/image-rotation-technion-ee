@@ -78,8 +78,8 @@ entity addr_calc is
 				
 				row_idx_in			:	in signed (10 downto 0);		--the current row index of the output image (2^10==>9 downto 0 + 1 bit of signed)
 				col_idx_in			:	in signed (10 downto 0);		--the current column index of the output image
-				x_crop_start	    :	in signed (10 downto 0);		--crop start index : the top left pixel for crop		
-				y_crop_start		:	in signed (10 downto 0);		--crop start index : the top left pixel for crop
+				x_crop_start	    :	in signed (10 downto 0);		--crop start index : the top left pixel for crop ,1 for full image		
+				y_crop_start		:	in signed (10 downto 0);		--crop start index : the top left pixel for crop,1 for full image
 				ram_start_add_in	:	in std_logic_vector  (22 downto 0);		--SDram beginning address
 				
                 tl_out				:	out std_logic_vector (22 downto 0);		--top left pixel address in SDRAM
@@ -649,17 +649,17 @@ end process calc_out_img_size_proc;
 					-- br_out	<=	ram_start_add_in + (br_x - '1') *std_logic_vector( to_signed(y_size_in_g,10)) + br_y;
 					--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++	
 					--      with pipeline     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-					tl_out_phase_1 	<=(tl_x - '1') *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
-					tl_out	<=tl_out_phase_1+ram_start_add_in+tl_y;                                                       
+					tl_out_phase_1 	<=(tl_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					tl_out	<=tl_out_phase_1+ram_start_add_in+tl_y- "10";                                                       
 					
-					tr_out_phase_1 	<=(tr_x - '1') *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
-					tr_out	<=tr_out_phase_1+ram_start_add_in+tr_y;
+					tr_out_phase_1 	<=(tr_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					tr_out	<=tr_out_phase_1+ram_start_add_in+tr_y- "10";
 					
-					bl_out_phase_1 	<=(bl_x - '1') *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
-					bl_out	<=bl_out_phase_1+ram_start_add_in+bl_y;
+					bl_out_phase_1 	<=(bl_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					bl_out	<=bl_out_phase_1+ram_start_add_in+bl_y- "10";
 					
-					br_out_phase_1 	<=(br_x - '1') *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
-					br_out	<=br_out_phase_1+ram_start_add_in+br_y;
+					br_out_phase_1 	<=(br_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					br_out	<=br_out_phase_1+ram_start_add_in+br_y- "10";
 		
 				else -- pixel is out of range
 					tl_x	<=	 ( others => '0') ;		
