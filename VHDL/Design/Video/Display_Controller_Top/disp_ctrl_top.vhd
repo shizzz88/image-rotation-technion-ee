@@ -130,6 +130,8 @@ constant right_frame_reg_addr_c	:	natural		:= 6;	--Frame register address
 constant upper_frame_reg_addr_c	:	natural		:= 7;	--Frame register address
 constant lower_frame_reg_addr_c	:	natural		:= 8;	--Frame register address
 
+constant frame_value_c		:	natural		:= (hor_active_pixels_g-hor_pres_pixels_g)/2;
+
 --###########################	Signals		###################################--
 --40MHz Clock Domain Signals
 signal pixels_req		:	std_logic_vector(integer(ceil(log(real(hor_active_pixels_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from FIFO
@@ -574,13 +576,13 @@ begin
 	--Frames
 	--ZERO all unused bits
 	left_frame_zero_proc:
-	--left_frame_rg (left_frame_rg'left downto reg_width_c) <=	(others => '0'); -- uri ran - uncomment for large resolution
-	left_frame_rg <= conv_std_logic_vector (336, left_frame_rg'high+1);
+	--left_frame_rg (left_frame_rg'left downto reg_width_c) <=	(others => '0'); 	-- uri ran - uncomment for large resolution
+	left_frame_rg <= conv_std_logic_vector (frame_value_c, left_frame_rg'high+1);				--for 128x96 change 80->336
 
 
 	right_frame_zero_proc:
-	--right_frame_rg (right_frame_rg'left downto reg_width_c) <=	(others => '0'); -- uri ran - uncomment for large resolution
-	right_frame_rg <= conv_std_logic_vector (336, right_frame_rg'high+1);
+	--right_frame_rg (right_frame_rg'left downto reg_width_c) <=	(others => '0'); 	-- uri ran - uncomment for large resolution
+	right_frame_rg <= conv_std_logic_vector (frame_value_c, right_frame_rg'high+1);			--for 128x96 change 80->336
 
 
 	upper_frame_zero_proc:

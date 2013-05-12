@@ -36,6 +36,7 @@ entity mem_mng_top is
 				clk_sys				:	in std_logic;	--System clock
 				rst_sdram			:	in std_logic;	--Reset for SDRAM Clock domain
 				rst_sys				:	in std_logic;	--Reset for System Clock domain
+				manipulation_trig	:	out std_logic;	--trigger image manipulation when bank switch
 
 				-- Wishbone Slave (mem_ctrl_wr)
 				wr_wbs_adr_i		:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -718,7 +719,8 @@ begin
 										rd_en		    =>	reg_rd_en,
 										wr_en		    =>	reg_wr_en
 									);
-	
+trigger_proc:
+manipulation_trig<=bank_switch;	
 -------------------------------	Debug Process--------------------------
 dbg_type_reg_proc:
 dbg_type_reg	<=	type_reg_dout;

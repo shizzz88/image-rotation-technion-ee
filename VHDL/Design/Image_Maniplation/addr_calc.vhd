@@ -64,6 +64,7 @@ entity addr_calc is
 			reset_polarity_g		:	std_logic	:= '0';			--Reset active low
 			x_size_in_g				:	positive 	:= 96;				-- number of rows  in the input image
 			y_size_in_g				:	positive 	:= 128;				-- number of columns  in the input image
+
 			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size_g			:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
@@ -173,8 +174,8 @@ signal br_y						:	std_logic_vector (row_idx_in'left - 1 downto 0);		--bottom ri
                                                     
 signal row_idx_in_shift			: signed (coordinate_size_shifted_7 downto 0);		--the current row index of the output image with shift left by 7
 signal col_idx_in_shift		    : signed (coordinate_size_shifted_7 downto 0);		--the current column index of the output image	with shift left by 7
-signal x_crop_start_shift		: signed (coordinate_size_shifted_7 downto 0);		--x_crop in in with shift left by 7
-signal y_crop_start_shift       : signed (coordinate_size_shifted_7 downto 0);		--y_crop in in with shift left by 7
+-- signal x_crop_start_shift		: signed (coordinate_size_shifted_7 downto 0);		--x_crop in in with shift left by 7
+-- signal y_crop_start_shift       : signed (coordinate_size_shifted_7 downto 0);		--y_crop in in with shift left by 7
            
 signal row_fraction_calc_after_crop		: 	signed (result_size downto 0); -- holds a temp calc of row index in the origin image + with crop command
 signal col_fraction_calc_after_crop    	: 	signed (result_size downto 0); -- holds a temp calc of col index in the origin image + with crop command
@@ -188,13 +189,13 @@ signal a_if_6	  	    	 : boolean; 			--temp signals for  pipeline of "out of ran
 signal in_range       : boolean; 	--temp signals for  pipeline of "out of range if"
 
 
-signal tl_out_phase_1 : std_logic_vector (19 downto 0);				--pipeline signals for calculation of output addr.
-signal tr_out_phase_1 : std_logic_vector (19 downto 0);				--pipeline signals for calculation of output addr.
-signal bl_out_phase_1 : std_logic_vector (19 downto 0);				--pipeline signals for calculation of output addr.
-signal br_out_phase_1 : std_logic_vector (19 downto 0);				--pipeline signals for calculation of output addr.
+signal tl_out_phase_1 : std_logic_vector (20 downto 0);				--pipeline signals for calculation of output addr.
+signal tr_out_phase_1 : std_logic_vector (20 downto 0);				--pipeline signals for calculation of output addr.
+signal bl_out_phase_1 : std_logic_vector (20 downto 0);				--pipeline signals for calculation of output addr.
+signal br_out_phase_1 : std_logic_vector (20 downto 0);				--pipeline signals for calculation of output addr.
 
 --valid proc signals
-signal pipe_counter				: integer range 0 to pipe_depth_g-1;		--pipe counter
+--signal pipe_counter				: integer range 0 to pipe_depth_g-1;		--pipe counter
 signal en_valid_count			: std_logic;							    -- indicates if this is the first time we count to pipe length
 signal valid_counter			: integer range 0 to valid_setup_g-1;		--valid counter
 signal	data_valid_out_sig		:	 std_logic;
@@ -233,13 +234,19 @@ begin
 			new_frame_y_size			<= 	y_size_in_g + 1 - conv_integer(std_logic_vector(y_crop_start));                                            
 			
 	--divide by 2 and shift left by 21 (shift_left_by_21 ==> multiply by 128^3, divide by 2=> shift right by 1)						
-			new_frame_x_size_shift(new_frame_x_size_shift'left downto new_frame_x_size_shift'left-1 )					<=( others => '0') ;
-			new_frame_x_size_shift(new_frame_x_size_shift'left-2 downto new_frame_x_size_shift'left-2-x_vector_size)	<= to_signed(new_frame_x_size,x_signed_vector_size) ;
+			new_frame_x_size_shift(new_frame_x_size_shift'left  )					<= '0' ;
+			new_frame_x_size_shift(new_frame_x_size_shift'left-1 downto new_frame_x_size_shift'left-2-x_vector_size)	<= to_signed(new_frame_x_size,x_signed_vector_size+1) ;
 			new_frame_x_size_shift(new_frame_x_size_shift'left-2-x_vector_size-1 downto 0 ) 							<=( others => '0') ;
 			
-			new_frame_y_size_shift(new_frame_y_size_shift'left downto new_frame_y_size_shift'left-1 )					<=( others => '0') ;
-			new_frame_y_size_shift(new_frame_y_size_shift'left-2 downto new_frame_y_size_shift'left-2-y_vector_size) 	<= to_signed(new_frame_y_size,y_signed_vector_size) ;
+			new_frame_y_size_shift(new_frame_y_size_shift'left  )					<= '0' ;
+			new_frame_y_size_shift(new_frame_y_size_shift'left-1 downto new_frame_y_size_shift'left-2-y_vector_size) 	<= to_signed(new_frame_y_size,y_signed_vector_size+1) ;
 			new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size-1 downto 0 )							    <=( others => '0') ;---------------------------synthesis error new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size downto 0 )							    <=( others => '0') ;
+			
+			--uri wrote:
+			--new_frame_y_size_shift(new_frame_y_size_shift'left  )					<= '0' ;
+			--new_frame_y_size_shift(new_frame_y_size_shift'left-1 downto new_frame_y_size_shift'left-2-y_vector_size) 	<= to_signed(new_frame_y_size,y_signed_vector_size+1) ;
+			--new_frame_y_size_shift(new_frame_y_size_shift'left-2- y_vector_size downto 0 )							    <=( others => '0') ;---------------------------synthesis error new_frame_y_size_shift(new_frame_y_size_shift'left-2-y_vector_size downto 0 )							    <=( others => '0') ;
+
 			
 	--shift left by 7 (shift_left_by_7 ==> multiply by 128)
 			row_idx_in_shift(row_idx_in_shift'left downto trig_frac_size_g )	<= row_idx_in	;
@@ -249,13 +256,21 @@ begin
 			col_idx_in_shift(trig_frac_size_g -1 downto 0)	<=( others => '0') ;
 
 	--divide by 2 and shift left by 7 (shift_left_by_7 ==> multiply by 128,  divide by 2=> shift right by 1)
-			x_size_out_shift(x_size_out_shift'left downto x_size_out_shift'left-1)					<=( others => '0') ;		-- =shift_left_by_7(x_size_out/2)
-			x_size_out_shift(x_size_out_shift'left-2 downto x_size_out_shift'left-2-x_vector_size)  <= to_signed(x_size_out_g,x_signed_vector_size);
+			x_size_out_shift(x_size_out_shift'left)					<='0' ;		-- =shift_left_by_7(x_size_out/2)
+			x_size_out_shift(x_size_out_shift'left-1 downto x_size_out_shift'left-2-x_vector_size)  <= to_signed(x_size_out_g,x_signed_vector_size+1);
 			x_size_out_shift(x_size_out_shift'left-2-x_vector_size-1 downto 0) 						<= ( others => '0') ;
 			
-			y_size_out_shift(y_size_out_shift'left downto y_size_out_shift'left-1) 					<=( others => '0') ;--=shift_left_by_7(y_size_out_g/2)
-			y_size_out_shift(y_size_out_shift'left-2 downto y_size_out_shift'left-2-y_vector_size)  <= to_signed(y_size_out_g,y_signed_vector_size);
+			y_size_out_shift(y_size_out_shift'left ) 					<='0' ;--=shift_left_by_7(y_size_out_g/2)
+			y_size_out_shift(y_size_out_shift'left-1 downto y_size_out_shift'left-2-y_vector_size)  <= to_signed(y_size_out_g,y_signed_vector_size+1);
 			y_size_out_shift(y_size_out_shift'left-2-y_vector_size-1 downto 0) 						<= ( others => '0') ;
+			
+			--uri wrote:
+			--y_size_out_shift(y_size_out_shift'left downto y_size_out_shift'left-1) 					<=( others => '0') ;--=shift_left_by_7(y_size_out_g/2)
+			--y_size_out_shift(y_size_out_shift'left-2 downto y_size_out_shift'left-3-y_vector_size)  <= to_signed(y_size_out_g,y_signed_vector_size+1);
+			--y_size_out_shift(y_size_out_shift'left-y_vector_size-3 downto 0) 						<= ( others => '0') ;			
+			
+			
+			
     --end if;
 
 ----------------------------------------------------------------------------------------
@@ -649,16 +664,16 @@ end process calc_out_img_size_proc;
 					-- br_out	<=	ram_start_add_in + (br_x - '1') *std_logic_vector( to_signed(y_size_in_g,10)) + br_y;
 					--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++	
 					--      with pipeline     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-					tl_out_phase_1 	<=(tl_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					tl_out_phase_1 	<=(tl_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size+1));
 					tl_out	<=tl_out_phase_1+ram_start_add_in+tl_y- "10";                                                       
 					
-					tr_out_phase_1 	<=(tr_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					tr_out_phase_1 	<=(tr_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size+1));
 					tr_out	<=tr_out_phase_1+ram_start_add_in+tr_y- "10";
 					
-					bl_out_phase_1 	<=(bl_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					bl_out_phase_1 	<=(bl_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size+1));
 					bl_out	<=bl_out_phase_1+ram_start_add_in+bl_y- "10";
 					
-					br_out_phase_1 	<=(br_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size));
+					br_out_phase_1 	<=(br_x - "10") *std_logic_vector( to_signed(y_size_in_g,y_signed_vector_size+1));
 					br_out	<=br_out_phase_1+ram_start_add_in+br_y- "10";
 		
 				else -- pixel is out of range

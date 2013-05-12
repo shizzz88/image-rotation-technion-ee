@@ -29,7 +29,7 @@ entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
-				img_ver_pixels_g	:	positive					:= 96;	-- active lines
+				img_ver_lines_g	:	positive					:= 96;	-- active lines
 				trig_frac_size_g	: 	positive					:= 7 ;
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
@@ -38,9 +38,8 @@ entity img_man_top is
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-				req_trig				:	in std_logic;							-- Trigger for image manipulation to begin,
 				image_tx_en				:	out std_logic;							--enable image transmission
-				
+				manipulation_trig				:	in std_logic;							--bank switch- indicates trigger
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
@@ -93,8 +92,9 @@ architecture rtl_img_man_top of img_man_top is
 	constant zoom_reg_addr_c	:	natural		:= 21;	--Zoom register address
 	constant cos_reg_addr_c		:	natural		:= 23;	--Cosine of Angle register address	
 	constant sin_reg_addr_c		:	natural		:= 25;	--Sine of Angle register address
---	###########################		Components		##############################	--
 
+	constant trigger_cnt_c		:	std_logic_vector(3 downto 0):="1111"; --number of cycles after summery chunk before trig is raised
+--	###########################		Components		##############################	--
 component gen_reg
 	generic	(
 				reset_polarity_g	:	std_logic	:= '0';					--When reset = reset_polarity_g, system is in RESET mode
@@ -163,7 +163,7 @@ end component wbs_reg;
 component addr_calc is
 	generic (
 				reset_polarity_g		:	std_logic	:= '0';					--Reset active low
-				x_size_in_g				:	positive 	:= img_ver_pixels_g;	-- number of rows  in the input image
+				x_size_in_g				:	positive 	:= img_ver_lines_g;	-- number of rows  in the input image
 				y_size_in_g				:	positive 	:= img_hor_pixels_g;	-- number of columns  in the input image
 				x_size_out_g			:	positive 	:= 600;				-- number of rows  in theoutput image
 				y_size_out_g			:	positive 	:= 800;				-- number of columns  in the output image
@@ -208,7 +208,7 @@ component img_man_manager is
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
 				img_hor_pixels_g	:	positive					:= 128;	--128 pixel in a coloum
-				img_ver_pixels_g	:	positive					:= 96;	--96 pixels in a row
+				img_ver_lines_g	:	positive					:= 96;	--96 pixels in a row
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row				
 			);
@@ -389,12 +389,19 @@ signal	bilinear_delta_row			:	std_logic_vector(trig_frac_size_g-1 downto 0);				
 signal	bilinear_delta_col			:	std_logic_vector(trig_frac_size_g-1 downto 0);				--	 needed for bilinear interpolation
 signal	bilinear_pixel_valid		:	std_logic;				--valid signal for index
 signal	bilinear_pixel_res			:	std_logic_vector (trig_frac_size_g downto 0); 	--current row index           --fix to generic
+
+-- trigger process
+signal trig_cnt						:	std_logic_vector(3 downto 0);--trigger counter signal
+signal trigger						:	std_logic;
+signal en_trig_proc						:	std_logic;
+
 --- garbage signals 
 signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
 signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
 --	###########################		Implementation		##############################	--
 begin	
 	
+
 	
 	unused_ports:
 	wbs_err_o<='0';
@@ -506,13 +513,14 @@ begin
 	generic map 
 				(reset_polarity_g => reset_polarity_g,
 				display_hor_pixels_g=>display_hor_pixels_g,
-				display_ver_pixels_g=>display_ver_pixels_g
-
+				display_ver_pixels_g=>display_ver_pixels_g,
+				img_hor_pixels_g=>img_hor_pixels_g,
+                img_ver_lines_g=>img_ver_lines_g
 				)
 	port map(
 			sys_clk				=>	system_clk,				-- clock
 			sys_rst				=>	system_rst,				-- Reset
-			req_trig			=>	req_trig,		-- Trigger for image manipulation to begin,
+			req_trig			=>	trigger,		-- Trigger for image manipulation to begin,
             image_tx_en			=>	image_tx_en,
 			--from addr_calc
 			
@@ -568,7 +576,7 @@ begin
 	addr_calc_inst	:	addr_calc	
 	generic map (
 				reset_polarity_g		=> '0',				--Reset active low
-				x_size_in_g				=> img_ver_pixels_g,	-- number of rows  in the input image
+				x_size_in_g				=> img_ver_lines_g,	-- number of rows  in the input image
 				y_size_in_g				=> img_hor_pixels_g,	-- number of columns  in the input image
 				x_size_out_g			=> 600,				-- number of rows  in theoutput image
 				y_size_out_g			=> 800,				-- number of columns  in the output image
@@ -578,23 +586,23 @@ begin
 	)
 	port map(
 			
-			--zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
-			--sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
-			--cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
-			--x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
-			--y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
+			zoom_factor			=>	signed(zoom_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			sin_teta			=>  signed(sin_reg_dout(trig_frac_size_g+1 downto 0)),	--from register --std_logic_vector int signed
+			cos_teta			=>  signed(cos_reg_dout(trig_frac_size_g+1 downto 0)) , --from register --std_logic_vector int signed             
+			x_crop_start	 	=>	signed(x_start_reg_dout(10 downto 0)),
+			y_crop_start		=>  signed(y_start_reg_dout(10 downto 0)),
 			row_idx_in			=>	im_addr_row_idx_in,	--from manager
 			col_idx_in			=>	im_addr_col_idx_in,	--from manager
 			
-			zoom_factor			=>	"010000000",--	 ZOOM
+			-- zoom_factor			=>	"010000000",--	 ZOOM
 			--sin_teta			=>	"000000000",--	0  degrees
 			--cos_teta			=>	"010000000",	
-			sin_teta			=>	"001101110",--	60 degree
-			cos_teta			=>	"001000000",	
+			-- sin_teta			=>	"001101110",--	60 degree
+			-- cos_teta			=>	"001000000",	
 			--sin_teta			=>	"010000000",--	90 degree
 			--cos_teta			=>	"000000000",
-			x_crop_start	 	=>	"00000000001",
-			y_crop_start		=>	"00000000001",
+			-- x_crop_start	 	=>	"00000000001",
+			-- y_crop_start		=>	"00000000001",
 
 			
 			ram_start_add_in	=> (others => '0'),
@@ -839,4 +847,40 @@ begin
 			wr_en		    =>	reg_wr_en
 	);
 	
+----------------------------------------------------------------------------------------
+----------------------------		trigger_proc Process		------------------------
+----------------------------------------------------------------------------------------
+-- the process generates a trigger to image manipulation for 1 cycle
+-- the trigger is raised 10 cycles (defined by constant) after summery is written
+---------------------------------------------------------------------------------------- 
+
+trigger_proc: process (system_clk, system_rst)
+begin
+	if (system_rst = reset_polarity_g) then
+		trig_cnt		<=	(others=>'0')	;	
+	    en_trig_proc	<=  '0';
+		trigger			<='0';
+ 
+	elsif (rising_edge (system_clk))  then
+		if (manipulation_trig='1') then --summery chunk
+			en_trig_proc<='1';
+		end if;	
+		
+		if (en_trig_proc='1') then
+			
+			if (trig_cnt=trigger_cnt_c) then 		--stop trigger, reset all
+				trigger<='0';
+				trig_cnt<=(others=>'0');
+				en_trig_proc<='0';
+			elsif (trig_cnt=trigger_cnt_c-1) then 	--raise trigger
+				trigger<='1';
+				trig_cnt<=trig_cnt+1;
+			else							        --count
+				trig_cnt<=trig_cnt+1;	
+			end if;	
+		end if;	
+	
+	end if;
+end process trigger_proc;
+
 end architecture rtl_img_man_top;

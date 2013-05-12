@@ -22,8 +22,11 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top_tb is
 	generic (
---original			uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
-			uart_tx_delay_g		:	positive	:= 1000000;			--Clock cycles between two transmissions
+	          img_hor_pixels_g	:	positive					:= 640;	-- active pixels
+	          img_ver_lines_g	:	positive					:= 480;	-- active lines
+	
+		--original	uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
+			uart_tx_delay_g		:	positive	:= 1000000000;			--Clock cycles between two transmissions
 			
 			file_max_idx_g		:	positive 	:= 1				-- uri ran Maximum file index
 		);
@@ -39,6 +42,8 @@ constant uart_period_c	:	time := (1 sec) / real(baudrate_c);
 
 component mds_top
 	generic (
+				img_hor_pixels_g	:	positive					:= 640;	-- active pixels
+				img_ver_lines_g	:	positive					:= 480;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 --				rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
@@ -51,7 +56,6 @@ component mds_top
 				rst_133				:	in std_logic;
 				rst_100				:	in std_logic;
 				rst_40				:	in std_logic;
-				img_trigger 	:	in std_logic;
 				--UART
 				uart_serial_in		:	in std_logic;
 				uart_serial_out		:	out std_logic;
@@ -262,16 +266,7 @@ rst_100	<=	'0', '1' after 20 ns;
 rst_proc3:
 rst_40	<=	'0', '1' after 20 ns;
 
-img_man_trigger_proc: process
-begin
- 
- img_man_trigger <= '0';
-   wait for 28 ms;
-		img_man_trigger <= '1';
-	wait for 10 ns;
-		img_man_trigger <= '0';
-	wait;
-end process;
+
 
 uart_gen_inst :  uart_tx_gen_model generic map (
 			file_name_g			=> "p:/uart_tx", 		--File name to be transmitted
@@ -288,7 +283,10 @@ uart_gen_inst :  uart_tx_gen_model generic map (
 
 mds_top_inst	: mds_top
 	generic map
-	(
+	(			
+				img_hor_pixels_g => img_hor_pixels_g,
+	            img_ver_lines_g =>img_ver_lines_g,
+	
 				--rep_size_g			=>	rep_size_c,
 				baudrate_g			=>	baudrate_c
 	)
@@ -299,7 +297,7 @@ mds_top_inst	: mds_top
                 rst_133	            =>	rst_133,
                 rst_100	            =>	rst_100,
                 rst_40	            =>	rst_40,
-                img_trigger => img_man_trigger,
+                --img_trigger => img_man_trigger,
 				uart_serial_in		=>	uart_serial_in	,
 				uart_serial_out		=>	uart_serial_out	,
 				dram_addr			=>	dram_addr		,
