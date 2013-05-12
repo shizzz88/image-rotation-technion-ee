@@ -114,7 +114,7 @@ architecture rtl_mem_ctrl_wr_wbm of mem_ctrl_wr_wbm is
 	signal cur_wr_addr		:	std_logic_vector(21 downto 0);		--Current write address to SDRAM
 	signal wr_cnt 			:	natural range 0 to img_hor_pixels_g*img_ver_lines_g - 1;	--Number of written words (16 bits) to the SDRAM 
 	signal wr_cnt_to_rd		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g - 1;	--Latched wr_cnt, for mem_ctrl_rd
-	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g;		--Summary chunk value
+	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g ;		--Summary chunk value
 	signal addr_pipe		:	std_logic_vector(7 downto 0);		--For pipeline
 	signal sum_pipe_bool	:	boolean;							--For pipeline
 	signal ram_cnt_zero_bool:	boolean;							--Indicates ram_words_cnt = x"01" (next is zero)
@@ -635,14 +635,18 @@ architecture rtl_mem_ctrl_wr_wbm of mem_ctrl_wr_wbm is
 	sum_wr_cnt_ff_proc: process (clk_i, rst)
 	begin
 		if (rst = reset_polarity_g) then
-			sum_wr_cnt	<= 0;
+			sum_wr_cnt	<= img_hor_pixels_g*img_ver_lines_g;
 		elsif rising_edge (clk_i) then
 			if (inc_sum_wr_cnt = "01") then	--Add data
-				sum_wr_cnt	<= sum_wr_cnt + conv_integer(ram_samp_dt);
+				sum_wr_cnt	<= img_hor_pixels_g*img_ver_lines_g;
+				--sum_wr_cnt	<= sum_wr_cnt + conv_integer(ram_samp_dt);
 			elsif (inc_sum_wr_cnt = "10") then --Reset counter
-				sum_wr_cnt	<= 0;
+				sum_wr_cnt	<= img_hor_pixels_g*img_ver_lines_g;
+
+				--sum_wr_cnt	<= 0;
 			else
-				sum_wr_cnt	<=	sum_wr_cnt;
+				sum_wr_cnt	<= img_hor_pixels_g*img_ver_lines_g;
+				--sum_wr_cnt	<=	sum_wr_cnt;
 			end if;
 		end if;
 	end process sum_wr_cnt_ff_proc;

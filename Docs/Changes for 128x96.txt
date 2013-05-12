@@ -1,4 +1,4 @@
-mem_ctrl_wr  line 151 :
+mem_ctrl_wr  line 151 :-----------------------mem_ctrl_wr_wbm
 	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g ;		--Summary chunk value
 	in the new version -1 removed by beeri
 	nothing to change

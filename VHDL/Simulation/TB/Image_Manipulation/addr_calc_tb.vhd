@@ -31,8 +31,8 @@ entity addr_calc_tb is
 						reset_polarity_g		:	std_logic	:= '0';			--Reset active low
 
 			file_name_g				:	string  	:= "test_modelsim.txt";		--out file name
-			x_size_in_g				:	positive 	:= 96;		
-			y_size_in_g				:	positive 	:= 128;		
+			x_size_in_g				:	positive 	:= 480;		
+			y_size_in_g				:	positive 	:= 640;		
 			x_size_out_g				:	positive 	:= 600;
 			y_size_out_g				:	positive 	:= 800;
 			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture (binary)
@@ -196,8 +196,8 @@ cos_teta_sig		    <=  "010000000";
 --y_crop_start_sig	    <=  "00000001010";  			--y_crop=10
 -- x_crop_start_sig	    <=  "00000101101"; 				--x_crop=45
 -- y_crop_start_sig	    <=  "00000101000";  			--y_crop=40  
-x_crop_start_sig	    <=  "00000000001"; 				--x_crop=45
-y_crop_start_sig	    <=  "00000000001";  			--y_crop=40                   
+x_crop_start_sig	    <=  "00000000001"; 				--x_crop=1
+y_crop_start_sig	    <=  "00000000001";  			--y_crop=1                   
 ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0                           
 
 -- row_idx_sig <= to_signed(301,11);		--row,col =301

@@ -465,10 +465,10 @@ tic;
 rotangle=str2double(get(handles.RotAngle,'String'));
 sinangle=floor(sind(rotangle)*128);
 cosangle=floor(cosd(rotangle)*128);
-zoom=str2double(get(handles.ZoomFactor,'String'));
+zoom=128/str2double(get(handles.ZoomFactor,'String'));
 xstart=str2double(get(handles.Xstart,'String'));
 ystart=str2double(get(handles.Ystart,'String'));
-rotimg=Imrotate5(OriginalImg,rotangle,zoom,xstart,ystart,600,800);
+rotimg=Imrotate6(OriginalImg,rotangle,str2double(get(handles.ZoomFactor,'String')),xstart,ystart,600,800);
 axes(handles.axes2);
 imshow(rotimg);
 colormap(gray);
@@ -517,7 +517,7 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     fprintf(fid, '#Length\r\n'); %write #Length
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
-    fprintf(fid, '%02X\r\n',floor( xstart/256), mod( xstart, 256) ); %write xstart value to file in 2 bytes hex
+    fprintf(fid, '%02X\r\n', mod( xstart, 256),floor( xstart/256) ); %write xstart value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
         crc = (mod((floor(xstart/256))+(mod(xstart, 256)) + 128 + 1 + x_start_addr , 256)); % calcultae crc= (xstart + type +length + address) mod 256
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
@@ -534,7 +534,7 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     fprintf(fid, '#Length\r\n'); %write #Length
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
-    fprintf(fid, '%02X\r\n',floor( ystart/256), mod( ystart, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '%02X\r\n', mod( ystart, 256),floor( ystart/256) ); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
         crc = (mod((floor(ystart/256))+(mod(ystart, 256)) + 128 + 1 + y_start_addr , 256)); % calcultae crc= (ystart + type +length + address) mod 256
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
@@ -552,7 +552,7 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     fprintf(fid, '#Length\r\n'); %write #Length
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
-    fprintf(fid, '%02X\r\n',floor( zoom/256), mod( zoom, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '%02X\r\n', mod( zoom, 256),floor( zoom/256) ); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
         crc = (mod((floor(zoom/256))+(mod(zoom, 256)) + 128 + 1 + zoom_addr , 256)); % calcultae crc= (\oom + type +length + address) mod 256
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
@@ -569,7 +569,7 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     fprintf(fid, '#Length\r\n'); %write #Length
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
-    fprintf(fid, '%02X\r\n',floor( cosangle/256), mod( cosangle, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '%02X\r\n', mod( cosangle, 256),floor( cosangle/256) ); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
         crc = mod(cosangle + 128 + 1 + cosine_addr , 256); % calcultae crc= (angle + type +length + address) mod 256
     %crc = mod(64 + 128 + 1 + 20 , 256);
@@ -587,7 +587,7 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     fprintf(fid, '#Length\r\n'); %write #Length
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
-    fprintf(fid, '%02X\r\n',floor( sinangle/256), mod( sinangle, 256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '%02X\r\n', mod( sinangle, 256) ,floor( sinangle/256)); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
         %old version -> crc = (mod((floor(sinangle/256))+(mod(sinangle, 256)) + 128 + 1 + 22 , 256)); % calcultae crc= (angle + type +length + address) mod 256
         crc = mod(sinangle + 128 + 1 + sine_addr , 256) % calcultae crc= (angle + type +length + address) mod 256

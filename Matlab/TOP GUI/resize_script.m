@@ -1,6 +1,7 @@
 clear all
 close all
 clc
+%resize and make jpeg image grayscale
 %read image and requested resolution from user
 %write new image in jpeg format
 [FileName,PathName,FilterIndex] =uigetfile({'*.jpg;*.bmp','All Image Files';'*.*','All Files' },'Please Choose Image');

@@ -26,6 +26,8 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top is
 	generic (
+				img_hor_pixels_g	:	positive					:= 640;	-- active pixels
+				img_ver_lines_g	:	positive					:= 480;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 	-- uri ran	rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
@@ -38,7 +40,6 @@ entity mds_top is
 				rst_133				:	in std_logic;
 				rst_100				:	in std_logic;
 				rst_40				:	in std_logic;
-				img_trigger 	:	in std_logic;
 				--Clock and Reset to SDRAM, VESA
 				clk_sdram_out		:	out std_logic;
 				clk_vesa_out		:	out std_logic;
@@ -101,10 +102,10 @@ constant num_of_wbm_y_c :	natural := 3;	--3 WBM to INTERCON Y	uri ran original 2
 
 component img_man_top is
 	generic (
-				reset_polarity_g 	: 	std_logic 					:= '0';
-				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
-				img_ver_pixels_g	:	positive					:= 96;	-- active lines
-				trig_frac_size_g	: 	positive					:= 7 ;
+				reset_polarity_g 		: 	std_logic 				:= '0';
+				img_hor_pixels_g		:	positive				:= 640;	-- active pixels
+				img_ver_lines_g			:	positive				:= 480;	-- active lines
+				trig_frac_size_g		: 	positive				:= 7 ;
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
 			);
@@ -112,8 +113,8 @@ component img_man_top is
 				--Clock and Reset
 				system_clk				:	in std_logic;							--Clock
 				system_rst				:	in std_logic;							--Reset
-				req_trig				 :	in std_logic;								-- Trigger for image manipulation to begin,
 				image_tx_en				:	out std_logic;							--enable image transmission
+				manipulation_trig		:	in std_logic;							--bank switch- indicates trigger
 
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -422,6 +423,7 @@ component mem_mng_top
 				clk_sys				:	in std_logic;	--System clock
 				rst_sdram			:	in std_logic;	--Reset for SDRAM Clock domain
 				rst_sys				:	in std_logic;	--Reset for System Clock domain
+				manipulation_trig	:	out std_logic;							--bank switch- indicates trigger
 
 				-- Wishbone Slave (mem_ctrl_wr)
 				wr_wbs_adr_i		:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -713,8 +715,11 @@ signal	img_rd_wbm_err_i		:  std_logic;
 
 signal	img_rd_wbm_dat_o		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
 signal	img_rd_wbm_we_o			:  std_logic;	
-		--Signals from image manipulation 
+		--Signals from image manipulation to display
 signal	img_image_tx_en			:  std_logic;					--enable image transmission
+		--Signals from mem_mng_top to image manipulation
+signal	mem_manipulation_trig	:  std_logic;					--trigger image transmission when bank switch
+
 	-- Wishbone Master (RX Block)
 signal rx_wbm_adr_o		:	std_logic_vector (9 downto 0);		--Address in internal RAM
 signal rx_wbm_tga_o		:	std_logic_vector (9 downto 0);		--Burst Length
@@ -998,53 +1003,52 @@ intercon_x_inst		:	intercon_mux generic map
 
 mem_mng_inst 	:	 mem_mng_top generic map
 				(
-					-- uri ran
-					img_hor_pixels_g	 => 128,                                         --************************************-
-				    img_ver_lines_g	     => 96                                        --************************************-
-					--img_hor_pixels_g	 => 640,
-				    --img_ver_lines_g	     => 480
+					
+					img_hor_pixels_g	 => img_hor_pixels_g,
+				    img_ver_lines_g	     => img_ver_lines_g
 				)	
 				port map
 				(
-				clk_sdram		=>	clk_133,
-				clk_sys			=>	clk_100,	
-				rst_sdram		=>	rst_133,	
-				rst_sys		    =>	rst_100,
-				wr_wbs_adr_i	=>	ic_wbs_adr_i (9 downto 0)		,	
-				wr_wbs_tga_i	=>	ic_wbs_tga_i (9 downto 0)		,	
-				wr_wbs_dat_i	=>	ic_wbs_dat_i (7 downto 0)		,	
-				wr_wbs_cyc_i	=>	ic_wbs_cyc_i (0)		,	
-				wr_wbs_stb_i	=>	ic_wbs_stb_i (0)		,	
-				wr_wbs_we_i		=>	ic_wbs_we_i  (0)		,	
-				wr_wbs_tgc_i	=>	ic_wbs_tgc_i (0)		,	
-				wr_wbs_dat_o	=>	mem_rx_wbm_dat_i		,	
-				wr_wbs_stall_o	=>	mem_rx_wbm_stall_i	,	
-				wr_wbs_ack_o	=>	mem_rx_wbm_ack_i		,	
-				wr_wbs_err_o	=>	mem_rx_wbm_err_i		,	
+				clk_sdram			=>	clk_133,
+				clk_sys				=>	clk_100,	
+				rst_sdram			=>	rst_133,	
+				rst_sys		    	=>	rst_100,
+				manipulation_trig	=>	mem_manipulation_trig,
+				wr_wbs_adr_i		=>	ic_wbs_adr_i (9 downto 0)		,	
+				wr_wbs_tga_i		=>	ic_wbs_tga_i (9 downto 0)		,	
+				wr_wbs_dat_i		=>	ic_wbs_dat_i (7 downto 0)		,	
+				wr_wbs_cyc_i		=>	ic_wbs_cyc_i (0)		,	
+				wr_wbs_stb_i		=>	ic_wbs_stb_i (0)		,	
+				wr_wbs_we_i			=>	ic_wbs_we_i  (0)		,	
+				wr_wbs_tgc_i		=>	ic_wbs_tgc_i (0)		,	
+				wr_wbs_dat_o		=>	mem_rx_wbm_dat_i		,	
+				wr_wbs_stall_o		=>	mem_rx_wbm_stall_i	,	
+				wr_wbs_ack_o		=>	mem_rx_wbm_ack_i		,	
+				wr_wbs_err_o		=>	mem_rx_wbm_err_i		,	
 				
-				rd_wbs_adr_i 	=>	rd_wbs_adr_i 	,	
-				rd_wbs_tga_i 	=>	rd_wbs_tga_i 	,	
-				rd_wbs_cyc_i	=>	rd_wbs_cyc_i	,	
-				rd_wbs_tgc_i 	=>	rd_wbs_tgc_i 	,	
-				rd_wbs_stb_i	=>	rd_wbs_stb_i	,	
-				rd_wbs_dat_o 	=>	rd_wbs_dat_o 	,	
-				rd_wbs_stall_o	=>	rd_wbs_stall_o	,	
-				rd_wbs_ack_o	=>	rd_wbs_ack_o	,	
-				rd_wbs_err_o	=>	rd_wbs_err_o	,	
-				
-				wbm_dat_i		=>	wbm_dat_i		,	
-				wbm_stall_i		=>	wbm_stall_i		,	
-				wbm_err_i		=>	wbm_err_i		,	
-				wbm_ack_i		=>	wbm_ack_i		,	
-				wbm_adr_o		=>	wbm_adr_o		,	
-				wbm_dat_o		=>	wbm_dat_o		,	
-				wbm_we_o		=>	wbm_we_o		,	
-				wbm_tga_o		=>	wbm_tga_o		,	
-				wbm_cyc_o		=>	wbm_cyc_o		,	
-				wbm_stb_o		=>	wbm_stb_o		,
-				dbg_type_reg	=>	dbg_type_reg_mem,
-				dbg_wr_bank_val =>	dbg_wr_bank_val,
-				dbg_rd_bank_val =>	dbg_rd_bank_val,
+				rd_wbs_adr_i 		=>	rd_wbs_adr_i 	,	
+				rd_wbs_tga_i 		=>	rd_wbs_tga_i 	,	
+				rd_wbs_cyc_i		=>	rd_wbs_cyc_i	,	
+				rd_wbs_tgc_i 		=>	rd_wbs_tgc_i 	,	
+				rd_wbs_stb_i		=>	rd_wbs_stb_i	,	
+				rd_wbs_dat_o 		=>	rd_wbs_dat_o 	,	
+				rd_wbs_stall_o		=>	rd_wbs_stall_o	,	
+				rd_wbs_ack_o		=>	rd_wbs_ack_o	,	
+				rd_wbs_err_o		=>	rd_wbs_err_o	,	
+					
+				wbm_dat_i			=>	wbm_dat_i		,	
+				wbm_stall_i			=>	wbm_stall_i		,	
+				wbm_err_i			=>	wbm_err_i		,	
+				wbm_ack_i			=>	wbm_ack_i		,	
+				wbm_adr_o			=>	wbm_adr_o		,	
+				wbm_dat_o			=>	wbm_dat_o		,	
+				wbm_we_o			=>	wbm_we_o		,	
+				wbm_tga_o			=>	wbm_tga_o		,	
+				wbm_cyc_o			=>	wbm_cyc_o		,	
+				wbm_stb_o			=>	wbm_stb_o		,
+				dbg_type_reg		=>	dbg_type_reg_mem,
+				dbg_wr_bank_val 	=>	dbg_wr_bank_val,
+				dbg_rd_bank_val 	=>	dbg_rd_bank_val,
 				dbg_actual_wr_bank	=>	dbg_actual_wr_bank,
 				dbg_actual_rd_bank  =>	dbg_actual_rd_bank
 			);
@@ -1053,10 +1057,10 @@ disp_ctrl_inst :	 disp_ctrl_top
 			generic map
 			(	-- uri ran
 				--rep_size_g	=>	rep_size_g
-				 hor_pres_pixels_g	=>	128,										--************************************-
-				ver_pres_lines_g	=>	96											--************************************-
-				--hor_pres_pixels_g	=>	640,	
-				--ver_pres_lines_g	=>	480		
+				 -- hor_pres_pixels_g	=>	128,										--************************************-
+				-- ver_pres_lines_g	=>	96											--************************************-
+				hor_pres_pixels_g	=>	img_hor_pixels_g,	
+				ver_pres_lines_g	=>	img_ver_lines_g	
 			)
 			port map
 			(
@@ -1184,8 +1188,8 @@ tx_path_inst: tx_path
 img_man_top_inst: img_man_top 
 	generic map(
 				reset_polarity_g 	 =>	'0',
-				img_hor_pixels_g	 =>128,	-- active pixels
-				img_ver_pixels_g	 => 96,	-- active lines
+				img_hor_pixels_g	 =>	img_hor_pixels_g,--128,	-- active pixels
+				img_ver_lines_g	 	 =>	img_ver_lines_g,--96,	-- active lines
 				trig_frac_size_g	 => 7,
 				display_hor_pixels_g => 800,	--800 pixel in a coloum
 				display_ver_pixels_g => 600	--600 pixels in a row
@@ -1194,12 +1198,12 @@ img_man_top_inst: img_man_top
 				--Clock and Reset
 				system_clk			=>	clk_100,
 				system_rst			=>	rst_100,
-				req_trig			=>  img_trigger,
 				image_tx_en			=>  img_image_tx_en,
+				manipulation_trig	=>	mem_manipulation_trig,
 				-- Wishbone Slave (Fr Registers)
 				wbs_adr_i			=> ic_wbs_adr_i(39 downto 30),
-				wbs_tga_i			=> ic_wbs_tga_i(29 downto 20),
-				wbs_dat_i			=> ic_wbs_dat_i(23 downto 16),
+				wbs_tga_i			=> ic_wbs_tga_i(39 downto 30),--(29 downto 20),--
+				wbs_dat_i			=> ic_wbs_dat_i(31 downto 24),--(23 downto 16),--
 				wbs_cyc_i			=> ic_wbs_cyc_i(3),
 				wbs_stb_i			=> ic_wbs_stb_i(3),
 				wbs_we_i			=> ic_wbs_we_i (3),
