@@ -1,0 +1,14 @@
+Partition Merge Status : Successful - Sun May 19 11:48:13 2013
+Quartus II 64-Bit Version : 12.1 Build 177 11/07/2012 SJ Full Version
+Revision Name : mds_img_manipulation
+Top-level Entity Name : sys_top
+Family : Cyclone II
+Total logic elements : 5,961 / 33,216 ( 18 % )
+    Total combinational functions : 4,418 / 33,216 ( 13 % )
+    Dedicated logic registers : 3,436 / 33,216 ( 10 % )
+Total registers : 3436
+Total pins : 129 / 475 ( 27 % )
+Total virtual pins : 0
+Total memory bits : 162,888 / 483,840 ( 34 % )
+Embedded Multiplier 9-bit elements : 24 / 70 ( 34 % )
+Total PLLs : 1 / 4 ( 25 % )
