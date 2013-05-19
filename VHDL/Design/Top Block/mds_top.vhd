@@ -26,8 +26,8 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top is
 	generic (
-				img_hor_pixels_g	:	positive					:= 640;	-- active pixels
-				img_ver_lines_g	:	positive					:= 480;	-- active lines
+				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
+				img_ver_lines_g	:	positive					:= 96;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 	-- uri ran	rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
