@@ -188,62 +188,8 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-
 set_global_assignment -name PARTITION_NETLIST_TYPE POST_FIT -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name TCL_SCRIPT_FILE de2_pins.tcl
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Controllers/SDRAM_Controller/sdram_controller.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Memory_Management_Top/mem_mng_top.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Arbiter/mem_mng_arbiter.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Altera_DE2/7Segment_Display/Hexss.vhd
-set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/tx_path_wbm/tx_path_wbm.vhd"
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/Display_Controller_Top/disp_ctrl_top.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/Pixel_Manager/pixel_mng.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/VESA/vesa_gen_ctrl.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/VESA/synthetic_frame_generator.vhd
-set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/tx_path.vhd"
-set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/rx_path.vhd"
-set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/mds_top.vhd"
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Intercon/intercon_pkg.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Intercon/intercon_mux.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Intercon/intercon.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Registers/wbs_reg.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Registers/gen_reg.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/ram_simple.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/ram_generic_pkg.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/ram_generic.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/altera_16to8_dc_ram.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/altera_8to16_dc_ram.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Wr/mem_ctrl_wr_wbs.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Wr/mem_ctrl_wr_wbm.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Wr/mem_ctrl_wr.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Rd/mem_ctrl_rd_wbs.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Rd/mem_ctrl_rd_wbm.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Rd/mem_ctrl_rd.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/FIFO/general_fifo.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/FIFO/dc_fifo.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/img_man_top.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/img_man_manager.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/bilinear.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/addr_calc.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Reset_Block/sync_rst_gen.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Reset_Block/reset_debouncer.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Reset_Block/reset_blk_top.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Global_Nets_Top/global_nets_top.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Clock_Block/pll.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Clock_Block/clk_blk_top.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Gates/mux_generic.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Gates/dec_generic.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/CRC/CheckSum/checksum_calc.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Communication/Serial/UART/TX/uart_tx.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Communication/Serial/UART/RX/uart_rx.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Bus/Message_Packs/Encoder/mp_enc.vhd
-set_global_assignment -name VHDL_FILE ../VHDL/Design/Bus/Message_Packs/Decoder/mp_dec.vhd
-set_global_assignment -name CDF_FILE output_files/output_files/Chain1.cdf
-set_global_assignment -name BDF_FILE mds_img_manipulation.bdf
-set_global_assignment -name BDF_FILE sys_top.bdf
-set_location_assignment PIN_AD12 -to uart_serial_in_led
-set_location_assignment PIN_AE12 -to clk_100_led
 set_global_assignment -name ENABLE_SIGNALTAP ON
 set_global_assignment -name USE_SIGNALTAP_FILE output_files/stp2.stp
-set_global_assignment -name SIGNALTAP_FILE output_files/stp2.stp
 set_global_assignment -name SLD_NODE_CREATOR_ID 110 -section_id auto_signaltap_0
 set_global_assignment -name SLD_NODE_ENTITY_NAME sld_signaltap -section_id auto_signaltap_0
 set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_clk -to fpga_clk -section_id auto_signaltap_0
@@ -301,5 +247,59 @@ set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_IN_ENABLE
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ADVANCED_TRIGGER_ENTITY=basic,1," -section_id auto_signaltap_0
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL_PIPELINE=1" -section_id auto_signaltap_0
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ENABLE_ADVANCED_TRIGGER=0" -section_id auto_signaltap_0
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_HIWORD=48053" -section_id auto_signaltap_0
+set_location_assignment PIN_AD12 -to dbg_img_image_tx_en
+set_global_assignment -name SDC_FILE SDC1.sdc
+set_global_assignment -name TCL_SCRIPT_FILE de2_pins.tcl
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Controllers/SDRAM_Controller/sdram_controller.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Memory_Management_Top/mem_mng_top.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Arbiter/mem_mng_arbiter.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Altera_DE2/7Segment_Display/Hexss.vhd
+set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/tx_path_wbm/tx_path_wbm.vhd"
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/Display_Controller_Top/disp_ctrl_top.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/Pixel_Manager/pixel_mng.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/VESA/vesa_gen_ctrl.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Video/VESA/synthetic_frame_generator.vhd
+set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/tx_path.vhd"
+set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/rx_path.vhd"
+set_global_assignment -name VHDL_FILE "../VHDL/Design/Top Block/mds_top.vhd"
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Intercon/intercon_pkg.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Intercon/intercon_mux.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Misc/Intercon/intercon.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Registers/wbs_reg.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Registers/gen_reg.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/ram_simple.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/ram_generic_pkg.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/ram_generic.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/altera_16to8_dc_ram.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/RAM/altera_8to16_dc_ram.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Wr/mem_ctrl_wr_wbs.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Wr/mem_ctrl_wr_wbm.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Wr/mem_ctrl_wr.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Rd/mem_ctrl_rd_wbs.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Rd/mem_ctrl_rd_wbm.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/Memory_Management/Mem_Ctrl_Rd/mem_ctrl_rd.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/FIFO/general_fifo.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Memory/FIFO/dc_fifo.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/img_man_top.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/img_man_manager.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/bilinear.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Image_Maniplation/addr_calc.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Reset_Block/sync_rst_gen.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Reset_Block/reset_debouncer.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Reset_Block/reset_blk_top.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Global_Nets_Top/global_nets_top.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Clock_Block/pll.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Global_Nets/Clock_Block/clk_blk_top.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Gates/mux_generic.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Gates/dec_generic.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/CRC/CheckSum/checksum_calc.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Communication/Serial/UART/TX/uart_tx.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Communication/Serial/UART/RX/uart_rx.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Bus/Message_Packs/Encoder/mp_enc.vhd
+set_global_assignment -name VHDL_FILE ../VHDL/Design/Bus/Message_Packs/Decoder/mp_dec.vhd
+set_global_assignment -name CDF_FILE output_files/output_files/Chain1.cdf
+set_global_assignment -name BDF_FILE mds_img_manipulation.bdf
+set_global_assignment -name BDF_FILE sys_top.bdf
+set_global_assignment -name SIGNALTAP_FILE output_files/stp2.stp
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

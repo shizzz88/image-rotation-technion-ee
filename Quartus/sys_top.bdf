@@ -72,7 +72,7 @@ applicable agreement for further details.
 )
 (pin
 	(output)
-	(rect 1656 616 1832 632)
+	(rect 1656 600 1832 616)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "uart_serial_out" (rect 90 0 161 12)(font "Arial" ))
 	(pt 0 8)
@@ -85,11 +85,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1840 592 1896 608))
+	(annotation_block (location)(rect 1840 576 1896 592))
 )
 (pin
 	(output)
-	(rect 1656 632 1834 648)
+	(rect 1656 616 1834 632)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_addr[11..0]" (rect 90 0 173 12)(font "Arial" ))
 	(pt 0 8)
@@ -102,11 +102,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1834 648 1890 816))
+	(annotation_block (location)(rect 1840 608 1928 632))
 )
 (pin
 	(output)
-	(rect 1656 648 1832 664)
+	(rect 1648 632 1824 648)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_bank[1..0]" (rect 90 0 170 12)(font "Arial" ))
 	(pt 0 8)
@@ -119,11 +119,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 664 1888 696))
+	(annotation_block (location)(rect 1824 648 1880 680))
 )
 (pin
 	(output)
-	(rect 1656 664 1832 680)
+	(rect 1648 648 1824 664)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_cas_n" (rect 90 0 150 12)(font "Arial" ))
 	(pt 0 8)
@@ -136,11 +136,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 680 1888 696))
+	(annotation_block (location)(rect 1824 664 1880 680))
 )
 (pin
 	(output)
-	(rect 1656 680 1832 696)
+	(rect 1648 664 1824 680)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_cke" (rect 90 0 138 12)(font "Arial" ))
 	(pt 0 8)
@@ -153,11 +153,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 696 1888 712))
+	(annotation_block (location)(rect 1824 680 1880 696))
 )
 (pin
 	(output)
-	(rect 1656 696 1832 712)
+	(rect 1648 680 1824 696)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_cs_n" (rect 90 0 144 12)(font "Arial" ))
 	(pt 0 8)
@@ -170,11 +170,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 712 1888 728))
+	(annotation_block (location)(rect 1824 696 1880 712))
 )
 (pin
 	(output)
-	(rect 1656 728 1832 744)
+	(rect 1648 712 1824 728)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_ldqm" (rect 90 0 144 12)(font "Arial" ))
 	(pt 0 8)
@@ -187,11 +187,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 744 1888 760))
+	(annotation_block (location)(rect 1824 728 1880 744))
 )
 (pin
 	(output)
-	(rect 1656 744 1832 760)
+	(rect 1648 728 1824 744)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_udqm" (rect 90 0 147 12)(font "Arial" ))
 	(pt 0 8)
@@ -204,11 +204,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 760 1880 776))
+	(annotation_block (location)(rect 1824 744 1872 760))
 )
 (pin
 	(output)
-	(rect 1656 760 1832 776)
+	(rect 1648 744 1824 760)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_ras_n" (rect 90 0 147 12)(font "Arial" ))
 	(pt 0 8)
@@ -221,11 +221,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 776 1888 792))
+	(annotation_block (location)(rect 1824 760 1880 776))
 )
 (pin
 	(output)
-	(rect 1656 776 1832 792)
+	(rect 1648 760 1824 776)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dram_we_n" (rect 90 0 145 12)(font "Arial" ))
 	(pt 0 8)
@@ -238,11 +238,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 792 1888 808))
+	(annotation_block (location)(rect 1824 776 1880 792))
 )
 (pin
 	(output)
-	(rect 1656 840 1832 856)
+	(rect 1648 824 1824 840)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "blank" (rect 90 0 115 12)(font "Arial" ))
 	(pt 0 8)
@@ -255,11 +255,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 856 1880 872))
+	(annotation_block (location)(rect 1824 840 1872 856))
 )
 (pin
 	(output)
-	(rect 1656 856 1832 872)
+	(rect 1648 840 1824 856)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "hsync" (rect 90 0 120 12)(font "Arial" ))
 	(pt 0 8)
@@ -272,11 +272,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 872 1880 888))
+	(annotation_block (location)(rect 1824 856 1872 872))
 )
 (pin
 	(output)
-	(rect 1656 872 1832 888)
+	(rect 1648 856 1824 872)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "vsync" (rect 90 0 121 12)(font "Arial" ))
 	(pt 0 8)
@@ -289,11 +289,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 888 1880 904))
+	(annotation_block (location)(rect 1824 872 1872 888))
 )
 (pin
 	(output)
-	(rect 1656 792 1832 808)
+	(rect 1648 776 1824 792)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "RED[9..0]" (rect 90 0 139 12)(font "Arial" ))
 	(pt 0 8)
@@ -306,11 +306,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 808 1888 952))
+	(annotation_block (location)(rect 1824 792 1880 936))
 )
 (pin
 	(output)
-	(rect 1656 808 1832 824)
+	(rect 1648 792 1824 808)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "GREEN[9..0]" (rect 90 0 154 12)(font "Arial" ))
 	(pt 0 8)
@@ -323,11 +323,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 824 1888 968))
+	(annotation_block (location)(rect 1824 808 1880 952))
 )
 (pin
 	(output)
-	(rect 1656 824 1832 840)
+	(rect 1648 808 1824 824)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "BLUE[9..0]" (rect 90 0 144 12)(font "Arial" ))
 	(pt 0 8)
@@ -340,7 +340,7 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1832 840 1888 984))
+	(annotation_block (location)(rect 1824 824 1880 968))
 )
 (pin
 	(output)
@@ -395,24 +395,7 @@ applicable agreement for further details.
 )
 (pin
 	(output)
-	(rect 1656 888 1836 904)
-	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
-	(text "dbg_rx_path_cyc" (rect 90 0 174 12)(font "Arial" ))
-	(pt 0 8)
-	(drawing
-		(line (pt 0 8)(pt 52 8))
-		(line (pt 52 4)(pt 78 4))
-		(line (pt 52 12)(pt 78 12))
-		(line (pt 52 12)(pt 52 4))
-		(line (pt 78 4)(pt 82 8))
-		(line (pt 82 8)(pt 78 12))
-		(line (pt 78 12)(pt 82 8))
-	)
-	(annotation_block (location)(rect 1920 928 1968 944))
-)
-(pin
-	(output)
-	(rect 1656 952 1842 968)
+	(rect 1648 936 1834 952)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dbg_sdram_active" (rect 90 0 180 12)(font "Arial" ))
 	(pt 0 8)
@@ -425,11 +408,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1912 960 1960 976))
+	(annotation_block (location)(rect 1792 1024 1840 1040))
 )
 (pin
 	(output)
-	(rect 1656 968 1832 984)
+	(rect 1648 952 1824 968)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dbg_disp_active" (rect 90 0 170 12)(font "Arial" ))
 	(pt 0 8)
@@ -442,11 +425,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1896 984 1944 1000))
+	(annotation_block (location)(rect 1784 1040 1832 1056))
 )
 (pin
 	(output)
-	(rect 1656 984 1847 1000)
+	(rect 1648 968 1839 984)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dbg_icy_bus_taken" (rect 90 0 185 12)(font "Arial" ))
 	(pt 0 8)
@@ -459,11 +442,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1896 1016 1944 1032))
+	(annotation_block (location)(rect 1776 1056 1824 1072))
 )
 (pin
 	(output)
-	(rect 1656 1000 1845 1016)
+	(rect 1648 984 1837 1000)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
 	(text "dbg_icz_bus_taken" (rect 90 0 183 12)(font "Arial" ))
 	(pt 0 8)
@@ -476,7 +459,7 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1896 1040 1944 1056))
+	(annotation_block (location)(rect 1768 1072 1816 1088))
 )
 (pin
 	(output)
@@ -633,9 +616,9 @@ applicable agreement for further details.
 )
 (pin
 	(output)
-	(rect 1080 816 1260 832)
+	(rect 1624 872 1804 888)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
-	(text "uart_serial_in_led" (rect 90 0 174 12)(font "Arial" ))
+	(text "dbg_rx_path_cyc" (rect 90 0 174 12)(font "Arial" ))
 	(pt 0 8)
 	(drawing
 		(line (pt 0 8)(pt 52 8))
@@ -646,13 +629,13 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1184 864 1280 880))
+	(annotation_block (location)(rect 1752 840 1800 856))
 )
 (pin
 	(output)
-	(rect 1400 152 1576 168)
+	(rect 1672 1152 1877 1168)
 	(text "OUTPUT" (rect 1 0 39 10)(font "Arial" (font_size 6)))
-	(text "clk_100_led" (rect 90 0 147 12)(font "Arial" ))
+	(text "dbg_img_image_tx_en" (rect 90 0 199 12)(font "Arial" ))
 	(pt 0 8)
 	(drawing
 		(line (pt 0 8)(pt 52 8))
@@ -663,11 +646,11 @@ applicable agreement for further details.
 		(line (pt 82 8)(pt 78 12))
 		(line (pt 78 12)(pt 82 8))
 	)
-	(annotation_block (location)(rect 1448 192 1504 208))
+	(annotation_block (location)(rect 1736 1152 1784 1168))
 )
 (pin
 	(bidir)
-	(rect 1656 712 1832 728)
+	(rect 1648 696 1824 712)
 	(text "BIDIR" (rect 1 0 25 10)(font "Arial" (font_size 6)))
 	(text "dram_dq[15..0]" (rect 90 0 164 12)(font "Arial" ))
 	(pt 0 8)
@@ -681,7 +664,7 @@ applicable agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 24 17)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect 1832 728 1888 952))
+	(annotation_block (location)(rect 1824 712 1880 936))
 )
 (symbol
 	(rect 1680 416 1728 448)
@@ -797,7 +780,7 @@ applicable agreement for further details.
 	)
 )
 (symbol
-	(rect 2208 984 2384 1080)
+	(rect 784 488 960 584)
 	(text "hexss" (rect 5 0 34 12)(font "Arial" ))
 	(text "inst11" (rect 8 80 37 92)(font "Arial" ))
 	(port
@@ -916,7 +899,7 @@ applicable agreement for further details.
 	)
 )
 (symbol
-	(rect 976 560 1184 704)
+	(rect 976 544 1184 688)
 	(text "global_nets_top" (rect 5 0 81 12)(font "Arial" ))
 	(text "inst" (rect 8 128 25 140)(font "Arial" ))
 	(port
@@ -983,12 +966,12 @@ applicable agreement for further details.
 	(drawing
 		(rectangle (rect 16 16 192 128))
 	)
-	(annotation_block (parameter)(rect 936 704 1128 736))
+	(annotation_block (parameter)(rect 936 688 1128 728))
 )
 (symbol
-	(rect 1360 560 1616 1120)
+	(rect 1368 544 1624 1104)
 	(text "mds_top" (rect 5 0 47 12)(font "Arial" ))
-	(text "inst16" (rect 8 544 37 556)(font "Arial" ))
+	(text "inst6" (rect 8 544 31 556)(font "Arial" ))
 	(port
 		(pt 0 32)
 		(input)
@@ -1249,6 +1232,13 @@ applicable agreement for further details.
 		(line (pt 256 512)(pt 240 512))
 	)
 	(port
+		(pt 256 528)
+		(output)
+		(text "dbg_img_image_tx_en" (rect 0 0 109 12)(font "Arial" ))
+		(text "dbg_img_image_tx_en" (rect 143 523 252 535)(font "Arial" ))
+		(line (pt 256 528)(pt 240 528))
+	)
+	(port
 		(pt 256 160)
 		(bidir)
 		(text "dram_dq[15..0]" (rect 0 0 74 12)(font "Arial" ))
@@ -1278,7 +1268,7 @@ applicable agreement for further details.
 	(drawing
 		(rectangle (rect 16 16 240 544))
 	)
-	(annotation_block (parameter)(rect 1368 1112 1613 1182))
+	(annotation_block (parameter)(rect 1120 1008 1368 1080))
 )
 (connector
 	(pt 960 544)
@@ -1287,14 +1277,6 @@ applicable agreement for further details.
 (connector
 	(pt 920 648)
 	(pt 912 648)
-)
-(connector
-	(pt 960 544)
-	(pt 960 592)
-)
-(connector
-	(pt 920 648)
-	(pt 920 608)
 )
 (connector
 	(pt 1688 536)
@@ -1306,169 +1288,25 @@ applicable agreement for further details.
 	(pt 1680 432)
 )
 (connector
-	(pt 1688 536)
-	(pt 1688 608)
-)
-(connector
-	(pt 1264 728)
-	(pt 1264 688)
-)
-(connector
-	(pt 1616 608)
-	(pt 1688 608)
-)
-(connector
-	(pt 1616 624)
-	(pt 1656 624)
-)
-(connector
-	(pt 1616 640)
-	(pt 1656 640)
-	(bus)
-)
-(connector
-	(pt 1616 656)
-	(pt 1656 656)
-	(bus)
-)
-(connector
-	(pt 1616 672)
-	(pt 1656 672)
-)
-(connector
-	(pt 1616 688)
-	(pt 1656 688)
-)
-(connector
-	(pt 1616 704)
-	(pt 1656 704)
-)
-(connector
-	(pt 1616 736)
-	(pt 1656 736)
-)
-(connector
-	(pt 1616 752)
-	(pt 1656 752)
-)
-(connector
-	(pt 1616 768)
-	(pt 1656 768)
-)
-(connector
-	(pt 1616 784)
-	(pt 1656 784)
-)
-(connector
-	(pt 1616 800)
-	(pt 1656 800)
-	(bus)
-)
-(connector
-	(pt 1616 816)
-	(pt 1656 816)
-	(bus)
-)
-(connector
-	(pt 1616 832)
-	(pt 1656 832)
-	(bus)
-)
-(connector
-	(pt 1616 848)
-	(pt 1656 848)
-)
-(connector
-	(pt 1616 864)
-	(pt 1656 864)
-)
-(connector
-	(pt 1616 880)
-	(pt 1656 880)
-)
-(connector
-	(pt 1616 720)
-	(pt 1656 720)
-	(bus)
-)
-(connector
 	(pt 1712 488)
 	(pt 1664 488)
 )
 (connector
-	(pt 1664 488)
-	(pt 1664 592)
-)
-(connector
-	(pt 1616 592)
-	(pt 1664 592)
-)
-(connector
-	(text "dbg_type_reg_mem[7..0]" (rect 1616 896 1739 908)(font "Arial" ))
-	(pt 1616 912)
-	(pt 1704 912)
-	(bus)
-)
-(connector
-	(text "dbg_type_reg_disp[7..0]" (rect 1616 912 1735 924)(font "Arial" ))
-	(pt 1616 928)
-	(pt 1704 928)
-	(bus)
-)
-(connector
-	(text "dbg_type_reg_tx[7..0]" (rect 1616 928 1724 940)(font "Arial" ))
-	(pt 1616 944)
-	(pt 1704 944)
-	(bus)
-)
-(connector
-	(pt 1616 896)
-	(pt 1656 896)
-)
-(connector
-	(pt 1616 960)
-	(pt 1656 960)
-)
-(connector
-	(pt 1616 976)
-	(pt 1656 976)
-)
-(connector
-	(pt 1616 992)
-	(pt 1656 992)
-)
-(connector
-	(pt 1616 1008)
-	(pt 1656 1008)
-)
-(connector
-	(text "dbg_type_reg_mem[3..0]" (rect 2120 584 2243 596)(font "Arial" ))
+	(text "dbg_type_reg_mem[3..0]" (rect 2104 584 2227 596)(font "Arial" ))
 	(pt 2120 600)
 	(pt 2208 600)
 	(bus)
 )
 (connector
-	(text "dbg_type_reg_mem[7..4]" (rect 2120 688 2243 700)(font "Arial" ))
+	(text "dbg_type_reg_mem[7..4]" (rect 2104 688 2227 700)(font "Arial" ))
 	(pt 2120 704)
 	(pt 2208 704)
 	(bus)
 )
 (connector
-	(text "dbg_type_reg_disp[3..0]" (rect 2120 792 2239 804)(font "Arial" ))
+	(text "dbg_type_reg_disp[3..0]" (rect 2104 792 2223 804)(font "Arial" ))
 	(pt 2120 808)
 	(pt 2208 808)
-	(bus)
-)
-(connector
-	(text "dbg_type_reg_disp[7..4]" (rect 2120 896 2239 908)(font "Arial" ))
-	(pt 2120 912)
-	(pt 2208 912)
-	(bus)
-)
-(connector
-	(text "dbg_type_reg_tx[3..0]" (rect 2120 1000 2228 1012)(font "Arial" ))
-	(pt 2120 1016)
-	(pt 2208 1016)
 	(bus)
 )
 (connector
@@ -1498,11 +1336,6 @@ applicable agreement for further details.
 	(bus)
 )
 (connector
-	(pt 2384 1016)
-	(pt 2424 1016)
-	(bus)
-)
-(connector
 	(pt 2384 1120)
 	(pt 2424 1120)
 	(bus)
@@ -1523,33 +1356,6 @@ applicable agreement for further details.
 	(pt 1320 456)
 )
 (connector
-	(pt 1184 592)
-	(pt 1360 592)
-)
-(connector
-	(pt 1184 624)
-	(pt 1360 624)
-)
-(connector
-	(text "sync_sdram_rst" (rect 1255 624 1335 636)(font "Arial" ))
-	(pt 1184 640)
-	(pt 1360 640)
-)
-(connector
-	(text "sync_system_rst" (rect 1209 640 1296 652)(font "Arial" ))
-	(pt 1360 656)
-	(pt 1184 656)
-)
-(connector
-	(text "sync_vesa_rst" (rect 1217 656 1291 668)(font "Arial" ))
-	(pt 1360 672)
-	(pt 1184 672)
-)
-(connector
-	(pt 1360 688)
-	(pt 1264 688)
-)
-(connector
 	(pt 1264 728)
 	(pt 1176 728)
 )
@@ -1558,53 +1364,221 @@ applicable agreement for further details.
 	(pt 1176 752)
 )
 (connector
-	(pt 976 592)
-	(pt 960 592)
-)
-(connector
-	(text "rst_led" (rect 918 592 951 604)(font "Arial" ))
-	(pt 976 608)
-	(pt 920 608)
-)
-(connector
-	(pt 1080 824)
-	(pt 1040 824)
-)
-(connector
-	(pt 1040 824)
-	(pt 1040 752)
-)
-(connector
 	(pt 920 752)
-	(pt 1040 752)
-)
-(connector
-	(pt 1040 752)
 	(pt 1176 752)
 )
 (connector
-	(pt 1392 160)
-	(pt 1392 176)
+	(pt 1688 536)
+	(pt 1688 592)
 )
 (connector
-	(pt 1400 160)
-	(pt 1392 160)
+	(pt 1264 728)
+	(pt 1264 672)
 )
 (connector
-	(pt 1392 176)
-	(pt 1208 176)
+	(pt 1664 488)
+	(pt 1664 576)
 )
 (connector
-	(pt 1208 608)
-	(pt 1208 176)
+	(pt 960 544)
+	(pt 960 576)
 )
 (connector
+	(pt 920 648)
+	(pt 920 592)
+)
+(connector
+	(pt 960 576)
+	(pt 976 576)
+)
+(connector
+	(text "rst_led" (rect 918 576 951 588)(font "Arial" ))
+	(pt 920 592)
+	(pt 976 592)
+)
+(connector
+	(text "sync_vesa_rst" (rect 1225 640 1299 652)(font "Arial" ))
+	(pt 1184 656)
+	(pt 1368 656)
+)
+(connector
+	(text "sync_system_rst" (rect 1209 624 1296 636)(font "Arial" ))
+	(pt 1368 640)
+	(pt 1184 640)
+)
+(connector
+	(text "sync_sdram_rst" (rect 1255 608 1335 620)(font "Arial" ))
+	(pt 1368 624)
+	(pt 1184 624)
+)
+(connector
+	(pt 1368 608)
 	(pt 1184 608)
-	(pt 1208 608)
 )
 (connector
-	(pt 1208 608)
-	(pt 1360 608)
+	(pt 1368 592)
+	(pt 1184 592)
 )
-(junction (pt 1040 752))
-(junction (pt 1208 608))
+(connector
+	(pt 1368 576)
+	(pt 1184 576)
+)
+(connector
+	(pt 1368 672)
+	(pt 1264 672)
+)
+(connector
+	(pt 1624 576)
+	(pt 1664 576)
+)
+(connector
+	(pt 1624 592)
+	(pt 1688 592)
+)
+(connector
+	(pt 1624 608)
+	(pt 1656 608)
+)
+(connector
+	(pt 1624 624)
+	(pt 1656 624)
+	(bus)
+)
+(connector
+	(pt 1648 640)
+	(pt 1624 640)
+	(bus)
+)
+(connector
+	(pt 1624 672)
+	(pt 1648 672)
+)
+(connector
+	(pt 1624 688)
+	(pt 1648 688)
+)
+(connector
+	(pt 1624 720)
+	(pt 1648 720)
+)
+(connector
+	(pt 1624 736)
+	(pt 1648 736)
+)
+(connector
+	(pt 1624 752)
+	(pt 1648 752)
+)
+(connector
+	(pt 1624 768)
+	(pt 1648 768)
+)
+(connector
+	(pt 1624 784)
+	(pt 1648 784)
+	(bus)
+)
+(connector
+	(pt 1624 816)
+	(pt 1648 816)
+	(bus)
+)
+(connector
+	(pt 1624 832)
+	(pt 1648 832)
+)
+(connector
+	(pt 1624 848)
+	(pt 1648 848)
+)
+(connector
+	(pt 1624 864)
+	(pt 1648 864)
+)
+(connector
+	(pt 1624 656)
+	(pt 1648 656)
+)
+(connector
+	(pt 1624 800)
+	(pt 1648 800)
+	(bus)
+)
+(connector
+	(text "dbg_type_reg_disp[7..0]" (rect 1896 896 2015 908)(font "Arial" ))
+	(pt 1624 912)
+	(pt 1984 912)
+	(bus)
+)
+(connector
+	(text "dbg_type_reg_tx[7..0]" (rect 1896 912 2004 924)(font "Arial" ))
+	(pt 1624 928)
+	(pt 1976 928)
+	(bus)
+)
+(connector
+	(pt 1624 992)
+	(pt 1648 992)
+)
+(connector
+	(pt 1624 944)
+	(pt 1648 944)
+)
+(connector
+	(pt 1624 960)
+	(pt 1648 960)
+)
+(connector
+	(pt 1624 976)
+	(pt 1648 976)
+)
+(connector
+	(text "dbg_type_reg_disp[7..4]" (rect 2104 896 2223 908)(font "Arial" ))
+	(pt 2208 912)
+	(pt 2080 912)
+	(bus)
+)
+(connector
+	(text "dbg_type_reg_mem[7..0]" (rect 1896 880 2019 892)(font "Arial" ))
+	(pt 1624 896)
+	(pt 2024 896)
+	(bus)
+)
+(connector
+	(pt 1624 1072)
+	(pt 1632 1072)
+)
+(connector
+	(pt 1632 1072)
+	(pt 1632 1160)
+)
+(connector
+	(pt 1632 1160)
+	(pt 1672 1160)
+)
+(connector
+	(pt 2416 1016)
+	(pt 2416 520)
+	(bus)
+)
+(connector
+	(pt 2424 1016)
+	(pt 2416 1016)
+	(bus)
+)
+(connector
+	(pt 2416 520)
+	(pt 960 520)
+	(bus)
+)
+(connector
+	(text "dbg_type_reg_tx[3..0]" (rect 680 504 788 516)(font "Arial" ))
+	(pt 784 520)
+	(pt 680 520)
+	(bus)
+)
+(connector
+	(pt 1624 704)
+	(pt 1648 704)
+	(bus)
+)

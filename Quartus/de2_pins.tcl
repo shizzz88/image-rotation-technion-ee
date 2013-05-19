@@ -98,8 +98,8 @@ if {[is_project_open]} {
 #   set_location_assignment PIN_AE15  -to LEDR13  ;# LEDR13
 #   set_location_assignment PIN_AF13  -to LEDR14  ;# LEDR14
 #   set_location_assignment PIN_AE13  -to LEDR15  ;# LEDR15
-   set_location_assignment PIN_AE12  -to clk_100_led  ;# LEDR16
-   set_location_assignment PIN_AD12  -to uart_serial_in_led  ;# LEDR17 on the left side
+ #  set_location_assignment PIN_AE12  -to clk_100_led  ;# LEDR16
+   set_location_assignment PIN_AD12  -to dbg_img_image_tx_en  ;# LEDR17 on the left side
 
 
    ;###############################

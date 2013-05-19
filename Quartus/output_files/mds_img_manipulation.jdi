@@ -1,10 +1,10 @@
 <sld_project_info>
   <project>
-    <hash md5_digest_80b="9962f904644c2f63ed12"/>
+    <hash md5_digest_80b="13cd020fbb15462fedae"/>
   </project>
   <file_info>
-    <file checksum="0x00679D47" device="EP2C35F672C6" path="mds_img_manipulation.sof" usercode="0xFFFFFFFF"/>
-    <file checksum="0x1C1369C0" device="EPCS16" path="mds_img_manipulation.pof" usercode="0x00000000"/>
+    <file checksum="0x00682F18" device="EP2C35F672C6" path="mds_img_manipulation.sof" usercode="0xFFFFFFFF"/>
+    <file checksum="0x1C112817" device="EPCS16" path="mds_img_manipulation.pof" usercode="0x00000000"/>
   </file_info>
   <hub_info ir_width="8" node_count="1"/>
   <node_info>
@@ -18,7 +18,7 @@
         <parameter name="sld_data_bits" type="unknown" value="17"/>
         <parameter name="sld_trigger_bits" type="unknown" value="17"/>
         <parameter name="SLD_NODE_CRC_BITS" type="dec" value="32"/>
-        <parameter name="sld_node_crc_hiword" type="unknown" value="11681"/>
+        <parameter name="sld_node_crc_hiword" type="unknown" value="48053"/>
         <parameter name="sld_node_crc_loword" type="unknown" value="37318"/>
         <parameter name="SLD_INCREMENTAL_ROUTING" type="dec" value="0"/>
         <parameter name="sld_sample_depth" type="unknown" value="1024"/>

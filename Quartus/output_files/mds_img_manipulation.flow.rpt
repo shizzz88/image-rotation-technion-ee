@@ -1,5 +1,5 @@
 Flow report for mds_img_manipulation
-Sun May 19 11:49:09 2013
+Sun May 19 13:26:44 2013
 Quartus II 64-Bit Version 12.1 Build 177 11/07/2012 SJ Full Version
 
 
@@ -38,18 +38,18 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------+
 ; Flow Summary                                                                   ;
 +------------------------------------+-------------------------------------------+
-; Flow Status                        ; Successful - Sun May 19 11:49:09 2013     ;
+; Flow Status                        ; Successful - Sun May 19 13:26:44 2013     ;
 ; Quartus II 64-Bit Version          ; 12.1 Build 177 11/07/2012 SJ Full Version ;
 ; Revision Name                      ; mds_img_manipulation                      ;
 ; Top-level Entity Name              ; sys_top                                   ;
 ; Family                             ; Cyclone II                                ;
 ; Device                             ; EP2C35F672C6                              ;
 ; Timing Models                      ; Final                                     ;
-; Total logic elements               ; 5,637 / 33,216 ( 17 % )                   ;
-;     Total combinational functions  ; 4,420 / 33,216 ( 13 % )                   ;
+; Total logic elements               ; 5,638 / 33,216 ( 17 % )                   ;
+;     Total combinational functions  ; 4,438 / 33,216 ( 13 % )                   ;
 ;     Dedicated logic registers      ; 3,436 / 33,216 ( 10 % )                   ;
 ; Total registers                    ; 3436                                      ;
-; Total pins                         ; 129 / 475 ( 27 % )                        ;
+; Total pins                         ; 128 / 475 ( 27 % )                        ;
 ; Total virtual pins                 ; 0                                         ;
 ; Total memory bits                  ; 162,888 / 483,840 ( 34 % )                ;
 ; Embedded Multiplier 9-bit elements ; 24 / 70 ( 34 % )                          ;
@@ -119,7 +119,31 @@ applicable agreement for further details.
 ; Assembler                 ; 00:00:05     ; 1.0                     ; 464 MB              ; 00:00:02                           ;
 ; TimeQuest Timing Analyzer ; 00:00:06     ; 1.0                     ; 521 MB              ; 00:00:02                           ;
 ; EDA Netlist Writer        ; 00:00:14     ; 1.0                     ; 474 MB              ; 00:00:04                           ;
-; Total                     ; 00:05:30     ; --                      ; --                  ; 00:04:27                           ;
+; Analysis & Synthesis      ; 00:00:25     ; 1.0                     ; 586 MB              ; 00:00:09                           ;
+; Partition Merge           ; 00:00:06     ; 1.0                     ; 488 MB              ; 00:00:02                           ;
+; Fitter                    ; 00:00:17     ; 2.1                     ; 771 MB              ; 00:00:18                           ;
+; Assembler                 ; 00:00:06     ; 1.0                     ; 463 MB              ; 00:00:02                           ;
+; TimeQuest Timing Analyzer ; 00:00:06     ; 1.0                     ; 521 MB              ; 00:00:02                           ;
+; EDA Netlist Writer        ; 00:00:18     ; 1.0                     ; 479 MB              ; 00:00:06                           ;
+; Analysis & Synthesis      ; 00:00:51     ; 1.7                     ; 574 MB              ; 00:00:28                           ;
+; Partition Merge           ; 00:00:05     ; 1.0                     ; 476 MB              ; 00:00:02                           ;
+; Fitter                    ; 00:00:21     ; 1.6                     ; 764 MB              ; 00:00:24                           ;
+; Assembler                 ; 00:00:05     ; 1.0                     ; 456 MB              ; 00:00:02                           ;
+; TimeQuest Timing Analyzer ; 00:00:07     ; 1.0                     ; 521 MB              ; 00:00:02                           ;
+; EDA Netlist Writer        ; 00:00:16     ; 1.0                     ; 479 MB              ; 00:00:06                           ;
+; Analysis & Synthesis      ; 00:00:50     ; 1.7                     ; 578 MB              ; 00:00:28                           ;
+; Partition Merge           ; 00:00:05     ; 1.0                     ; 472 MB              ; 00:00:02                           ;
+; Fitter                    ; 00:00:33     ; 2.5                     ; 810 MB              ; 00:00:46                           ;
+; Assembler                 ; 00:00:05     ; 1.0                     ; 468 MB              ; 00:00:02                           ;
+; TimeQuest Timing Analyzer ; 00:00:08     ; 2.0                     ; 537 MB              ; 00:00:04                           ;
+; EDA Netlist Writer        ; 00:00:18     ; 1.0                     ; 490 MB              ; 00:00:07                           ;
+; Analysis & Synthesis      ; 00:00:53     ; 1.7                     ; 582 MB              ; 00:00:28                           ;
+; Partition Merge           ; 00:00:06     ; 1.0                     ; 476 MB              ; 00:00:02                           ;
+; Fitter                    ; 00:00:34     ; 2.5                     ; 814 MB              ; 00:00:47                           ;
+; Assembler                 ; 00:00:05     ; 1.0                     ; 456 MB              ; 00:00:03                           ;
+; TimeQuest Timing Analyzer ; 00:00:12     ; 1.0                     ; 537 MB              ; 00:00:04                           ;
+; EDA Netlist Writer        ; 00:00:19     ; 1.0                     ; 490 MB              ; 00:00:06                           ;
+; Total                     ; 00:12:41     ; --                      ; --                  ; 00:09:09                           ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 
@@ -152,6 +176,30 @@ applicable agreement for further details.
 ; Assembler                 ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
 ; TimeQuest Timing Analyzer ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
 ; EDA Netlist Writer        ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Analysis & Synthesis      ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Partition Merge           ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Fitter                    ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Assembler                 ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; TimeQuest Timing Analyzer ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; EDA Netlist Writer        ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Analysis & Synthesis      ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Partition Merge           ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Fitter                    ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Assembler                 ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; TimeQuest Timing Analyzer ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; EDA Netlist Writer        ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Analysis & Synthesis      ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Partition Merge           ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Fitter                    ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Assembler                 ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; TimeQuest Timing Analyzer ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; EDA Netlist Writer        ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Analysis & Synthesis      ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Partition Merge           ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Fitter                    ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; Assembler                 ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; TimeQuest Timing Analyzer ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
+; EDA Netlist Writer        ; DIGLAB352-2-04   ; Windows 7 ; 6.1        ; x86_64         ;
 +---------------------------+------------------+-----------+------------+----------------+
 
 
@@ -170,6 +218,30 @@ quartus_asm --read_settings_files=off --write_settings_files=off mds_img_manipul
 quartus_sta mds_img_manipulation -c mds_img_manipulation
 quartus_eda --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
 quartus_sta mds_img_manipulation -c mds_img_manipulation
+quartus_map --read_settings_files=on --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_cdb --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation --merge=on
+quartus_fit --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_asm --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_sta mds_img_manipulation -c mds_img_manipulation
+quartus_eda --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_map --read_settings_files=on --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_cdb --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation --merge=on
+quartus_fit --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_asm --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_sta mds_img_manipulation -c mds_img_manipulation
+quartus_eda --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_map --read_settings_files=on --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_cdb --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation --merge=on
+quartus_fit --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_asm --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_sta mds_img_manipulation -c mds_img_manipulation
+quartus_eda --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_map --read_settings_files=on --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_cdb --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation --merge=on
+quartus_fit --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_asm --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
+quartus_sta mds_img_manipulation -c mds_img_manipulation
+quartus_eda --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
 quartus_map --read_settings_files=on --write_settings_files=off mds_img_manipulation -c mds_img_manipulation
 quartus_cdb --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation --merge=on
 quartus_fit --read_settings_files=off --write_settings_files=off mds_img_manipulation -c mds_img_manipulation

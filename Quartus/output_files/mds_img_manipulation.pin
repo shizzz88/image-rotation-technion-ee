@@ -181,7 +181,7 @@ RESERVED_INPUT               : AD8       :        :                   :         
 GND                          : AD9       : gnd    :                   :         :           :                
 RESERVED_INPUT               : AD10      :        :                   :         : 8         :                
 7s_lsb_mem[3]                : AD11      : output : 3.3-V LVTTL       :         : 8         : Y              
-uart_serial_in_led           : AD12      : output : 3.3-V LVTTL       :         : 8         : Y              
+dbg_img_image_tx_en          : AD12      : output : 3.3-V LVTTL       :         : 8         : Y              
 GND+                         : AD13      :        :                   :         : 8         :                
 GND                          : AD14      : gnd    :                   :         :           :                
 RESERVED_INPUT               : AD15      :        :                   :         : 7         :                
@@ -207,7 +207,7 @@ RESERVED_INPUT               : AE8       :        :                   :         
 RESERVED_INPUT               : AE9       :        :                   :         : 8         :                
 RESERVED_INPUT               : AE10      :        :                   :         : 8         :                
 7s_lsb_mem[2]                : AE11      : output : 3.3-V LVTTL       :         : 8         : Y              
-clk_100_led                  : AE12      : output : 3.3-V LVTTL       :         : 8         : Y              
+RESERVED_INPUT               : AE12      :        :                   :         : 8         :                
 RESERVED_INPUT               : AE13      :        :                   :         : 8         :                
 GND+                         : AE14      :        :                   :         : 7         :                
 RESERVED_INPUT               : AE15      :        :                   :         : 7         :                
