@@ -423,7 +423,7 @@ function pushbutton_tx_data_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_tx_data (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-clc;
+%clc;
 
 %% Get Image
 DirN=get(handles.edit_dir,'String');
@@ -493,7 +493,7 @@ if numel(serial_port) ~= 0
     fclose(serial_port);
 end
  serial_port = serial('COM4','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
-fopen(serial_port) %Open serial port
+fopen(serial_port); %Open serial port
 sof = hex2dec(get(handles.sof_edit, 'String'));
 eof = hex2dec(get(handles.eof_edit, 'String'));
 %fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permission
@@ -504,7 +504,7 @@ eof = hex2dec(get(handles.eof_edit, 'String'));
 	zoom_addr=21;
 	sine_addr=25;
 	cosine_addr=23;
-	
+	msgbox('hello world')
    
 %% write X_start to register file
 %     fprintf(fid, '#Chunk\r\n'); 
@@ -571,7 +571,7 @@ eof = hex2dec(get(handles.eof_edit, 'String'));
     type=128;
     addr=y_start_addr;
     dataToSend=[sof     type    addr   mod( zoom, 256)    floor( zoom/256)    crc     eof];
-    fwrite(serial_port, dataToSend)
+    fwrite(serial_port, dataToSend);
 %% write CosAngle to register file
 %     fprintf(fid, '#Chunk\r\n'); 
 %     fprintf(fid, '#SOF\r\n'); %write #SOF 
@@ -590,7 +590,7 @@ eof = hex2dec(get(handles.eof_edit, 'String'));
 %     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
 %     fprintf(fid, '#EOF\r\n'); %write color repetitions to file
 %     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file  
-    type=128;
+    type=128
     addr=cosine_addr;
     dataToSend=[sof     type    addr   mod( cosangle, 256)    floor( cosangle/256)    crc     eof];
     fwrite(serial_port, dataToSend);
@@ -822,7 +822,7 @@ function pushbutton_update_regs_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_update_regs (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-clc;
+%%clc;
 %% Transmit Data
 % Prepare serial port
  serial_port= instrfind('Port','COM3'); %Close any COM1 serial connection
@@ -969,7 +969,7 @@ function pushbutton_tx_dbg_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Prepare serial port
-clc;
+%clc;
 % serial_port= instrfind('Port','COM1'); %Close any COM1 serial connection
 % if numel(serial_port) ~= 0
 %     fclose(serial_port);

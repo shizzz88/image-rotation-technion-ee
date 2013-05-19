@@ -85,7 +85,8 @@ entity mds_top is
 				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
-				dbg_actual_rd_bank	:	out std_logic							--Actual Written bank
+				dbg_actual_rd_bank	:	out std_logic;							--Actual Written bank
+				dbg_img_image_tx_en	:	out std_logic 	--image display enable	
 			);
 end entity mds_top;
 
@@ -1250,5 +1251,7 @@ dbg_sdram_acive	<=	wbm_cyc_o;
 --WBM_CYC_O from disp_ctrl_top to INTERCON_Y state
 dbg_disp_active_proc:
 dbg_disp_active	<=	icy_disp_wbm_cyc_o;
-			
+
+dbg_img_image_tx_proc:
+dbg_img_image_tx_en<=img_image_tx_en;			
 end architecture rtl_mds_top;

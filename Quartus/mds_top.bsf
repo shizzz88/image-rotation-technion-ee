@@ -283,6 +283,13 @@ applicable agreement for further details.
 		(line (pt 256 512)(pt 240 512)(line_width 1))
 	)
 	(port
+		(pt 256 528)
+		(output)
+		(text "dbg_img_image_tx_en" (rect 0 0 92 12)(font "Arial" ))
+		(text "dbg_img_image_tx_en" (rect 143 523 235 535)(font "Arial" ))
+		(line (pt 256 528)(pt 240 528)(line_width 1))
+	)
+	(port
 		(pt 256 160)
 		(bidir)
 		(text "dram_dq[15..0]" (rect 0 0 60 12)(font "Arial" ))
