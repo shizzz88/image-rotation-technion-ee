@@ -463,7 +463,7 @@ begin
 			pix_req_add	<=	(others => '0');
 		elsif rising_edge (clk_i) then
 			if (req_trig_d2 = '1') then
-				pix_req_add	<=	pixels_req + 480;
+				pix_req_add	<=	pixels_req + ver_lines_g;
 			else
 				pix_req_add	<=	pix_req_add;
 			end if;

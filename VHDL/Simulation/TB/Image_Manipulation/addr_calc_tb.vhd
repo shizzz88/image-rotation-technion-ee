@@ -128,6 +128,9 @@ signal				delta_col_out_sig		:	std_logic_vector		(trig_frac_size-1 downto 0);
 signal 				trigger					:	std_logic;
 signal 				en_unit					:	std_logic;	 	                                                                        
 signal				start_tb				:std_logic;
+
+
+
 ----------------------------------------------------------------------  READ PROCESS	-------------------------------------------------------------------------
  SIGNAL    newValueRead     : BOOLEAN := FALSE;
  SIGNAL    newValueToSave   : BOOLEAN := FALSE;
@@ -150,6 +153,9 @@ signal curr_st		: fsm_states;
 ---------------------------		process + inst	-----------------------------------------
 begin
 
+
+
+	
 clk_100_proc:
 system_clk	<=	not system_clk after 5 ns;
 

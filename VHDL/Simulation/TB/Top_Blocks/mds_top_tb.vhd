@@ -22,8 +22,8 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top_tb is
 	generic (
-	          img_hor_pixels_g	:	positive					:= 640;	-- active pixels
-	          img_ver_lines_g	:	positive					:= 480;	-- active lines
+	          img_hor_pixels_g	:	positive					:= 256;	-- active pixels 256
+	          img_ver_lines_g	:	positive					:= 160;	-- active lines 192
 	
 		--original	uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
 			uart_tx_delay_g		:	positive	:= 1000000000;			--Clock cycles between two transmissions
@@ -88,6 +88,7 @@ component mds_top
 				--Debug Ports
 				dbg_rx_path_cyc		:	out std_logic;							--RX Path WBM_CYC_O for debug
 				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
+				dbg_adrr_reg_mem	:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
 				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
 				dbg_sdram_acive		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
@@ -248,7 +249,7 @@ signal dbg_wr_bank_val	:	std_logic;							--Expected Write SDRAM Bank Value
 signal dbg_rd_bank_val  :	std_logic;							--Expected Read SDRAM Bank Value
 signal dbg_actual_wr_bank  :	std_logic;						--Actual Read SDRAM Bank Value
 signal dbg_actual_rd_bank  :	std_logic;						--Actual Read SDRAM Bank Value
-
+signal dbg_adrr_reg_mem:	std_logic_vector (23 downto 0);	
 --#############################	Instantiaion ##############################################--
 begin
 
@@ -317,7 +318,9 @@ mds_top_inst	: mds_top
 				hsync				=>	hsync			,
 				vsync				=>  vsync			,
 				dbg_rx_path_cyc		=>	dbg_rx_path_cyc		,
-                dbg_type_reg_disp	=>	dbg_type_reg_disp	,
+                dbg_adrr_reg_mem	=>	dbg_adrr_reg_mem,	
+
+				dbg_type_reg_disp	=>	dbg_type_reg_disp	,
                 dbg_type_reg_mem	=>	dbg_type_reg_mem	,
                 dbg_type_reg_tx		=>	dbg_type_reg_tx		,
                 dbg_sdram_acive		=>	dbg_sdram_acive		,

@@ -76,6 +76,7 @@ entity mem_mng_top is
 
 				--Debug Port
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
+				dbg_adrr_reg		:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
@@ -731,4 +732,6 @@ dbg_wr_bank_val	<=	wr_bank_val;
 dbg_rd_bank_val_proc:
 dbg_rd_bank_val <=	rd_bank_val;  
 
+dbg_addr_reg_proc:
+dbg_adrr_reg	<=	dbg_reg_dout;
 end architecture rtl_mem_mng_top;

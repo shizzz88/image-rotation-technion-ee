@@ -37,8 +37,8 @@
 --          row=vertical=x
 --          col=horizontal=y         
 --
---          RowSizeIn=96;
---          ColSizeIn=128;
+--          RowSizeIn=480;
+--          ColSizeIn=640;
 --          RowStart=30;
 --          ColStart=29;
 --          Row_size_after_crop=RowSizeIn+1-RowStart;%m=67
@@ -62,7 +62,7 @@ library work ;
 entity addr_calc is
 	generic (
 			reset_polarity_g		:	std_logic	:= '0';			--Reset active low
-			x_size_in_g				:	positive 	:= 96;				-- number of rows  in the input image
+			x_size_in_g				:	positive 	:= 480;				-- number of rows  in the input image
 			y_size_in_g				:	positive 	:= 128;				-- number of columns  in the input image
 
 			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
@@ -447,9 +447,9 @@ begin
 	elsif (rising_edge (system_clk))  then
 		if (enable_unit='1') then
 			a_if_1	<= row_fraction_calc(row_fraction_calc'left) = '0';
-			a_if_2	<= row_fraction_calc ( result_size - 5 downto shift_3_times) >=  "0000000001";
+			a_if_2	<= std_logic_vector(row_fraction_calc ( result_size - 5 downto shift_3_times) )>=  "0000000001";--NO CASTING : row_fraction_calc ( result_size - 5 downto shift_3_times) >=  "0000000001";
 			a_if_3	<= col_fraction_calc(col_fraction_calc'left) = '0';
-			a_if_4	<= col_fraction_calc ( result_size - 5 downto shift_3_times) >=  "0000000001";
+			a_if_4	<= std_logic_vector(col_fraction_calc ( result_size - 5 downto shift_3_times)) >=  "0000000001";--NO CASTING :col_fraction_calc ( result_size - 5 downto shift_3_times) >=  "0000000001";
 			a_if_5	<= row_fraction_calc(row_fraction_calc'left downto 1) <= new_frame_x_size_shift;
 			a_if_6	<= col_fraction_calc(col_fraction_calc'left downto 1) <= new_frame_y_size_shift;
 			in_range	<=	a_if_1 and a_if_2 and a_if_3 and a_if_4 and a_if_5 and a_if_6;
