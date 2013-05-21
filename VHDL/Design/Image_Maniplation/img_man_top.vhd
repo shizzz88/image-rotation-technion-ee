@@ -29,7 +29,7 @@ entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
-				img_ver_lines_g	:	positive					:= 96;	-- active lines
+				img_ver_lines_g	:	positive					:= 480;	-- active lines
 				trig_frac_size_g	: 	positive					:= 7 ;
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
@@ -207,8 +207,8 @@ component img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
-				img_hor_pixels_g	:	positive					:= 128;	--128 pixel in a coloum
-				img_ver_lines_g	:	positive					:= 96;	--96 pixels in a row
+				img_hor_pixels_g	:	positive					:= 128;	-- pixel in a coloum
+				img_ver_lines_g	:	positive					:= 480;	-- pixels in a row
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row				
 			);

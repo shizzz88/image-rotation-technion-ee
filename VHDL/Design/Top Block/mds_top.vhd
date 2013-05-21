@@ -27,7 +27,7 @@ use ieee.std_logic_unsigned.all;
 entity mds_top is
 	generic (
 				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
-				img_ver_lines_g	:	positive					:= 96;	-- active lines
+				img_ver_lines_g	:	positive					:= 480;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 	-- uri ran	rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
@@ -75,6 +75,7 @@ entity mds_top is
 				
 				--Debug Ports
 				dbg_rx_path_cyc		:	out std_logic;							--RX Path WBM_CYC_O for debug
+				dbg_adrr_reg_mem	:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
 				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
 				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
@@ -85,8 +86,7 @@ entity mds_top is
 				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
-				dbg_actual_rd_bank	:	out std_logic;							--Actual Written bank
-				dbg_img_image_tx_en	:	out std_logic 	--image display enable	
+				dbg_actual_rd_bank	:	out std_logic						--Actual Written bank
 			);
 end entity mds_top;
 
@@ -464,6 +464,7 @@ component mem_mng_top
 
 				--Debug Port
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
+				dbg_adrr_reg		:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_wr_bank_val		:	out std_logic;							--Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
@@ -1048,6 +1049,7 @@ mem_mng_inst 	:	 mem_mng_top generic map
 				wbm_cyc_o			=>	wbm_cyc_o		,	
 				wbm_stb_o			=>	wbm_stb_o		,
 				dbg_type_reg		=>	dbg_type_reg_mem,
+				dbg_adrr_reg		=>	dbg_adrr_reg_mem,
 				dbg_wr_bank_val 	=>	dbg_wr_bank_val,
 				dbg_rd_bank_val 	=>	dbg_rd_bank_val,
 				dbg_actual_wr_bank	=>	dbg_actual_wr_bank,
@@ -1189,8 +1191,8 @@ tx_path_inst: tx_path
 img_man_top_inst: img_man_top 
 	generic map(
 				reset_polarity_g 	 =>	'0',
-				img_hor_pixels_g	 =>	img_hor_pixels_g,--128,	-- active pixels
-				img_ver_lines_g	 	 =>	img_ver_lines_g,--96,	-- active lines
+				img_hor_pixels_g	 =>	img_hor_pixels_g,--,	-- active pixels
+				img_ver_lines_g	 	 =>	img_ver_lines_g,--,	-- active lines
 				trig_frac_size_g	 => 7,
 				display_hor_pixels_g => 800,	--800 pixel in a coloum
 				display_ver_pixels_g => 600	--600 pixels in a row
@@ -1251,7 +1253,5 @@ dbg_sdram_acive	<=	wbm_cyc_o;
 --WBM_CYC_O from disp_ctrl_top to INTERCON_Y state
 dbg_disp_active_proc:
 dbg_disp_active	<=	icy_disp_wbm_cyc_o;
-
-dbg_img_image_tx_proc:
-dbg_img_image_tx_en<=img_image_tx_en;			
+		
 end architecture rtl_mds_top;

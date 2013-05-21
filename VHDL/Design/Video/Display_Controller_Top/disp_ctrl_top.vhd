@@ -11,6 +11,8 @@
 --			Number		Date		Name					Description			
 --			1.00		10.5.2011	Beeri Schreiber			Creation
 --			1.01		11.12.2012 	uri ran					nivun hadash
+--			1.02		21.05.2013	uri						removal of right_frame_rg,left_frame_rg,upper_frame_rg,lower_frame_rg because size mismmatch in small  input resolutions.
+--															small resolution input image requires larger than 8 bit frame register
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -130,7 +132,8 @@ constant right_frame_reg_addr_c	:	natural		:= 6;	--Frame register address
 constant upper_frame_reg_addr_c	:	natural		:= 7;	--Frame register address
 constant lower_frame_reg_addr_c	:	natural		:= 8;	--Frame register address
 
-constant frame_value_c		:	natural		:= (hor_active_pixels_g-hor_pres_pixels_g)/2;
+constant hor_frame_value_c		:	natural		:= (hor_active_pixels_g-hor_pres_pixels_g)/2;
+constant ver_frame_value_c		:	natural		:= (ver_active_lines_g-ver_pres_lines_g)/2;
 
 --###########################	Signals		###################################--
 --40MHz Clock Domain Signals
@@ -575,22 +578,24 @@ begin
 				
 	--Frames
 	--ZERO all unused bits
-	left_frame_zero_proc:
-	--left_frame_rg (left_frame_rg'left downto reg_width_c) <=	(others => '0'); 	-- uri ran - uncomment for large resolution
-	left_frame_rg <= conv_std_logic_vector (frame_value_c, left_frame_rg'high+1);				--for 128x96 change 80->336
+	-- left_frame_zero_proc:
+	-- left_frame_rg (left_frame_rg'left downto reg_width_c) <=	(others => '0'); 	-- uri ran - uncomment for large resolution
 
+	-- right_frame_zero_proc:
+	-- right_frame_rg (right_frame_rg'left downto reg_width_c) <=	(others => '0'); 	-- uri ran - uncomment for large resolution
 
-	right_frame_zero_proc:
-	--right_frame_rg (right_frame_rg'left downto reg_width_c) <=	(others => '0'); 	-- uri ran - uncomment for large resolution
-	right_frame_rg <= conv_std_logic_vector (frame_value_c, right_frame_rg'high+1);			--for 128x96 change 80->336
-
-
-	upper_frame_zero_proc:
-	upper_frame_rg (upper_frame_rg'left downto reg_width_c) <=	(others => '0');
-
-	lower_frame_zero_proc:
-	lower_frame_rg (lower_frame_rg'left downto reg_width_c) <=	(others => '0');
-
+	-- upper_frame_zero_proc:
+	-- upper_frame_rg (upper_frame_rg'left downto reg_width_c) <=	(others => '0');
+	
+	-- lower_frame_zero_proc:
+	-- lower_frame_rg (lower_frame_rg'left downto reg_width_c) <=	(others => '0');
+	
+	wire_frame_register_proc:
+	left_frame_rg <= conv_std_logic_vector (hor_frame_value_c, left_frame_rg'high+1);
+	right_frame_rg <= conv_std_logic_vector (hor_frame_value_c, right_frame_rg'high+1);				
+	upper_frame_rg  <=	conv_std_logic_vector (ver_frame_value_c, upper_frame_rg'high+1);
+	lower_frame_rg <=conv_std_logic_vector (ver_frame_value_c, lower_frame_rg'high+1);
+	
 	--Connect frames
 	left_frame_m_proc:
 	left_frame_m	<=	left_frame_sy when vesa_mux_d2 = '1'
@@ -884,7 +889,7 @@ gen_reg_type_inst	:	gen_reg generic map (
 							dout		        =>	type_reg_dout,
 							dout_valid	        =>	type_reg_dout_valid
 						);
--- uri ran			
+-- uri ran
 -- gen_reg_left_frame_inst	:	gen_reg generic map (
 							-- reset_polarity_g	=>	reset_polarity_g,	
 							-- width_g				=>	reg_width_c,
@@ -933,53 +938,53 @@ gen_reg_type_inst	:	gen_reg generic map (
 							-- dout_valid	        =>	right_frame_reg_dout_valid
 						-- );
 						
-gen_reg_upper_frame_inst	:	gen_reg generic map (
-							reset_polarity_g	=>	reset_polarity_g,	
-							width_g				=>	reg_width_c,
-							addr_en_g			=>	true,
-							addr_val_g			=>	upper_frame_reg_addr_c,
-							addr_width_g		=>	reg_addr_width_c,
-							read_en_g			=>	true,
-							write_en_g			=>	true,
-							clear_on_read_g		=>	false,
-							default_value_g		=>	(ver_active_lines_g - ver_pres_lines_g)/2
-						)
-						port map (
-							clk					=>	clk_100,
-							reset		        =>	rst_100,
-							addr		        =>	reg_addr,
-							din			        =>	reg_din,
-							wr_en		        =>	reg_wr_en,
-							clear		        =>	'0',
-							din_ack		        =>	upper_frame_reg_din_ack,
-							rd_en				=>	upper_frame_reg_rd_en,
-							dout		        =>	upper_frame_rg (reg_width_c - 1 downto 0),
-							dout_valid	        =>	upper_frame_reg_dout_valid
-						);
+-- gen_reg_upper_frame_inst	:	gen_reg generic map (
+							-- reset_polarity_g	=>	reset_polarity_g,	
+							-- width_g				=>	reg_width_c,
+							-- addr_en_g			=>	true,
+							-- addr_val_g			=>	upper_frame_reg_addr_c,
+							-- addr_width_g		=>	reg_addr_width_c,
+							-- read_en_g			=>	true,
+							-- write_en_g			=>	true,
+							-- clear_on_read_g		=>	false,
+							-- default_value_g		=>	(ver_active_lines_g - ver_pres_lines_g)/2
+						-- )
+						-- port map (
+							-- clk					=>	clk_100,
+							-- reset		        =>	rst_100,
+							-- addr		        =>	reg_addr,
+							-- din			        =>	reg_din,
+							-- wr_en		        =>	reg_wr_en,
+							-- clear		        =>	'0',
+							-- din_ack		        =>	upper_frame_reg_din_ack,
+							-- rd_en				=>	upper_frame_reg_rd_en,
+							-- dout		        =>	upper_frame_rg (reg_width_c - 1 downto 0),
+							-- dout_valid	        =>	upper_frame_reg_dout_valid
+						-- );
 						
-gen_reg_lower_frame_inst	:	gen_reg generic map (
-							reset_polarity_g	=>	reset_polarity_g,	
-							width_g				=>	reg_width_c,
-							addr_en_g			=>	true,
-							addr_val_g			=>	lower_frame_reg_addr_c,
-							addr_width_g		=>	reg_addr_width_c,
-							read_en_g			=>	true,
-							write_en_g			=>	true,
-							clear_on_read_g		=>	false,
-							default_value_g		=>	(ver_active_lines_g - ver_pres_lines_g)/2
-						)
-						port map (
-							clk					=>	clk_100,
-							reset		        =>	rst_100,
-							addr		        =>	reg_addr,
-							din			        =>	reg_din,
-							wr_en		        =>	reg_wr_en,
-							clear		        =>	'0',
-							din_ack		        =>	lower_frame_reg_din_ack,
-							rd_en				=>	lower_frame_reg_rd_en,
-							dout		        =>	lower_frame_rg (reg_width_c - 1 downto 0),
-							dout_valid	        =>	lower_frame_reg_dout_valid
-						);
+-- gen_reg_lower_frame_inst	:	gen_reg generic map (
+							-- reset_polarity_g	=>	reset_polarity_g,	
+							-- width_g				=>	reg_width_c+2,
+							-- addr_en_g			=>	true,
+							-- addr_val_g			=>	lower_frame_reg_addr_c,
+							-- addr_width_g		=>	reg_addr_width_c,
+							-- read_en_g			=>	true,
+							-- write_en_g			=>	true,
+							-- clear_on_read_g		=>	false,
+							-- default_value_g		=>	(ver_active_lines_g - ver_pres_lines_g)/2
+						-- )
+						-- port map (
+							-- clk					=>	clk_100,
+							-- reset		        =>	rst_100,
+							-- addr		        =>	reg_addr,
+							-- din			        =>	reg_din,
+							-- wr_en		        =>	reg_wr_en,
+							-- clear		        =>	'0',
+							-- din_ack		        =>	lower_frame_reg_din_ack,
+							-- rd_en				=>	lower_frame_reg_rd_en,
+							-- dout		        =>	lower_frame_rg (reg_width_c - 1 downto 0),
+							-- dout_valid	        =>	lower_frame_reg_dout_valid
+						-- );
 						
 wbs_reg_inst	:	wbs_reg generic map (
 							reset_polarity_g=>	reset_polarity_g,
