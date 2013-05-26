@@ -1,5 +1,0 @@
-set tool_name "ModelSim (VHDL)"
-set corner_file_list {
-	{{"Slow Model"} {mds_img_manipulation.vho mds_img_manipulation_vhd.sdo}}
-	{{"Fast Model"} {mds_img_manipulation_fast.vho mds_img_manipulation_vhd_fast.sdo}}
-}
