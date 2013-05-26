@@ -384,6 +384,9 @@ architecture rtl_mem_ctrl_rd_wbs of mem_ctrl_rd_wbs is
 			if (wbs_cur_st = wbs_init_sdram_rx_st) then
 				rd_addr_reg_wbm	<=	rd_addr_reg;
 				type_reg_wbm	<=	type_reg;
+			elsif (wbs_cur_st = wbs_done_st) then -- uri ran
+				type_reg_wbm	<=	type_reg;
+				rd_addr_reg_wbm	<=	rd_addr_reg;
 			end if;
 		end if;
 	end process info_reg_proc;

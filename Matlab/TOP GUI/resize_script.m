@@ -27,7 +27,7 @@ if ainfo.Format=='bmp'
 		%write new image to file
 		imwrite(b,bmap,filename,'bmp');
 else %input file is jpeg
-    a=rgb2gray(a);
+    a=im2uint8(a);
     prompt = {'Enter number of rows:','Enter number of coloums:','Enter Name for new fie'};
     dlg_title = 'Input required resolution';
     num_lines = 1;

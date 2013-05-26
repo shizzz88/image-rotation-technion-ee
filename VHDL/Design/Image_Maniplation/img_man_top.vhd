@@ -163,8 +163,8 @@ end component wbs_reg;
 component addr_calc is
 	generic (
 				reset_polarity_g		:	std_logic	:= '0';					--Reset active low
-				x_size_in_g				:	positive 	:= img_ver_lines_g;	-- number of rows  in the input image
-				y_size_in_g				:	positive 	:= img_hor_pixels_g;	-- number of columns  in the input image
+				x_size_in_g				:	positive 	:= 480;	-- number of rows  in the input image
+				y_size_in_g				:	positive 	:= 640;	-- number of columns  in the input image
 				x_size_out_g			:	positive 	:= 600;				-- number of rows  in theoutput image
 				y_size_out_g			:	positive 	:= 800;				-- number of columns  in the output image
 				trig_frac_size_g		:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)

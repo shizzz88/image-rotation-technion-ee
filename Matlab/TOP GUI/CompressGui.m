@@ -24,7 +24,7 @@ function varargout = CompressGui(varargin)
 
 % Edit the above text to modify the response to help CompressGui
 
-% Last Modified by GUIDE v2.5 26-Jan-2012 14:22:42
+% Last Modified by GUIDE v2.5 21-May-2013 10:07:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -44,7 +44,6 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
-
 % --- Executes just before CompressGui is made visible.
 function CompressGui_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
@@ -82,7 +81,7 @@ function buttonLoadImage_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 %% My program
 %Load image:
-[FileN, DirN] = uigetfile({'*.bmp; *.png; *.jpg; *.gif', 'Picture File (*.bmp, *.png, *.jpg, *.gif)'; '*.*', 'All files (*.*)'}, 'Choose Image Files', 'MultiSelect', 'on');
+[FileN, DirN] = uigetfile({'*.bmp; *.png; *.jpg; *.gif', 'Picture File (*.bmp, *.png, *.jpg, *.gif)'; '*.*', 'All files (*.*)'} ,'Choose Image Files', 'MultiSelect', 'on','P:\image-rotation-technion-ee\General\Test Images');
 set(handles.listbox_files,'Value', 1); %Add files into list
 set(handles.listbox_files,'String', FileN); %Add files into list
 set(handles.edit_dir,'String', DirN);
@@ -178,11 +177,11 @@ imshow(OriginalImg);
 colormap(gray);
 
 %Compress image
-tic;
+% tic;
 CmpImg = compress_img(get(handles.edit1,'String'),1);%cmp ratio RAN URI
-set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);
-sbytescmp=whos('CmpImg'); %Compressed image size
-set(handles.text_cmp_byte, 'String', [num2str(sbytescmp.bytes) ' Bytes']);
+% set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);
+% sbytescmp=whos('CmpImg'); %Compressed image size
+% set(handles.text_cmp_byte, 'String', [num2str(sbytescmp.bytes) ' Bytes']);
 
 %Compression Ratio:
 set(handles.text_ratio, 'String', ['Compression Ratio: 1 : ' num2str(ceil(sbytesorig.bytes/sbytescmp.bytes))]);
@@ -191,9 +190,9 @@ set(handles.text_ratio, 'String', ['Compression Ratio: 1 : ' num2str(ceil(sbytes
 clear('sbytesorig', 'sbytescmp');
 
 %Decompress Image
-tic;
+% tic;
 DecompImg = decompress_img(CmpImg,ImgSize);
-set(handles.text_dec_img, 'String', [num2str(toc) ' Seconds']);
+% set(handles.text_dec_img, 'String', [num2str(toc) ' Seconds']);
 
 %Show decompressed image
 axes(handles.axes2);
@@ -434,24 +433,17 @@ else
     set(handles.edit1, 'String', [DirN, cell2mat(Files(get(handles.listbox_files, 'Value')))] )
 end
 clear Files;
-OriginalImg=imread(get(handles.edit1,'String')); %read image
-% % %test image
-% a=[10 20 30 40 50]
-% b=[ 0 0 0 0 0]
-% c=[a b]
-% for i=1:64
-%     for j=1:10
-%     row(j+10*(i-1))=c(j);
-%     end
+  OriginalImg=imread(get(handles.edit1,'String')); %read image
+
+% test_image4=uint8(zeros(192,256));
+% for i=2:192
+% test_image4(i,:)=test_image4(i-1,:)+1;
 % end
-% for i=1:480
-%     Imagetest(i,:)=row;
-% end;
-% OriginalImg=uint8(Imagetest);
-% %end of test image
+% OriginalImg=test_image4;
+
 %Display image size:
-sbytesorig=whos('OriginalImg');
-set(handles.text_decmp_byte, 'String', [num2str(sbytesorig.bytes) ' Bytes']);
+% sbytesorig=whos('OriginalImg');
+% set(handles.text_decmp_byte, 'String', [num2str(sbytesorig.bytes) ' Bytes']);
 
 %Show image:
 axes(handles.axes1);
@@ -459,7 +451,7 @@ imshow((OriginalImg));
 colormap(gray);
 
 %Compress image
-tic;
+% tic;
 
 %display rotated image
 rotangle=str2double(get(handles.RotAngle,'String'));
@@ -475,9 +467,9 @@ colormap(gray);
 
 % CmpImg = compress_img(get(handles.edit1,'String'),1);%cmp ratio RAN URI
 CmpImg = OriginalImg';% don't compress image
-set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);
-sbytescmp=whos('CmpImg'); %Compressed image size
-set(handles.text_cmp_byte, 'String', [num2str(sbytescmp.bytes) ' Bytes']);
+% set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);
+% sbytescmp=whos('CmpImg'); %Compressed image size
+% set(handles.text_cmp_byte, 'String', [num2str(sbytescmp.bytes) ' Bytes']);
 
 %Compression Ratio:
 % set(handles.text_ratio, 'String', ['Compression Ratio: 1 : ' num2str(ceil(sbytesorig.bytes/sbytescmp.bytes))]);
@@ -487,16 +479,19 @@ clear('sbytesorig', 'sbytescmp');
 %END IMAGE COMPRESION
 
 %% Transmit Data
+tic
 % Prepare serial port
- serial_port= instrfind('Port','COM4'); %Close any COM4 serial connection
-if numel(serial_port) ~= 0
-     fclose(serial_port);
- end
- serial_port = serial('COM4','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 8, 'InputBufferSize', 1024 + 8);
- fopen(serial_port); %Open serial port
+if get(handles.en_serial_checkbox, 'Value') == 1 
+    serial_port= instrfind('Port','COM4'); %Close any COM4 serial connection
+        if numel(serial_port) ~= 0
+             fclose(serial_port);
+        end
+    serial_port = serial('COM4','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 8, 'InputBufferSize', 1024 + 8);
+    fopen(serial_port); %Open serial port
+end 
 sof = hex2dec(get(handles.sof_edit, 'String'));
 eof = hex2dec(get(handles.eof_edit, 'String'));
-fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permission
+fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
 
 %%	Register adresses in decimal form
 	x_start_addr=17;
@@ -527,7 +522,9 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     addr=x_start_addr;
     
     dataToSend=[sof     type    addr   mod( xstart, 256)    floor( xstart/256)    crc     eof];
-    fwrite(serial_port, dataToSend);
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+        fwrite(serial_port, dataToSend);
+    end    
 %% write Y_start to register file
     fprintf(fid, '#Chunk\r\n'); 
     fprintf(fid, '#SOF\r\n'); %write #SOF 
@@ -548,8 +545,9 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     type=128;
     addr=y_start_addr;
     dataToSend=[sof     type    addr   mod( ystart, 256)    floor( ystart/256)    crc     eof];
-    fwrite(serial_port, dataToSend);
-
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+        fwrite(serial_port, dataToSend);
+    end
  %% write zoom to register file
     fprintf(fid, '#Chunk\r\n'); 
     fprintf(fid, '#SOF\r\n'); %write #SOF 
@@ -570,8 +568,10 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     type=128;
     addr=y_start_addr;
     dataToSend=[sof     type    addr   mod( zoom, 256)    floor( zoom/256)    crc     eof];
-    fwrite(serial_port, dataToSend);
-%% write CosAngle to register file
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+        fwrite(serial_port, dataToSend);
+    end
+    %% write CosAngle to register file
     fprintf(fid, '#Chunk\r\n'); 
     fprintf(fid, '#SOF\r\n'); %write #SOF 
     fprintf(fid, '%02X\r\n',sof ); %write SOF value
@@ -592,8 +592,10 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
     type=128;
     addr=cosine_addr;
     dataToSend=[sof     type    addr   mod( cosangle, 256)    floor( cosangle/256)    crc     eof];
-    fwrite(serial_port, dataToSend);
-%% write SinAngle to register file
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+        fwrite(serial_port, dataToSend);
+    end
+    %% write SinAngle to register file
     fprintf(fid, '#Chunk\r\n'); 
     fprintf(fid, '#SOF\r\n'); %write #SOF 
     fprintf(fid, '%02X\r\n',sof ); %write SOF value
@@ -614,8 +616,9 @@ fid = fopen('p:\matlab_uart_tx_1.txt', 'w');  % open the file with write permiss
  type=128;
     addr=sine_addr;
     dataToSend=[sof     type    addr   mod( sinangle, 256)    floor( sinangle/256)    crc     eof];
-    fwrite(serial_port, dataToSend);
-
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+        fwrite(serial_port, dataToSend);
+    end
 
 
 
@@ -657,34 +660,40 @@ while (total_data_len > 0)
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
     fprintf(fid, '#EOF\r\n'); %write color repetitions to file
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
-    fwrite(serial_port, dataToSend);
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+        fwrite(serial_port, dataToSend);
+    end    
 end
 
 %Prepare summary chunk
-clear payload;
-type = type + 2;
-data =  numel (CmpImg);
-counter = ceil (log(data)/log(256));
-len = counter - 1;
-while (counter > 0)
-    payload(counter) = mod (data, 256);
-    data = floor (data / 256);
-    counter = counter - 1;
-end
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-fprintf(fid, '#Summay\r\n'); %Write summary chunk
-dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
-fprintf(fid, '%02X\r\n',dataToSend ); %write summary chunk
-fwrite(serial_port, dataToSend);
-%% End of transaction
-uiwait(msgbox('Image Transmission is DONE!!!','Status'));
-fclose (fid);
-fclose(serial_port);
-
+    clear payload;
+    type = type + 2;
+    data =  numel (CmpImg);
+    counter = ceil (log(data)/log(256));
+    len = counter - 1;
+    while (counter > 0)
+        payload(counter) = mod (data, 256);
+        data = floor (data / 256);
+        counter = counter - 1;
+    end
+    if get(handles.crc_checkbox, 'Value') == 1 
+        crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+    else
+        crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+    end
+    fprintf(fid, '#Summay\r\n'); %Write summary chunk
+    dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
+    fprintf(fid, '%02X\r\n',dataToSend ); %write summary chunk
+    if get(handles.en_serial_checkbox, 'Value') == 1 
+            fwrite(serial_port, dataToSend);
+    end
+        %% End of transaction
+    uiwait(msgbox('Image Transmission is DONE!!!','Status'));
+    fclose (fid);
+    if get(handles.en_serial_checkbox, 'Value') == 1     
+    	fclose(serial_port);
+    end
+    set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);   
 function edit_dbg_addr_msb_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_dbg_addr_msb (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -823,97 +832,103 @@ function pushbutton_update_regs_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 clc;
-%% Transmit Data
+%% Transmit Data to Rgisters
 % Prepare serial port
- serial_port= instrfind('Port','COM4'); %Close any COM1 serial connection
- if numel(serial_port) ~= 0
-     fclose(serial_port);
-end
- serial_port = serial('COM4','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
- fopen(serial_port); %Open serial port
-%fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
+    if get(handles.en_serial_checkbox, 'Value') == 1     
+        serial_port= instrfind('Port','COM4'); %Close any COM1 serial connection
+        if numel(serial_port) ~= 0
+             fclose(serial_port);
+        end
+        serial_port = serial('COM4','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
+        fopen(serial_port); %Open serial port
+    end;
+    fid_debug = fopen('../../../debug_uart_tx_1.txt', 'w');  % open the file with write permission
 
 % Prepare data
-sof = hex2dec(get(handles.sof_edit, 'String'));
-eof = hex2dec(get(handles.eof_edit, 'String'));
-type = 4*get(handles.checkbox_synthetic, 'Value') + 128; %128 for Registers transmission
+    sof = hex2dec(get(handles.sof_edit, 'String'));
+    eof = hex2dec(get(handles.eof_edit, 'String'));
+    type =  128; %128 for Registers transmission
 % Transmit Debug Register data
-clear payload;
-payload = zeros(1,3);
-addr = 2;
-len = 2; %2 = 3 address data
-payload(1) = hex2dec(get(handles.edit_dbg_addr_msb, 'String')) ; %Prepare payload to transmit
-payload(2) = hex2dec(get(handles.edit_dbg_addr_mid, 'String')) ; %Prepare payload to transmit
-payload(3) = hex2dec(get(handles.edit_dbg_addr_lsb, 'String')) ; %Prepare payload to transmit
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-%fprintf(fid, '#Debug Register\r\n'); 
-dataToSend=[sof     type    addr   0      len       payload    crc     eof];
-%fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+    clear payload;
+    payload = zeros(1,3);
+    addr = 2;%debug register address
+    len = 2; %2 = 3 address data
+    payload(3) = hex2dec(get(handles.edit_dbg_addr_msb, 'String')) ; %Prepare payload to transmit
+    payload(2) = hex2dec(get(handles.edit_dbg_addr_mid, 'String')) ; %Prepare payload to transmit
+    payload(1) = hex2dec(get(handles.edit_dbg_addr_lsb, 'String')) ; %Prepare payload to transmit
+    if get(handles.crc_checkbox, 'Value') == 1 
+        crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+    else
+        crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+    end
+    fprintf(fid_debug, '#Debug Register\r\n'); 
+    dataToSend=[sof     type    addr   0      len       payload    crc     eof];
+    fprintf(fid_debug, '%02X\r\n',dataToSend ); %write color repetitions to file
+    if get(handles.en_serial_checkbox, 'Value') == 1     
+        fwrite(serial_port, dataToSend);
+    end
+    fclose(fid_debug);
 
-% Transmit Frames Register data
-clear payload;
-addr = 5;
-len = 0; %0 = 1 address data
-payload = str2num(get(handles.edit_left_frame, 'String')) ; %Prepare payload to transmit
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-%fprintf(fid, '#Left Frame Register\r\n'); 
-dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
-%fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+% % Transmit Frames Register data
+% clear payload;
+% addr = 5;
+% len = 0; %0 = 1 address data
+% payload = str2num(get(handles.edit_left_frame, 'String')) ; %Prepare payload to transmit
+% if get(handles.crc_checkbox, 'Value') == 1 
+%     crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+% else
+%     crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+% end
+% %fprintf(fid, '#Left Frame Register\r\n'); 
+% dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
+% %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
+% fwrite(serial_port, dataToSend);
 
-addr = 6;
-len = 0; %0 = 1 address data
-payload = str2num(get(handles.edit_right_frame, 'String')) ; %Prepare payload to transmit
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-%fprintf(fid, '#Right Frame Register\r\n'); 
-dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
-%fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
-
-addr = 7;
-len = 0; %0 = 1 address data
-payload = str2num(get(handles.edit_upper_frame, 'String')) ; %Prepare payload to transmit
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-%fprintf(fid, '#Upper Frame Register\r\n'); 
-dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
-%fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
- fwrite(serial_port, dataToSend);
-
-addr = 8;
-len = 0; %0 = 1 address data
-payload = str2num(get(handles.edit_lower_frame, 'String')) ; %Prepare payload to transmit
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-%fprintf(fid, '#Lower Frame Register\r\n'); 
-dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
-%fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
+% addr = 6;
+% len = 0; %0 = 1 address data
+% payload = str2num(get(handles.edit_right_frame, 'String')) ; %Prepare payload to transmit
+% if get(handles.crc_checkbox, 'Value') == 1 
+%     crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+% else
+%     crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+% end
+% %fprintf(fid, '#Right Frame Register\r\n'); 
+% dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
+% %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
+% fwrite(serial_port, dataToSend);
+% 
+% addr = 7;
+% len = 0; %0 = 1 address data
+% payload = str2num(get(handles.edit_upper_frame, 'String')) ; %Prepare payload to transmit
+% if get(handles.crc_checkbox, 'Value') == 1 
+%     crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+% else
+%     crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+% end
+% %fprintf(fid, '#Upper Frame Register\r\n'); 
+% dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
+% %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
+%  fwrite(serial_port, dataToSend);
+% 
+% addr = 8;
+% len = 0; %0 = 1 address data
+% payload = str2num(get(handles.edit_lower_frame, 'String')) ; %Prepare payload to transmit
+% if get(handles.crc_checkbox, 'Value') == 1 
+%     crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+% else
+%     crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+% end
+% %fprintf(fid, '#Lower Frame Register\r\n'); 
+% dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
+% %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
+% fwrite(serial_port, dataToSend);
 
 %% End of transaction
 uiwait(msgbox('Registers Transmission is DONE!!!','Status'));
 %fclose (fid);
-fclose(serial_port);
-
+if get(handles.en_serial_checkbox, 'Value') == 1
+    fclose(serial_port);
+end;
 
 
 
@@ -963,48 +978,48 @@ end
 
 %% TX Debug
 
-% Executes on button press in pushbutton_tx_dbg.
-function pushbutton_tx_dbg_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tx_dbg (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Prepare serial port
-clc;
-serial_port= instrfind('Port','COM1'); %Close any COM1 serial connection
- if numel(serial_port) ~= 0
-     fclose(serial_port);
- end
-serial_port = serial('COM1','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
-fopen(serial_port); %Open serial port
-%fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
-
-% Prepare data
-sof = hex2dec(get(handles.sof_edit, 'String'));
-eof = hex2dec(get(handles.eof_edit, 'String'));
-type = 1 + 4*get(handles.checkbox_synthetic, 'Value');
-addr = 0;
-total_data_len =str2num(get(handles.edit_dbg_elements, 'String'));
-len = total_data_len-1;
-% Transmit data
-payload=zeros(1, min([1024, total_data_len]));
-%Prepare payload
-for idx=1:min([1024, total_data_len])
-    len = min([1024, total_data_len]) - 1; %Maximum of 1024 bytes = 1KBytes to transmit 
-    payload(idx) = mod(idx-1,256); %Prepare payload to transmit
-end
-if get(handles.crc_checkbox, 'Value') == 1 
-    crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
-else
-    crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
-end
-%fprintf(fid, '#Debug Chunk\r\n'); 
-dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
-%fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
-fwrite(serial_port, dataToSend);
-%% End of transaction
-uiwait(msgbox('Debug Transmission is DONE!!!','Status'));
-%fclose (fid);
-fclose(serial_port);
+% % Executes on button press in pushbutton_tx_dbg.
+% function pushbutton_tx_dbg_Callback(hObject, eventdata, handles)
+% % hObject    handle to pushbutton_tx_dbg (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% % Prepare serial port
+% clc;
+% serial_port= instrfind('Port','COM4'); %Close any COM1 serial connection
+%  if numel(serial_port) ~= 0
+%      fclose(serial_port);
+%  end
+% serial_port = serial('COM4','BaudRate', 115200,'Parity', 'none', 'DataBits', 8, 'StopBits', 1,'Timeout', 2, 'OutputBufferSize', 1024 + 7, 'InputBufferSize', 1024 + 7);
+% fopen(serial_port); %Open serial port
+% %fid = fopen('uart_tx_1.txt', 'w');  % open the file with write permission
+% 
+% % Prepare data
+% sof = hex2dec(get(handles.sof_edit, 'String'));
+% eof = hex2dec(get(handles.eof_edit, 'String'));
+% type = 128;
+% addr = 0;
+% total_data_len =str2num(get(handles.edit_dbg_elements, 'String'));
+% len = total_data_len-1;
+% % Transmit data
+% payload=zeros(1, min([1024, total_data_len]));
+% %Prepare payload
+% for idx=1:min([1024, total_data_len])
+%     len = min([1024, total_data_len]) - 1; %Maximum of 1024 bytes = 1KBytes to transmit 
+%     payload(idx) = mod(idx-1,256); %Prepare payload to transmit
+% end
+% if get(handles.crc_checkbox, 'Value') == 1 
+%     crc = mod(sum(payload) + type + floor(len/256) + mod(len, 256) + addr, 256);
+% else
+%     crc = hex2dec(get(handles.crc_force_val_edit, 'String')) ;
+% end
+% %fprintf(fid, '#Debug Chunk\r\n'); 
+% dataToSend=[sof     type    addr   floor(len/256)      mod(len, 256)       payload    crc     eof];
+% %fprintf(fid, '%02X\r\n',dataToSend ); %write color repetitions to file
+% fwrite(serial_port, dataToSend);
+% %% End of transaction
+% uiwait(msgbox('Debug Transmission is DONE!!!','Status'));
+% %fclose (fid);
+% fclose(serial_port);
 
 function edit_dbg_elements_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_dbg_elements (see GCBO)
@@ -1027,16 +1042,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-% --- Executes during object creation, after setting all properties.
-function axes_background_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to axes_background (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: place code in OpeningFcn to populate axes_background
-backgroundImage = importdata('background.jpg');
-image(backgroundImage);
 
 
 
@@ -1150,20 +1155,32 @@ end
 
 
 
-% --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over crc_checkbox.
-function crc_checkbox_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to crc_checkbox (see GCBO)
+
+
+
+
+
+% --- Executes on button press in en_serial_checkbox.
+function en_serial_checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to en_serial_checkbox (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 
+
+
+
 % --- Executes during object creation, after setting all properties.
-function background_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to background (see GCBO)
+function crc_checkbox_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to crc_checkbox (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: place code in OpeningFcn to populate background
-axes(hObject)
-imshow('background.jpg');
+
+% --- Executes on button press in en_serial_checkbox.
+function checkbox5_Callback(hObject, eventdata, handles)
+% hObject    handle to en_serial_checkbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of en_serial_checkbox

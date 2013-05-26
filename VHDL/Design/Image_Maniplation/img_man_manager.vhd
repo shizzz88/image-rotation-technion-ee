@@ -132,7 +132,7 @@ architecture rtl_img_man_manager of img_man_manager is
 	constant file_name_1_g					:	string  	:= "img_mang_toRAM_test.txt";		--out file name
 	constant file_name_2_g					:	string  	:= "img_mang_toSDRAM_test.txt";		--out file name
 
-	constant wb_burst_int                   :	positive			:=1024;				--length of burst for write back to SDRAM -1, because counting starts with 0
+	constant wb_burst_int                   :	positive			:=1024;				--length of burst for write back to SDRAM -1, because counting starts with 0. burst length should be such that for some N : wb_burst_int*N=img_hor_pixels_g*img_ver_lines_g
 	constant wb_burst_length_c				:	std_logic_vector 	(9 downto 0):= std_logic_vector(to_unsigned( wb_burst_int-1,10)); 	-- wb_burst_length_c   for wb purposes
 	constant wb_address_c					:	std_logic_vector 	(9 downto 0):= std_logic_vector(to_unsigned( wb_burst_int/2,10)); 	-- wb_burst_length_c/2 for wb address counter
 	constant wait_for_valid_c				:	std_logic_vector (2 downto 0):="011";
@@ -362,14 +362,24 @@ image_tx_en	<=	manipulation_complete;
 			case cur_st is
 			------------------------------Idle State--------------------------------- --
 				when fsm_idle_st =>
+					--for debug - disable block
 					if (req_trig='1')  then
-						report "Start of Image Manipulation  Time: " & time'image(now) severity note;
-						cur_st	<= 	fsm_increment_coord_st;
-						manipulation_complete	<='0';
-
+						report "Image Manipulation disabled - start display of original image from original bank  Time: " & time'image(now) severity note;
+						cur_st	<= 	fsm_idle_st;
+						manipulation_complete	<='1';
 					else
-						cur_st 	<= 	fsm_idle_st;
-					end if;				
+						cur_st	<= 	fsm_idle_st;
+						manipulation_complete	<='1';
+					end if;
+					
+					-- if (req_trig='1')  then
+						-- report "Start of Image Manipulation  Time: " & time'image(now) severity note;
+						-- cur_st	<= 	fsm_increment_coord_st;
+						-- manipulation_complete	<='0';
+
+					-- else
+						-- cur_st 	<= 	fsm_idle_st;
+					-- end if;				
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
 								ram_din_valid          <='0';
@@ -666,7 +676,9 @@ image_tx_en	<=	manipulation_complete;
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						write_SDRAM_state <= write_wb_addr_half_bank_st;
 						w_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
-						w_wr_wbm_dat_o	<=	"0001" & wb_address(19 downto 16);--in order to devide the bank to 2 
+						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 0000
+						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 0001
+						w_wr_wbm_dat_o	<=	"0001" & wb_address(19 downto 16);
 						w_wr_wbm_tga_o	<=	(others => '0');
 						w_wr_wbm_cyc_o	<=	'1';
 						w_wr_wbm_stb_o	<=	'1';
@@ -1024,7 +1036,9 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_dbg_reg_start_bank_1_st;
 						r_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
-						r_wr_wbm_dat_o	<=	(others => '0'); --address from addr_calc
+						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 00010000
+						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 00000000
+						r_wr_wbm_dat_o	<=	"00000000";--(others => '0'); --address from addr_calc
 						r_wr_wbm_tga_o	<=	(others => '0');
 						r_wr_wbm_cyc_o	<=	'1';
 						r_wr_wbm_stb_o	<=	'1';
@@ -1226,7 +1240,9 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 					if	(wr_wbm_stall_i='1' or wr_wbm_ack_i='0')then
 						read_SDRAM_state <= write_dbg_reg_start_bank_2_st;
 						r_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
-						r_wr_wbm_dat_o	<=	(others => '0'); --0
+						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 00010000
+						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 00000000
+						r_wr_wbm_dat_o	<=	"00000000";--(others => '0'); --0
 						r_wr_wbm_tga_o	<=	(others => '0');
 						r_wr_wbm_cyc_o	<=	'1';
 						r_wr_wbm_stb_o	<=	'1';
