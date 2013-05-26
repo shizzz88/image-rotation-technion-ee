@@ -14,6 +14,7 @@
 --			Number		Date		Name							Description			
 --			1.00		18.5.2011	Beeri Schreiber					Creation			
 --			1.01		11.12.2012	uri & ran						nivun mehudash
+--			1.02		26.05.2013	uri								changes mainly in pix_req_add
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
@@ -88,8 +89,10 @@ architecture rtl_pixel_mng of pixel_mng is
 	--Pixels
 	signal pix_cnt			:	natural range 0 to num_pixels_c + 256;	--Total received pixels for specific frame
 	signal tot_req_pix		:	natural range 0 to num_pixels_c + req_lines_g*hor_pixels_g;	--Total number of requested pixels from VESA generator
-	signal pix_req_add		:	std_logic_vector(integer(ceil(log(real(screen_hor_pix_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from VESA + 480 uri ran
---	alias  reps_in			: 	std_logic_vector (rep_size_g - 1 downto 0) is wbm_dat_i (7 downto rep_kind_pos_c);--Repetitions
+	signal pix_req_add		:	std_logic_vector(9 downto 0); --uri 26.05
+	--signal pix_req_add		:	std_logic_vector(integer(ceil(log(real(screen_hor_pix_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from VESA + 480 
+
+	--	alias  reps_in			: 	std_logic_vector (rep_size_g - 1 downto 0) is wbm_dat_i (7 downto rep_kind_pos_c);--Repetitions
 	
 	--General
 	signal rd_adr			:	std_logic_vector (9 downto 0);		--Read address from Wishbone Slave
@@ -252,7 +255,7 @@ begin
 					elsif (wbm_ack_i = '1') then
 						if (rd_adr = x"3FF") --End of Burst / All pixels have been received
 						or pix_max_b then
-						--or ((rd_adr(0) = '0') and (pix_cnt + (conv_integer(reps_in) + 1)*(2**rep_kind_pos_c) = num_pixels_c)) then
+						 --((rd_adr(0) = '0') then--and (pix_cnt + (conv_integer(reps_in) + 1)*(2**rep_kind_pos_c) = num_pixels_c)) then
 							wbm_stb_o	<=	'0';	
 							cur_st		<=	end_cyc_st;
 						else
@@ -354,17 +357,17 @@ begin
 	pixel_proc: process (clk_i, rst)
 	begin
 		if (rst = reset_polarity_g) then
-			tot_req_pix			<=	hor_pixels_g * req_lines_g;
+			tot_req_pix			<=	0;--hor_pixels_g * req_lines_g; uri 26.05
 			pix_cnt				<=	0;
 		elsif rising_edge (clk_i) then
 			if (vsync_sig = '1') then
-				tot_req_pix		<=	hor_pixels_g  * req_lines_g;
+				tot_req_pix		<=	0;--hor_pixels_g  * req_lines_g;uri 26.05
 				pix_cnt			<=	0;
 
 			elsif (cur_st = wbm_idle_st) then
 				pix_cnt	<=	pix_cnt;
 				if (req_trig_sig = '1') and req_trig_b
-				and (pix_cnt /= num_pixels_c) then	--Request for data
+				and (pix_cnt /= num_pixels_c)  then	--Request for data
 					tot_req_pix	<=	tot_req_pix + conv_integer(pix_req_add);
 				else
 					tot_req_pix	<=	tot_req_pix;
@@ -373,6 +376,7 @@ begin
 			elsif (cur_st = wbm_rx_st)
 			and (wbm_ack_i = '1') then
 				tot_req_pix		<=	tot_req_pix;
+				-- if (pix_cnt < num_pixels_c) then
 				if (rd_adr(0) = '0') and (pix_cnt < num_pixels_c) then	--Repetition data
 				--	pix_cnt		<=	pix_cnt + (conv_integer(reps_in) + 1)*(2**rep_kind_pos_c); --uri ran 
 					pix_cnt		<=	pix_cnt + 1;-- uri ran promote counter by 1
@@ -383,6 +387,7 @@ begin
 			elsif (cur_st = end_cyc_st)
 			and (wbm_ack_i = '1') then
 				tot_req_pix		<=	tot_req_pix;
+				--if (pix_cnt < num_pixels_c) then
 				if (rd_adr(0) = '0') and (pix_cnt < num_pixels_c) then	--Repetition data
 					--pix_cnt		<=	pix_cnt + (conv_integer(reps_in) + 1)*(2**rep_kind_pos_c); --uri ran
 					pix_cnt		<=	pix_cnt +  1; --uri ran promote counter by 1
@@ -463,9 +468,9 @@ begin
 			pix_req_add	<=	(others => '0');
 		elsif rising_edge (clk_i) then
 			if (req_trig_d2 = '1') then
-				pix_req_add	<=	pixels_req + ver_lines_g;
+				pix_req_add	<=	"1000000000";--pixels_req + hor_pixels_g;uri 26.05
 			else
-				pix_req_add	<=	pix_req_add;
+				pix_req_add	<=	"1000000000";--pix_req_add;uri 26.05
 			end if;
 		end if;
 	end process pix_req_add_proc;

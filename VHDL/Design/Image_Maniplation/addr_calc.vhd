@@ -63,7 +63,7 @@ entity addr_calc is
 	generic (
 			reset_polarity_g		:	std_logic	:= '0';			--Reset active low
 			x_size_in_g				:	positive 	:= 480;				-- number of rows  in the input image
-			y_size_in_g				:	positive 	:= 128;				-- number of columns  in the input image
+			y_size_in_g				:	positive 	:= 640;				-- number of columns  in the input image
 
 			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image

@@ -112,8 +112,10 @@ architecture rtl_mem_ctrl_wr_wbm of mem_ctrl_wr_wbm is
 	signal wbm_cyc_internal	:	std_logic;							--Internal WBS_CYC_O
 	signal wbm_stb_internal	:	std_logic;							--Internal WBS_STB_O
 	signal cur_wr_addr		:	std_logic_vector(21 downto 0);		--Current write address to SDRAM
-	signal wr_cnt 			:	natural range 0 to img_hor_pixels_g*img_ver_lines_g - 1;	--Number of written words (16 bits) to the SDRAM 
-	signal wr_cnt_to_rd		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g - 1;	--Latched wr_cnt, for mem_ctrl_rd
+	signal cur_wr_addr_temp		:	std_logic_vector(21 downto 0);	
+	
+	signal wr_cnt 			:	natural range 0 to img_hor_pixels_g*img_ver_lines_g -1;	--Number of written words (16 bits) to the SDRAM 
+	signal wr_cnt_to_rd		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g -1;	--Latched wr_cnt, for mem_ctrl_rd
 	signal sum_wr_cnt 		:	natural range 0 to img_hor_pixels_g*img_ver_lines_g ;		--Summary chunk value
 	signal addr_pipe		:	std_logic_vector(7 downto 0);		--For pipeline
 	signal sum_pipe_bool	:	boolean;							--For pipeline
@@ -162,8 +164,17 @@ architecture rtl_mem_ctrl_wr_wbm of mem_ctrl_wr_wbm is
 					else ram_data_out;
 	
 	--Address out to SDRAM (WBM_ADR_O)
+	-- original image [bank 0,msb 0], manipulated image [bank 0,msb 1]
 	wbm_adr_o_proc:
 	wbm_adr_o		<= 	cur_wr_addr;
+	
+	--Address out to SDRAM (WBM_ADR_O)
+	-- original image [bank 0,msb 1], manipulated image [bank 0,msb 0]
+	-- wbm_adr_o_proc:
+	-- wbm_adr_o(21)			<= 	cur_wr_addr_temp(21);
+	-- wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
+	-- wbm_adr_o(19 downto 0)	<= 	cur_wr_addr_temp(19 downto 0) ;
+	-- cur_wr_addr_temp <=cur_wr_addr;
 	
 	--Write counter to Mem_Ctrl_Read
 	wr_cnt_proc:
@@ -645,7 +656,7 @@ architecture rtl_mem_ctrl_wr_wbm of mem_ctrl_wr_wbm is
 
 				--sum_wr_cnt	<= 0;
 			else
-				sum_wr_cnt	<= img_hor_pixels_g*img_ver_lines_g;
+				 sum_wr_cnt	<= img_hor_pixels_g*img_ver_lines_g;
 				--sum_wr_cnt	<=	sum_wr_cnt;
 			end if;
 		end if;

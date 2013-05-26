@@ -79,8 +79,10 @@ entity mds_top is
 				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
 				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
 				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
-				dbg_sdram_acive		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
+				dbg_sdram_active		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
 				dbg_disp_active		:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+				dbg_manipulation_Y_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
+				dbg_manipulation_Z_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
 				dbg_icy_bus_taken	:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
 				dbg_icz_bus_taken	:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
 				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
@@ -715,8 +717,8 @@ signal	img_rd_wbm_stall_i		:	std_logic;							--Slave is not ready to receive ne
 signal	img_rd_wbm_ack_i		:  std_logic;							--Input data has been successfuly acknowledged
 signal	img_rd_wbm_err_i		:  std_logic;	
 
-signal	img_rd_wbm_dat_o		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
-signal	img_rd_wbm_we_o			:  std_logic;	
+signal	OPEN_img_rd_wbm_dat_o		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
+signal	OPEN_img_rd_wbm_we_o			:  std_logic;	
 		--Signals from image manipulation to display
 signal	img_image_tx_en			:  std_logic;					--enable image transmission
 		--Signals from mem_mng_top to image manipulation
@@ -775,8 +777,8 @@ signal tx_icz_wbs_ack_o		:	std_logic;						--ACK from TX Path registers
 signal tx_icz_wbs_err_o		:	std_logic;						--ERR from TX Path Registers
 
 begin
-img_rd_wbm_dat_o <=	(others => '0');
-img_rd_wbm_we_o	<='0';
+OPEN_img_rd_wbm_dat_o <=	(others => '0');
+OPEN_img_rd_wbm_we_o	<='0';
 --Hidden Processes
 
 --Connects SDRAM clock to out
@@ -933,7 +935,7 @@ intercon_y_inst		:	intercon generic map
 				ic_wbm_tga_o (29 downto 20)	=>	img_rd_wbm_tga_o,
 				ic_wbm_dat_o (7 downto 0)	=>	OPEN_disp_dat_o,		
 				ic_wbm_dat_o (15 downto 8)	=>	icxy_wbm_dat_o (7 downto 0),		
-				ic_wbm_dat_o (23 downto 16)	=>	img_rd_wbm_dat_o,	-- dummy signal uri ran bug
+				ic_wbm_dat_o (23 downto 16)	=>	OPEN_img_rd_wbm_dat_o,	-- dummy signal uri ran bug
 				ic_wbm_cyc_o(0)				=>	icy_disp_wbm_cyc_o,		
 				ic_wbm_cyc_o(1)				=>	icxy_wbm_cyc_o,		
 				ic_wbm_cyc_o(2)				=>	img_rd_wbm_cyc_o,
@@ -942,7 +944,7 @@ intercon_y_inst		:	intercon generic map
 				ic_wbm_stb_o(2)				=>	img_rd_wbm_stb_o,
 				ic_wbm_we_o(0)				=>	OPEN_disp_we_o,		
 				ic_wbm_we_o(1)				=>	icxy_wbm_we_o,		
-				ic_wbm_we_o(2)				=>	img_rd_wbm_we_o,	-- dummy signal uri ran bug
+				ic_wbm_we_o(2)				=>	OPEN_img_rd_wbm_we_o,	-- dummy signal uri ran bug
 				ic_wbm_tgc_o(0)				=>	icy_disp_wbm_tgc_o,		
 				ic_wbm_tgc_o(1)				=>	icxy_wbm_tgc_o,		
 				ic_wbm_tgc_o(2)				=>	img_rd_wbm_tgc_o,	
@@ -1247,11 +1249,16 @@ dbg_rx_path_cyc_proc:
 dbg_rx_path_cyc	<=	rx_wbm_cyc_o;
 
 --WBM_CYC_O from mem_mng_top to SDRAM state
-dbg_sdram_acive_proc:
-dbg_sdram_acive	<=	wbm_cyc_o;
+dbg_sdram_active_proc:
+dbg_sdram_active	<=	wbm_cyc_o;
 			
 --WBM_CYC_O from disp_ctrl_top to INTERCON_Y state
 dbg_disp_active_proc:
 dbg_disp_active	<=	icy_disp_wbm_cyc_o;
+
+--WBM_CYC_O from img_man_top to INTERCON_Y state
+dbg_img_man_active_proc:
+dbg_manipulation_Y_active	<=	 img_rd_wbm_cyc_o;
+dbg_manipulation_Z_active	<=	 img_wr_wbm_cyc_o;
 		
 end architecture rtl_mds_top;

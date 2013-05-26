@@ -148,6 +148,7 @@ signal dc_fifo_empty	:	std_logic;						--DC FIFO is empty
 signal dc_fifo_dout		:	std_logic_vector (7 downto 0);	--Output from DC FIFO
 signal dc_rd_req		:	std_logic;						--DC FIFO Read Request from VESA when FIFO is not empty
 signal vesa_data_valid	:	std_logic;						--Input data is valid for VESA (From DC FIFO)
+
 signal vesa_data_valid_sy:	std_logic;						--Input data is valid for VESA (Sythetic Frame Generator)
 signal r_in_sy			:	std_logic_vector (red_width_g - 1 downto 0);	--RED (Synthetic Frame Generator)
 signal g_in_sy			:	std_logic_vector (green_width_g - 1 downto 0);	--GREEN (Synthetic Frame Generator)
@@ -534,9 +535,9 @@ begin
 	end generate dc_fifo_aclr_gen2;
 
 	--VESA Data valid process
-	vesa_data_valid_proc:
+	async_vesa_data_valid_proc:
 	vesa_data_valid	<=	vesa_data_valid_sy when vesa_mux_d2 = '1'
-						else (not dc_fifo_empty);
+						 else (not dc_fifo_empty);
 
 	--VSync process:
 	vsync_proc:
