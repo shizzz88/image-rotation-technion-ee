@@ -14,7 +14,7 @@
 --			Number		Date		Name							Description			
 --			1.00		18.5.2011	Beeri Schreiber					Creation			
 --			1.01		11.12.2012	uri & ran						nivun mehudash
---			1.02		26.05.2013	uri								changes mainly in pix_req_add
+--			1.02		27.05.2013	uri								changes mainly in pix_req_add and added image_tx_en
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) 
@@ -40,7 +40,7 @@ entity pixel_mng is
    	   (
    	    clk_i			:	in std_logic; 						--Wishbone Clock
    	    rst				:	in std_logic;						--Reset
-		
+		image_tx_en		:	in std_logic;				
 		-- Wishbown Signals
 		wbm_ack_i		:	in std_logic;						--Wishbone Acknowledge
 		wbm_err_i		:	in std_logic;						--Wishbone Error
@@ -90,7 +90,7 @@ architecture rtl_pixel_mng of pixel_mng is
 	signal pix_cnt			:	natural range 0 to num_pixels_c + 256;	--Total received pixels for specific frame
 	signal tot_req_pix		:	natural range 0 to num_pixels_c + req_lines_g*hor_pixels_g;	--Total number of requested pixels from VESA generator
 	signal pix_req_add		:	std_logic_vector(9 downto 0); --uri 26.05
-	--signal pix_req_add		:	std_logic_vector(integer(ceil(log(real(screen_hor_pix_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from VESA + 480 
+	-- signal pix_req_add		:	std_logic_vector(integer(ceil(log(real(screen_hor_pix_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from VESA + 480 
 
 	--	alias  reps_in			: 	std_logic_vector (rep_size_g - 1 downto 0) is wbm_dat_i (7 downto rep_kind_pos_c);--Repetitions
 	
@@ -222,23 +222,24 @@ begin
 		elsif rising_edge (clk_i) then
 			case cur_st is
 				when wbm_idle_st =>
-					if (term_cyc = '1') then	--Terminate transaction due to debug mode
-						cur_st 	<=	cur_st;
-					
-					elsif (req_trig_sig = '1') 
-					and (pix_cnt /= num_pixels_c) 
-					and (pix_cnt < tot_req_pix + conv_integer(pix_req_add)) then	--Request for data, and not end of picture
-					--NOTE: req_trig_sig may be active for more than 1 clock, which is OK
-						cur_st		<=	wbm_init_rx_st;
-					elsif (vsync_sig = vsync_polarity_g) then
-						cur_st		<=	restart_rd_st;
-					else
-						cur_st		<=	cur_st;
+					if  (image_tx_en='1')	then	
+						if (term_cyc = '1') then	--Terminate transaction due to debug mode
+							cur_st 	<=	cur_st;
+						
+						elsif (req_trig_sig = '1') 
+						and (pix_cnt /= num_pixels_c) 
+						and (pix_cnt < tot_req_pix + conv_integer(pix_req_add)) then	--Request for data, and not end of picture
+						--NOTE: req_trig_sig may be active for more than 1 clock, which is OK
+							cur_st		<=	wbm_init_rx_st;
+						elsif (vsync_sig = vsync_polarity_g) then
+							cur_st		<=	restart_rd_st;
+						else
+							cur_st		<=	cur_st;
+						end if;
+						cyc_internal<=	'0';
+						wbm_stb_o	<=	'0';
+						wbm_tgc_o	<=	'0';
 					end if;
-					cyc_internal<=	'0';
-					wbm_stb_o	<=	'0';
-					wbm_tgc_o	<=	'0';
-					
 				when wbm_init_rx_st =>
 					cyc_internal<=	'1';
 					wbm_stb_o	<=	'1';
@@ -357,18 +358,20 @@ begin
 	pixel_proc: process (clk_i, rst)
 	begin
 		if (rst = reset_polarity_g) then
-			tot_req_pix			<=	0;--hor_pixels_g * req_lines_g; uri 26.05
+			-- tot_req_pix			<=	hor_pixels_g * req_lines_g;
+			tot_req_pix			<=	0; --uri 26.05
 			pix_cnt				<=	0;
 		elsif rising_edge (clk_i) then
 			if (vsync_sig = '1') then
-				tot_req_pix		<=	0;--hor_pixels_g  * req_lines_g;uri 26.05
+				-- tot_req_pix			<=	hor_pixels_g * req_lines_g;
+				tot_req_pix		<=	0;--uri 26.05
 				pix_cnt			<=	0;
 
 			elsif (cur_st = wbm_idle_st) then
 				pix_cnt	<=	pix_cnt;
 				if (req_trig_sig = '1') and req_trig_b
 				and (pix_cnt /= num_pixels_c)  then	--Request for data
-					tot_req_pix	<=	tot_req_pix + conv_integer(pix_req_add);
+					tot_req_pix	<=	tot_req_pix + 2*conv_integer(pix_req_add);
 				else
 					tot_req_pix	<=	tot_req_pix;
 				end if;
@@ -376,8 +379,8 @@ begin
 			elsif (cur_st = wbm_rx_st)
 			and (wbm_ack_i = '1') then
 				tot_req_pix		<=	tot_req_pix;
-				-- if (pix_cnt < num_pixels_c) then
-				if (rd_adr(0) = '0') and (pix_cnt < num_pixels_c) then	--Repetition data
+				if (pix_cnt < num_pixels_c) then
+				-- if (rd_adr(0) = '0') and (pix_cnt < num_pixels_c) then	--Repetition data
 				--	pix_cnt		<=	pix_cnt + (conv_integer(reps_in) + 1)*(2**rep_kind_pos_c); --uri ran 
 					pix_cnt		<=	pix_cnt + 1;-- uri ran promote counter by 1
 				else							--Color data
@@ -387,8 +390,9 @@ begin
 			elsif (cur_st = end_cyc_st)
 			and (wbm_ack_i = '1') then
 				tot_req_pix		<=	tot_req_pix;
-				--if (pix_cnt < num_pixels_c) then
-				if (rd_adr(0) = '0') and (pix_cnt < num_pixels_c) then	--Repetition data
+				if (pix_cnt < num_pixels_c) then
+				-- if (rd_adr(0) = '0') and (pix_cnt < num_pixels_c) then	--Repetition data
+				-- if  (pix_cnt < num_pixels_c) then	--Repetition data
 					--pix_cnt		<=	pix_cnt + (conv_integer(reps_in) + 1)*(2**rep_kind_pos_c); --uri ran
 					pix_cnt		<=	pix_cnt +  1; --uri ran promote counter by 1
 				else							--Color data
@@ -453,7 +457,8 @@ begin
 		if (rst = reset_polarity_g) then
 			pix_max_b	<=	false;
 		elsif rising_edge (clk_i) then
-			pix_max_b <= (pix_cnt + 256 >= num_pixels_c);
+			pix_max_b <= (pix_cnt  >= num_pixels_c);--			pix_max_b <= (pix_cnt +256 >= num_pixels_c);
+
 		end if;
 	end process pix_max_proc;
 	
@@ -468,9 +473,11 @@ begin
 			pix_req_add	<=	(others => '0');
 		elsif rising_edge (clk_i) then
 			if (req_trig_d2 = '1') then
-				pix_req_add	<=	"1000000000";--pixels_req + hor_pixels_g;uri 26.05
+				-- pix_req_add	<=	pixels_req + ver_lines_g;
+				pix_req_add	<=	"1000000000";--uri 26.05
 			else
-				pix_req_add	<=	"1000000000";--pix_req_add;uri 26.05
+				-- pix_req_add <= pix_req_add;
+				pix_req_add	<=	"1000000000";--uri 26.05
 			end if;
 		end if;
 	end process pix_req_add_proc;

@@ -13,6 +13,8 @@
 --			1.01		11.12.2012 	uri ran					nivun hadash
 --			1.02		21.05.2013	uri						removal of right_frame_rg,left_frame_rg,upper_frame_rg,lower_frame_rg because size mismmatch in small  input resolutions.
 --															small resolution input image requires larger than 8 bit frame register
+--			1.03		27.05		uri						added image_tx_en signal to pixel_manager.
+--											                removed signal associated with frame registers
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1)
@@ -142,7 +144,7 @@ signal req_ln_trig		:	std_logic;						--Trigger to image transmitter, to load it
 signal vsync_int		:	std_logic;						--Vertical Sync
 signal hsync_int		:	std_logic;						--Horizontal Sync
 signal dc_fifo_full		:	std_logic;						--DC FIFO is full
-signal dc_fifo_wr_en_log:	std_logic;						--DC FIFO Write enable logic
+-- signal dc_fifo_wr_en_log:	std_logic;						--DC FIFO Write enable logic
 signal vesa_req_data	:	std_logic;						--VESA Generator request for data
 signal dc_fifo_empty	:	std_logic;						--DC FIFO is empty
 signal dc_fifo_dout		:	std_logic_vector (7 downto 0);	--Output from DC FIFO
@@ -164,10 +166,10 @@ signal sc_fifo_full		:	std_logic;						--SC FIFO is full
 signal sc_fifo_empty	:	std_logic;						--SC FIFO is empty
 signal sc_fifo_dout		:	std_logic_vector (7 downto 0);	--Output FIFO data
 signal sc_fifo_dout_val	:	std_logic;						--Output FIFO data is valid
-signal sc_fifo_rd_en	:	std_logic;						--Read enable to FIFO
+-- signal sc_fifo_rd_en	:	std_logic;						--Read enable to FIFO
 signal sc_fifo_wr_en	:	std_logic;						--Write enable to FIFO
-signal dc_fifo_din		:	std_logic_vector (7 downto 0);	--Input FIFO data
-signal dc_fifo_wr_en	:	std_logic;						--Write enable to FIFO
+-- signal dc_fifo_din		:	std_logic_vector (7 downto 0);	--Input FIFO data
+-- signal dc_fifo_wr_en	:	std_logic;						--Write enable to FIFO
 signal dc_fifo_aclr		:	std_logic;						--Clear to DC FIFO
 signal flush			:	std_logic;						--Flush data in FIFO, and go to rx state in decompressor
 signal sc_fifo_rd_req	:	std_logic;						--uri ran Read request to sc_fifo from dc_fifo
@@ -207,18 +209,18 @@ signal type_reg_dout		:	std_logic_vector (reg_width_c - 1 downto 0);	--Output da
 signal type_reg_dout_valid	:	std_logic;										--Output data is valid
 
 --Frame's register signals
-signal left_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
+-- signal left_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
 signal left_frame_reg_rd_en			:	std_logic;								--Read Enable
-signal left_frame_reg_dout_valid	:	std_logic;								--Output data is valid
-signal right_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
+-- signal left_frame_reg_dout_valid	:	std_logic;								--Output data is valid
+-- signal right_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
 signal right_frame_reg_rd_en		:	std_logic;								--Read Enable
-signal right_frame_reg_dout_valid	:	std_logic;								--Output data is valid
-signal upper_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
+-- signal right_frame_reg_dout_valid	:	std_logic;								--Output data is valid
+-- signal upper_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
 signal upper_frame_reg_rd_en		:	std_logic;								--Read Enable
-signal upper_frame_reg_dout_valid	:	std_logic;								--Output data is valid
-signal lower_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
+-- signal upper_frame_reg_dout_valid	:	std_logic;								--Output data is valid
+-- signal lower_frame_reg_din_ack		:	std_logic;								--Data has been acknowledged
 signal lower_frame_reg_rd_en		:	std_logic;								--Read Enable
-signal lower_frame_reg_dout_valid	:	std_logic;								--Output data is valid
+-- signal lower_frame_reg_dout_valid	:	std_logic;								--Output data is valid
 
 --Frame
 signal left_frame_sy	:	std_logic_vector(integer(ceil(log(real(hor_active_pixels_g)) / log(2.0))) - 1 downto 0);	--Left frame border
@@ -399,7 +401,7 @@ component pixel_mng
    	   (
    	    clk_i			:	in std_logic; 						--Wishbone Clock
    	    rst				:	in std_logic;						--Reset
-		
+		image_tx_en		:	in std_logic;				
 		-- Wishbown Signals
 		wbm_ack_i		:	in std_logic;						--Wishbone Acknowledge
 		wbm_err_i		:	in std_logic;						--Wishbone Error
@@ -659,19 +661,19 @@ begin
 
 	--MUX, to route addressed register dout_valid to the WBS
 	wbs_reg_dout_valid_proc:
-	wbs_reg_dout_valid	<=	type_reg_dout_valid 
-							or left_frame_reg_dout_valid 
-							or right_frame_reg_dout_valid 
-							or upper_frame_reg_dout_valid 
-							or lower_frame_reg_dout_valid;
+	wbs_reg_dout_valid	<=	type_reg_dout_valid ;
+							-- or left_frame_reg_dout_valid 
+							-- or right_frame_reg_dout_valid 
+							-- or upper_frame_reg_dout_valid 
+							-- or lower_frame_reg_dout_valid;
 
 	--MUX, to route addressed register din_ack to the WBS
 	wbs_reg_din_ack_proc:
-	wbs_reg_din_ack	<=	type_reg_din_ack 
-						or left_frame_reg_din_ack
-						or right_frame_reg_din_ack
-						or upper_frame_reg_din_ack
-						or lower_frame_reg_din_ack;
+	wbs_reg_din_ack	<=	type_reg_din_ack ;
+						-- or left_frame_reg_din_ack
+						-- or right_frame_reg_din_ack
+						-- or upper_frame_reg_din_ack
+						-- or lower_frame_reg_din_ack;
 						
 	--Read Enables processes:
 	type_reg_rd_en_proc:
@@ -711,6 +713,7 @@ pixel_mng_inst: pixel_mng generic map
 						(
 							clk_i				=>	clk_100,		
 							rst			        =>	rst_100,
+							image_tx_en			=>image_tx_en,
 							wbm_ack_i	        =>	wbm_ack_i,
 							wbm_err_i	        =>	wbm_err_i	,
 							wbm_stall_i	        =>	wbm_stall_i	,
@@ -1030,6 +1033,7 @@ begin
 	    right_frame_rg_d2   <=	(others => '0');
 	    lower_frame_rg_d2   <=	(others => '0');
 		vesa_mux_d1			<=	'0';
+		vesa_mux_d2			<=	'0';
 	elsif rising_edge(clk_40) then
 		vesa_mux_d1			<=	type_reg_dout (synth_bit_g);
 		left_frame_rg_d1	<=	left_frame_rg	;

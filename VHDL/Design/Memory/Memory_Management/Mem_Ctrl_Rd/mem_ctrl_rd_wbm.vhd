@@ -175,16 +175,16 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 	
 	--Address out to SDRAM (WBM_ADR_O)
 	-- original image [bank 0,msb 1], manipulated image [bank 0,msb 0]
-	wbm_adr_o_proc:
-	wbm_adr_o <=cur_rd_addr;
+	-- wbm_adr_o_proc:
+	-- wbm_adr_o <=cur_rd_addr;
 	
 	--Address out to SDRAM (WBM_ADR_O)
 	-- original image [bank 0,msb 0], manipulated image [bank 0,msb 1]
-	-- wbm_adr_o_proc:
-	-- wbm_adr_o(21)			<= 	cur_rd_addr_temp(21);
-	-- wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
-	-- wbm_adr_o(19 downto 0)	<= 	cur_rd_addr_temp(19 downto 0) ;
-	-- cur_rd_addr_temp <=cur_rd_addr;
+	wbm_adr_o_proc:
+	wbm_adr_o(21)			<= 	cur_rd_addr_temp(21);
+	wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
+	wbm_adr_o(19 downto 0)	<= 	cur_rd_addr_temp(19 downto 0) ;
+	cur_rd_addr_temp <=cur_rd_addr;
 	
 
 	--############################################################################--
