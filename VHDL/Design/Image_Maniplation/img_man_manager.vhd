@@ -363,23 +363,26 @@ image_tx_en	<=	manipulation_complete;
 			------------------------------Idle State--------------------------------- --
 				when fsm_idle_st =>
 					--for debug - disable block
-					if (req_trig='1')  then
-						report "Image Manipulation disabled - start display of original image from original bank  Time: " & time'image(now) severity note;
-						cur_st	<= 	fsm_idle_st;
-						manipulation_complete	<='1';
-					else
-						cur_st	<= 	fsm_idle_st;
-						manipulation_complete	<='1';
-					end if;
-					
 					-- if (req_trig='1')  then
-						-- report "Start of Image Manipulation  Time: " & time'image(now) severity note;
-						-- cur_st	<= 	fsm_increment_coord_st;
-						-- manipulation_complete	<='0';
-
+						-- report "Image Manipulation disabled - start display of original image from original bank  Time: " & time'image(now) severity note;
+						-- cur_st	<= 	fsm_idle_st;
+						-- manipulation_complete	<='1';
+					-- elsif (manipulation_complete='1') then
+						-- manipulation_complete	<='1';
+						-- cur_st	<= 	fsm_idle_st;
 					-- else
-						-- cur_st 	<= 	fsm_idle_st;
-					-- end if;				
+						-- manipulation_complete	<='0';
+						-- cur_st	<= 	fsm_idle_st;	
+					-- end if;
+					
+					if (req_trig='1')  then
+						report "Start of Image Manipulation  Time: " & time'image(now) severity note;
+						cur_st	<= 	fsm_increment_coord_st;
+						manipulation_complete	<='0';
+
+					else
+						cur_st 	<= 	fsm_idle_st;
+					end if;				
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
 								ram_din_valid          <='0';

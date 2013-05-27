@@ -433,7 +433,8 @@ else
     set(handles.edit1, 'String', [DirN, cell2mat(Files(get(handles.listbox_files, 'Value')))] )
 end
 clear Files;
-  OriginalImg=imread(get(handles.edit1,'String')); %read image
+  
+OriginalImg=imread(get(handles.edit1,'String')); %read image
 
 % test_image4=uint8(zeros(192,256));
 % for i=2:192

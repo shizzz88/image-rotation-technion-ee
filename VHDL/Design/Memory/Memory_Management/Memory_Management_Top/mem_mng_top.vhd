@@ -470,7 +470,7 @@ begin
 	---------------------------------------------------------------------------------------
 	-- The process switches between the two double banks when fine image has been received.
 	---------------------------------------------------------------------------------------
-	bank_val_proc: process (clk_sdram, rst_sdram,type_reg_dout(0))
+	bank_val_proc: process (clk_sdram, rst_sdram)
 	begin
 		if (rst_sdram = reset_polarity_g) then
 			wr_bank_val <= '0';

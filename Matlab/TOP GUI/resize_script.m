@@ -4,7 +4,7 @@ clc
 %resize and make jpeg image grayscale
 %read image and requested resolution from user
 %write new image in jpeg format
-[FileName,PathName,FilterIndex] =uigetfile({'*.jpg;*.bmp','All Image Files';'*.*','All Files' },'Please Choose Image');
+[FileName,PathName,FilterIndex] =uigetfile({'*.jpg;*.bmp','All Image Files';'*.*','All Files' },'Please Choose Image','../../General/Test Images/');
 path_and_name=strcat(PathName,FileName);
 [a,amap]=imread(path_and_name);
 ainfo=imfinfo(path_and_name);
@@ -23,7 +23,7 @@ if ainfo.Format=='bmp'
 		%resize image and colormap
 		[b,bmap]=imresize(a,amap,newres);
 		%imshow(b,bmap)
-		filename=strcat(answer{3},'.bmp');
+		filename=strcat('../../General/Test Images/',answer{3},'.bmp');
 		%write new image to file
 		imwrite(b,bmap,filename,'bmp');
 else %input file is jpeg
@@ -36,7 +36,7 @@ else %input file is jpeg
     %resize image and colormap
     [b]=imresize(a,newres);
     %imshow(b,bmap)
-    filename=strcat(answer{3},'.jpg');
+    filename=strcat('../../General/Test Images/',answer{3},'.jpg');
     %write new image to file
     imwrite(b,filename,'jpg');
 end
