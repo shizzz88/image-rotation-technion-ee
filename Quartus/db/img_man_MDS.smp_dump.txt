@@ -1,0 +1,171 @@
+
+State Machine - |img_man_MDS|mds_top:inst15|img_man_top:img_man_top_inst|img_man_manager:img_man_manager_inst|read_SDRAM_state
+Name read_SDRAM_state.write_type_reg_0x00_2_st read_SDRAM_state.write_type_reg_0x00_1_st read_SDRAM_state.restart_sdram_after_read read_SDRAM_state.wait_ack_2_st read_SDRAM_state.write_type_reg_0x81_2_st read_SDRAM_state.write_dbg_reg_start_bank_2_st read_SDRAM_state.write_dbg_reg_msb_2_st read_SDRAM_state.write_dbg_reg_lsb_2_st read_SDRAM_state.write_type_reg_0x80_2_st read_SDRAM_state.prepare_for_second_pair_st read_SDRAM_state.wait_ack_1_st read_SDRAM_state.write_type_reg_0x81_1_st read_SDRAM_state.write_dbg_reg_start_bank_1_st read_SDRAM_state.write_dbg_reg_msb_1_st read_SDRAM_state.write_dbg_reg_lsb_1_st read_SDRAM_state.write_type_reg_0x80_1_st read_SDRAM_state.read_idle_st 
+read_SDRAM_state.read_idle_st 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+read_SDRAM_state.write_type_reg_0x80_1_st 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+read_SDRAM_state.write_dbg_reg_lsb_1_st 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+read_SDRAM_state.write_dbg_reg_msb_1_st 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+read_SDRAM_state.write_dbg_reg_start_bank_1_st 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+read_SDRAM_state.write_type_reg_0x81_1_st 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+read_SDRAM_state.wait_ack_1_st 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+read_SDRAM_state.prepare_for_second_pair_st 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+read_SDRAM_state.write_type_reg_0x80_2_st 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+read_SDRAM_state.write_dbg_reg_lsb_2_st 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.write_dbg_reg_msb_2_st 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.write_dbg_reg_start_bank_2_st 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.write_type_reg_0x81_2_st 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.wait_ack_2_st 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.restart_sdram_after_read 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.write_type_reg_0x00_1_st 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+read_SDRAM_state.write_type_reg_0x00_2_st 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|img_man_top:img_man_top_inst|img_man_manager:img_man_manager_inst|write_SDRAM_state
+Name write_SDRAM_state.write_type_reg_0x00_st write_SDRAM_state.prep_st write_SDRAM_state.write_burst_st write_SDRAM_state.write_type_reg_0x01_st write_SDRAM_state.write_wb_addr_half_bank_st write_SDRAM_state.write_wb_addr_msb_st write_SDRAM_state.write_wb_addr_lsb_st write_SDRAM_state.write_idle_st 
+write_SDRAM_state.write_idle_st 0 0 0 0 0 0 0 0 
+write_SDRAM_state.write_wb_addr_lsb_st 0 0 0 0 0 0 1 1 
+write_SDRAM_state.write_wb_addr_msb_st 0 0 0 0 0 1 0 1 
+write_SDRAM_state.write_wb_addr_half_bank_st 0 0 0 0 1 0 0 1 
+write_SDRAM_state.write_type_reg_0x01_st 0 0 0 1 0 0 0 1 
+write_SDRAM_state.write_burst_st 0 0 1 0 0 0 0 1 
+write_SDRAM_state.prep_st 0 1 0 0 0 0 0 1 
+write_SDRAM_state.write_type_reg_0x00_st 1 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|img_man_top:img_man_top_inst|img_man_manager:img_man_manager_inst|cur_st
+Name cur_st.summery_chunk_st cur_st.fsm_WB_to_SDRAM_st cur_st.result_to_RAM_st cur_st.fsm_bilinear_st cur_st.fsm_READ_from_SDRAM_st cur_st.fsm_address_calc_st cur_st.fsm_increment_coord_st cur_st.fsm_idle_st 
+cur_st.fsm_idle_st 0 0 0 0 0 0 0 0 
+cur_st.fsm_increment_coord_st 0 0 0 0 0 0 1 1 
+cur_st.fsm_address_calc_st 0 0 0 0 0 1 0 1 
+cur_st.fsm_READ_from_SDRAM_st 0 0 0 0 1 0 0 1 
+cur_st.fsm_bilinear_st 0 0 0 1 0 0 0 1 
+cur_st.result_to_RAM_st 0 0 1 0 0 0 0 1 
+cur_st.fsm_WB_to_SDRAM_st 0 1 0 0 0 0 0 1 
+cur_st.summery_chunk_st 1 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|tx_path:tx_path_inst|tx_path_wbm:tx_wbm_inst|wbm_cur_st
+Name wbm_cur_st.wbm_wait_burst_st wbm_cur_st.wbm_rx_st wbm_cur_st.wbm_idle_st 
+wbm_cur_st.wbm_idle_st 0 0 0 
+wbm_cur_st.wbm_rx_st 0 1 1 
+wbm_cur_st.wbm_wait_burst_st 1 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|tx_path:tx_path_inst|mp_enc:mp_enc1|cur_st
+Name cur_st.eof_st cur_st.crc_st cur_st.reg_crc_st cur_st.data_st cur_st.len_st cur_st.addr_st cur_st.type_st cur_st.sof_st cur_st.idle_st 
+cur_st.idle_st 0 0 0 0 0 0 0 0 0 
+cur_st.sof_st 0 0 0 0 0 0 0 1 1 
+cur_st.type_st 0 0 0 0 0 0 1 0 1 
+cur_st.addr_st 0 0 0 0 0 1 0 0 1 
+cur_st.len_st 0 0 0 0 1 0 0 0 1 
+cur_st.data_st 0 0 0 1 0 0 0 0 1 
+cur_st.reg_crc_st 0 0 1 0 0 0 0 0 1 
+cur_st.crc_st 0 1 0 0 0 0 0 0 1 
+cur_st.eof_st 1 0 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|tx_path:tx_path_inst|uart_tx:uart_tx_c|cur_st
+Name cur_st.TX_ST cur_st.REGDATA_ST cur_st.IDLE_ST 
+cur_st.IDLE_ST 0 0 0 
+cur_st.REGDATA_ST 0 1 1 
+cur_st.TX_ST 1 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|rx_path:rx_path_inst|wbm_cur_st
+Name wbm_cur_st.wbm_wait_type_st wbm_cur_st.wbm_tx_type_st wbm_cur_st.wbm_wait_burst_st wbm_cur_st.wbm_tx_st wbm_cur_st.wbm_neg_st wbm_cur_st.wbm_idle_st 
+wbm_cur_st.wbm_idle_st 0 0 0 0 0 0 
+wbm_cur_st.wbm_neg_st 0 0 0 0 1 1 
+wbm_cur_st.wbm_tx_st 0 0 0 1 0 1 
+wbm_cur_st.wbm_wait_burst_st 0 0 1 0 0 1 
+wbm_cur_st.wbm_tx_type_st 0 1 0 0 0 1 
+wbm_cur_st.wbm_wait_type_st 1 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|rx_path:rx_path_inst|mp_dec:mp_dec1|cur_st
+Name cur_st.eof_st cur_st.crc_st cur_st.data_st cur_st.len_st cur_st.addr_st cur_st.type_st cur_st.sof_st 
+cur_st.sof_st 0 0 0 0 0 0 0 
+cur_st.type_st 0 0 0 0 0 1 1 
+cur_st.addr_st 0 0 0 0 1 0 1 
+cur_st.len_st 0 0 0 1 0 0 1 
+cur_st.data_st 0 0 1 0 0 0 1 
+cur_st.crc_st 0 1 0 0 0 0 1 
+cur_st.eof_st 1 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|rx_path:rx_path_inst|uart_rx:uart_rx_c|cur_st
+Name cur_st.STOPBIT_ST cur_st.PARITY_ST cur_st.RX_ST cur_st.STARTBIT_ST cur_st.IDLE_ST 
+cur_st.IDLE_ST 0 0 0 0 0 
+cur_st.STARTBIT_ST 0 0 0 1 1 
+cur_st.RX_ST 0 0 1 0 1 
+cur_st.PARITY_ST 0 1 0 0 1 
+cur_st.STOPBIT_ST 1 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|sdram_controller:sdr_ctrl|next_state
+Name next_state.WAIT_PRE_ST next_state.READ_BST_STOP_ST next_state.READ5_ST next_state.READ4_ST next_state.READ3_ST next_state.READ2_ST next_state.READ1_ST next_state.READ0_ST next_state.WRITE_BST_STOP_ST next_state.WRITE1_ST next_state.WRITE0_ST next_state.WAIT_ACT_ST next_state.ACT_ST next_state.REFRESH_WAIT_ST next_state.REFRESH_ST next_state.IDLE_ST 
+next_state.IDLE_ST 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+next_state.REFRESH_ST 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+next_state.REFRESH_WAIT_ST 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+next_state.ACT_ST 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+next_state.WAIT_ACT_ST 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+next_state.WRITE0_ST 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+next_state.WRITE1_ST 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+next_state.WRITE_BST_STOP_ST 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+next_state.READ0_ST 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+next_state.READ1_ST 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+next_state.READ2_ST 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+next_state.READ3_ST 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+next_state.READ4_ST 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+next_state.READ5_ST 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+next_state.READ_BST_STOP_ST 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+next_state.WAIT_PRE_ST 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|sdram_controller:sdr_ctrl|next_init_state
+Name next_init_state.INIT_WAIT_MODE_REG_ST next_init_state.INIT_MODE_REG_ST next_init_state.INIT_AUTO_REF_WAIT_ST next_init_state.INIT_AUTO_REF_ST next_init_state.INIT_WAIT_PRE_ST next_init_state.INIT_PRECHARGE_ST next_init_state.INIT_WAIT_200us_ST next_init_state.INIT_IDLE_ST 
+next_init_state.INIT_IDLE_ST 0 0 0 0 0 0 0 0 
+next_init_state.INIT_WAIT_200us_ST 0 0 0 0 0 0 1 1 
+next_init_state.INIT_PRECHARGE_ST 0 0 0 0 0 1 0 1 
+next_init_state.INIT_WAIT_PRE_ST 0 0 0 0 1 0 0 1 
+next_init_state.INIT_AUTO_REF_ST 0 0 0 1 0 0 0 1 
+next_init_state.INIT_AUTO_REF_WAIT_ST 0 0 1 0 0 0 0 1 
+next_init_state.INIT_MODE_REG_ST 0 1 0 0 0 0 0 1 
+next_init_state.INIT_WAIT_MODE_REG_ST 1 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|disp_ctrl_top:disp_ctrl_inst|pixel_mng:pixel_mng_inst|cur_st
+Name cur_st.restart_wack_st cur_st.restart_rd_st cur_st.end_cyc_st cur_st.wbm_rx_st cur_st.wbm_init_rx_st cur_st.wbm_idle_st 
+cur_st.wbm_idle_st 0 0 0 0 0 0 
+cur_st.wbm_init_rx_st 0 0 0 0 1 1 
+cur_st.wbm_rx_st 0 0 0 1 0 1 
+cur_st.end_cyc_st 0 0 1 0 0 1 
+cur_st.restart_rd_st 0 1 0 0 0 1 
+cur_st.restart_wack_st 1 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|mem_mng_top:mem_mng_inst|mem_ctrl_rd:mem_ctrl_rd_inst|mem_ctrl_rd_wbm:wbm_inst|wbm_cur_st
+Name wbm_cur_st.wbm_bank_st wbm_cur_st.wbm_wait_burst_st wbm_cur_st.wbm_rx_st wbm_cur_st.wbm_req_arb_st wbm_cur_st.wbm_idle_st 
+wbm_cur_st.wbm_idle_st 0 0 0 0 0 
+wbm_cur_st.wbm_req_arb_st 0 0 0 1 1 
+wbm_cur_st.wbm_rx_st 0 0 1 0 1 
+wbm_cur_st.wbm_wait_burst_st 0 1 0 0 1 
+wbm_cur_st.wbm_bank_st 1 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|mem_mng_top:mem_mng_inst|mem_ctrl_rd:mem_ctrl_rd_inst|mem_ctrl_rd_wbs:wbs_inst|wbs_cur_st
+Name wbs_cur_st.wbs_done_st wbs_cur_st.wbs_wait_end_cyc_st wbs_cur_st.wbs_tx_st wbs_cur_st.wbs_ram_delay_st wbs_cur_st.wbs_wait_ram_rdy_st wbs_cur_st.wbs_init_sdram_rx_st wbs_cur_st.wbs_idle_st 
+wbs_cur_st.wbs_idle_st 0 0 0 0 0 0 0 
+wbs_cur_st.wbs_init_sdram_rx_st 0 0 0 0 0 1 1 
+wbs_cur_st.wbs_wait_ram_rdy_st 0 0 0 0 1 0 1 
+wbs_cur_st.wbs_ram_delay_st 0 0 0 1 0 0 1 
+wbs_cur_st.wbs_tx_st 0 0 1 0 0 0 1 
+wbs_cur_st.wbs_wait_end_cyc_st 0 1 0 0 0 0 1 
+wbs_cur_st.wbs_done_st 1 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|mem_mng_top:mem_mng_inst|mem_ctrl_wr:mem_ctrl_wr_inst|mem_ctrl_wr_wbm:wbm_inst|wbm_cur_st
+Name wbm_cur_st.wbm_sum_st wbm_cur_st.wbm_wait_sum_st wbm_cur_st.wbm_bank_st wbm_cur_st.wbm_bank_switch_st wbm_cur_st.wbm_wait2_switch_st wbm_cur_st.wbm_wait_switch_st wbm_cur_st.wbm_wait_burst_st wbm_cur_st.wbm_tx_st wbm_cur_st.wbm_req_arb_st wbm_cur_st.wbm_idle_st 
+wbm_cur_st.wbm_idle_st 0 0 0 0 0 0 0 0 0 0 
+wbm_cur_st.wbm_req_arb_st 0 0 0 0 0 0 0 0 1 1 
+wbm_cur_st.wbm_tx_st 0 0 0 0 0 0 0 1 0 1 
+wbm_cur_st.wbm_wait_burst_st 0 0 0 0 0 0 1 0 0 1 
+wbm_cur_st.wbm_wait_switch_st 0 0 0 0 0 1 0 0 0 1 
+wbm_cur_st.wbm_wait2_switch_st 0 0 0 0 1 0 0 0 0 1 
+wbm_cur_st.wbm_bank_switch_st 0 0 0 1 0 0 0 0 0 1 
+wbm_cur_st.wbm_bank_st 0 0 1 0 0 0 0 0 0 1 
+wbm_cur_st.wbm_wait_sum_st 0 1 0 0 0 0 0 0 0 1 
+wbm_cur_st.wbm_sum_st 1 0 0 0 0 0 0 0 0 1 
+
+State Machine - |img_man_MDS|mds_top:inst15|mem_mng_top:mem_mng_inst|mem_ctrl_wr:mem_ctrl_wr_inst|mem_ctrl_wr_wbs:wbs_inst|wbs_cur_st
+Name wbs_cur_st.wbs_done_st wbs_cur_st.wbs_wait_end_cyc_st wbs_cur_st.wbs_rx_st wbs_cur_st.wbs_neg_stall_st wbs_cur_st.wbs_idle_st 
+wbs_cur_st.wbs_idle_st 0 0 0 0 0 
+wbs_cur_st.wbs_neg_stall_st 0 0 0 1 1 
+wbs_cur_st.wbs_rx_st 0 0 1 0 1 
+wbs_cur_st.wbs_wait_end_cyc_st 0 1 0 0 1 
+wbs_cur_st.wbs_done_st 1 0 0 0 1 

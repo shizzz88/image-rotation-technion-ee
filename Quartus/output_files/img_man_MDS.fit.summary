@@ -1,0 +1,16 @@
+Fitter Status : Successful - Tue May 28 20:08:11 2013
+Quartus II 64-Bit Version : 12.1 Build 177 11/07/2012 SJ Full Version
+Revision Name : img_man_MDS
+Top-level Entity Name : img_man_MDS
+Family : Cyclone II
+Device : EP2C35F672C6
+Timing Models : Final
+Total logic elements : 6,230 / 33,216 ( 19 % )
+    Total combinational functions : 4,515 / 33,216 ( 14 % )
+    Dedicated logic registers : 4,020 / 33,216 ( 12 % )
+Total registers : 4020
+Total pins : 148 / 475 ( 31 % )
+Total virtual pins : 0
+Total memory bits : 290,888 / 483,840 ( 60 % )
+Embedded Multiplier 9-bit elements : 24 / 70 ( 34 % )
+Total PLLs : 1 / 4 ( 25 % )
