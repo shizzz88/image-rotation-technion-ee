@@ -70,8 +70,8 @@ entity disp_ctrl_top is
 			
 			--Synthetic Fram Generator
 			change_frame_clk_g		:	positive	:= 120000000;		--Change frame position each 'change_frame_clk_g' clocks
-			hor_pres_pixels_g		:	positive	:= 640;				--640X480 Pixels in frame
-			ver_pres_lines_g		:	positive	:= 480				--640X480 Pixels in frame
+			hor_pres_pixels_g		:	positive	:= 256;				--256X192 Pixels in frame
+			ver_pres_lines_g		:	positive	:= 192				--256X192 Pixels in frame
 			);
 	port	(
 				--Clock and Reset
@@ -318,8 +318,8 @@ component synthetic_frame_generator
 			
 			change_frame_clk_g		:	positive	:= 120000000;		--Change frame position each 'change_frame_clk_g' clocks
 			
-			hor_pres_pixels_g		:	positive	:= 640;				--640X480 Pixels in frame
-			ver_pres_lines_g		:	positive	:= 480;				--640X480 Pixels in frame
+			hor_pres_pixels_g		:	positive	:= 256;				--256X192 Pixels in frame
+			ver_pres_lines_g		:	positive	:= 192;				--256X192 Pixels in frame
 
 			hor_active_pixels_g		:	positive	:= 800;				--800 active pixels per line
 			ver_active_lines_g		:	positive	:= 600;				--600 active lines
@@ -392,8 +392,8 @@ component pixel_mng
 			reset_polarity_g	:	std_logic	:= '0';		--Reset active low
 			vsync_polarity_g	:	std_logic	:= '1';		--VSync Polarity
 			screen_hor_pix_g	:	positive	:= 800;		--800X600 = Actual screen resolution
-			hor_pixels_g		:	positive	:= 640;		--640X480
-			ver_lines_g			:	positive	:= 480;		--640X480
+			hor_pixels_g		:	positive	:= 256;		--256X192
+			ver_lines_g			:	positive	:= 192;		--256X192
 			req_lines_g			:	positive	:= 3		--Number of lines to request from image transmitter, to hold in its FIFO
 --			rep_size_g			:	positive	:= 7		--uri ran 2^7=128 => Maximum of 128 repetitions for pixel / line  
            );
@@ -432,7 +432,7 @@ end component pixel_mng;
 -- component runlen_extractor 
    -- generic (
 			-- reset_polarity_g	:	std_logic	:= '0';		--Reset active low
-			-- pixels_per_line_g	:	positive	:= 640;		--640X480
+			-- pixels_per_line_g	:	positive	:= 256;		--256X192
 			-- rep_size_g			:	positive	:= 7;		--2^7=128 => Maximum of 128 repetitions for pixel / line
 			-- width_g				:	positive	:= 8		--Input / output width
            -- );

@@ -39,8 +39,8 @@ entity mem_ctrl_rd_wbm is
 	   (
 		reset_polarity_g	:	std_logic				:= '0';	--When rst = reset_polarity_g, system is in RESET mode
 		mode_g				:	natural range 0 to 7 	:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
-		img_hor_pixels_g	:	positive				:= 640;	--640 activepixels
-		img_ver_lines_g		:	positive				:= 480	--480 active lines
+		img_hor_pixels_g	:	positive				:= 256;	--256 activepixels
+		img_ver_lines_g		:	positive				:= 192	--192 active lines
 		);
   port (
 		-- Clocks and Reset 
@@ -175,16 +175,16 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 	
 	--Address out to SDRAM (WBM_ADR_O)
 	-- original image [bank 0,msb 1], manipulated image [bank 0,msb 0]
-	-- wbm_adr_o_proc:
-	-- wbm_adr_o <=cur_rd_addr;
+	 -- wbm_adr_o_proc:
+	 -- wbm_adr_o <=cur_rd_addr;
 	
 	--Address out to SDRAM (WBM_ADR_O)
-	-- original image [bank 0,msb 0], manipulated image [bank 0,msb 1]
-	wbm_adr_o_proc:
-	wbm_adr_o(21)			<= 	cur_rd_addr_temp(21);
-	wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
-	wbm_adr_o(19 downto 0)	<= 	cur_rd_addr_temp(19 downto 0) ;
-	cur_rd_addr_temp <=cur_rd_addr;
+	-- -- -- original image [bank 0,msb 0], manipulated image [bank 0,msb 1]
+	 wbm_adr_o_proc:
+	 wbm_adr_o(21)			<= 	cur_rd_addr_temp(21);
+	 wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
+	 wbm_adr_o(19 downto 0)	<= 	cur_rd_addr_temp(19 downto 0) ;
+	 cur_rd_addr_temp <=cur_rd_addr;
 	
 
 	--############################################################################--

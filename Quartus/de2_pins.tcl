@@ -32,15 +32,15 @@ if {[is_project_open]} {
    set_location_assignment PIN_G26  -to fpga_rst  ;# KEY0
 #   set_location_assignment PIN_N23  -to KEY1  ;# KEY1
 #   set_location_assignment PIN_P23  -to KEY2  ;# KEY2
-#   set_location_assignment PIN_W26  -to KEY3  ;# KEY3
+   set_location_assignment PIN_W26  -to dbg_trigger_in  ;# KEY3
 
 
    ;################################
    ;# Slide Switches ('1' when up) #
    ;################################
 
-#   set_location_assignment PIN_N25  -to SW0   ;# SW0
-#   set_location_assignment PIN_N26  -to SW1   ;# SW1
+   set_location_assignment PIN_N25  -to dbg_trig_sw   ;# SW0
+   set_location_assignment PIN_N26  -to dbg_img_tx_en_sw   ;# SW1
 #   set_location_assignment PIN_P25  -to SW2   ;# SW2
 #   set_location_assignment PIN_AE14 -to SW3   ;# SW3
 #   set_location_assignment PIN_AF14 -to SW4   ;# SW4
@@ -72,8 +72,8 @@ if {[is_project_open]} {
 #   set_location_assignment PIN_U18   -to LEDG4 ;# LEDG4
 #   set_location_assignment PIN_U17   -to LEDG5 ;# LEDG5
 #   set_location_assignment PIN_AA20  -to LEDG6 ;# LEDG6
-#   set_location_assignment PIN_Y18   -to LEDG7 ;# LEDG7
-  set_location_assignment PIN_Y12   -to LEDG8 ;# LEDG8 Between 7-Segments
+   set_location_assignment PIN_Y18   -to dbg_image_tx_en ;# LEDG7
+  set_location_assignment PIN_Y12   -to dbg_manipulation_trig ;# LEDG8 Between 7-Segments
 
 
    ;#################################################
@@ -87,19 +87,19 @@ if {[is_project_open]} {
    set_location_assignment PIN_AB21  -to dbg_disp_active   ;# LEDR2
    set_location_assignment PIN_AC22  -to dbg_icy_bus_taken   ;# LEDR3
    set_location_assignment PIN_AD22  -to dbg_icz_bus_taken   ;# LEDR4
-#   set_location_assignment PIN_AD23  -to LEDR5   ;# LEDR5
-#   set_location_assignment PIN_AD21  -to LEDR6   ;# LEDR6
+   set_location_assignment PIN_AD23  -to dbg_manipulation_Y_active   ;# LEDR5
+  set_location_assignment PIN_AD21  -to dbg_manipulation_Z_active   ;# LEDR6
 #   set_location_assignment PIN_AC21  -to LEDR7   ;# LEDR7
 #   set_location_assignment PIN_AA14  -to LEDR8   ;# LEDR8
 #   set_location_assignment PIN_Y13   -to LEDR9   ;# LEDR9
-   set_location_assignment PIN_AA13  -to LEDR10  ;# LEDR10
-   set_location_assignment PIN_AC14  -to LEDR11  ;# LEDR11
-#   set_location_assignment PIN_AD15  -to LEDR12  ;# LEDR12
-#   set_location_assignment PIN_AE15  -to LEDR13  ;# LEDR13
-  set_location_assignment PIN_AF13  -to LEDR14  ;# LEDR14
-  set_location_assignment PIN_AE13  -to LEDR15  ;# LEDR15
-  set_location_assignment PIN_AE12  -to LEDR16  ;# LEDR16
-  set_location_assignment PIN_AD12  -to LEDR17  ;# LEDR17 on the left side
+#	set_location_assignment PIN_AA13  -to dbg_manipulation_Y_active  ;# LEDR10
+#   set_location_assignment PIN_AC14  -to dbg_manipulation_Y_active  ;# LEDR11
+   set_location_assignment PIN_AD15  -to dbg_icy_bus_taken  ;# LEDR12
+   set_location_assignment PIN_AE15  -to dbg_icz_bus_taken  ;# LEDR13
+  set_location_assignment PIN_AF13  -to dbg_wr_bank_val  ;# LEDR14
+  set_location_assignment PIN_AE13  -to dbg_rd_bank_val  ;# LEDR15
+  set_location_assignment PIN_AE12  -to dbg_actual_wr_bank  ;# LEDR16
+  set_location_assignment PIN_AD12  -to dbg_actual_rd_bank  ;# LEDR17 on the left side
 
 
    ;###############################
@@ -186,7 +186,7 @@ if {[is_project_open]} {
    ;##################################
    ;# Using on board MAX232 transceiver
    set_location_assignment PIN_C25  -to uart_serial_in
-   set_location_assignment PIN_B25  -to uart_serial_out
+   set_location_assignment PIN_B25  -to dbg_uart_serial_out
 
 
    ;##################################

@@ -30,8 +30,8 @@ entity synthetic_frame_generator is
 			
 			change_frame_clk_g		:	positive	:= 120000000;		--Change frame position each 'change_frame_clk_g' clocks
 			
-			hor_pres_pixels_g		:	positive	:= 640;				--640X480 Pixels in frame
-			ver_pres_lines_g		:	positive	:= 480;				--640X480 Pixels in frame
+			hor_pres_pixels_g		:	positive	:= 256;				--256X192 Pixels in frame
+			ver_pres_lines_g		:	positive	:= 192;				--256X192 Pixels in frame
 
 			hor_active_pixels_g		:	positive	:= 800;				--800 active pixels per line
 			ver_active_lines_g		:	positive	:= 600;				--600 active lines

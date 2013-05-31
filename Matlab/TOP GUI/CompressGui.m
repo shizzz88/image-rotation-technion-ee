@@ -461,7 +461,7 @@ cosangle=floor(cosd(rotangle)*128);
 zoom=128/str2double(get(handles.ZoomFactor,'String'));
 xstart=str2double(get(handles.Xstart,'String'));
 ystart=str2double(get(handles.Ystart,'String'));
-rotimg=Imrotate6(OriginalImg,rotangle,str2double(get(handles.ZoomFactor,'String')),xstart,ystart,600,800);
+rotimg=Imrotate5(OriginalImg,rotangle,str2double(get(handles.ZoomFactor,'String')),xstart,ystart,600,800);
 axes(handles.axes2);
 imshow(rotimg);
 colormap(gray);
@@ -493,7 +493,11 @@ end
 sof = hex2dec(get(handles.sof_edit, 'String'));
 eof = hex2dec(get(handles.eof_edit, 'String'));
 fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
-
+	%% debug serial
+	dbg_wr=0;
+	if dbg_wr
+		dbg_fid = fopen('p:\dbg_uart_output.txt', 'w');  % open the file with write permission
+	end
 %%	Register adresses in decimal form
 	x_start_addr=17;
 	y_start_addr=19;
@@ -511,6 +515,7 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#Address\r\n'); %write #Adress
     fprintf(fid, '%02X\r\n',x_start_addr ); %write #Adress Value
     fprintf(fid, '#Length\r\n'); %write #Length
+    length=[00 01];
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n', mod( xstart, 256),floor( xstart/256) ); %write xstart value to file in 2 bytes hex
@@ -522,9 +527,12 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     type=128;
     addr=x_start_addr;
     
-    dataToSend=[sof     type    addr   mod( xstart, 256)    floor( xstart/256)    crc     eof];
+    dataToSend=[sof     type    addr  length mod( xstart, 256)    floor( xstart/256)    crc     eof];
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
+        if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end    
 %% write Y_start to register file
     fprintf(fid, '#Chunk\r\n'); 
@@ -535,6 +543,7 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#Address\r\n'); %write #Adress
     fprintf(fid, '%02X\r\n',y_start_addr ); %write #Adress Value
     fprintf(fid, '#Length\r\n'); %write #Length
+    length=[00 01];
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n', mod( ystart, 256),floor( ystart/256) ); %write angle value to file in 2 bytes hex
@@ -545,9 +554,12 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
     type=128;
     addr=y_start_addr;
-    dataToSend=[sof     type    addr   mod( ystart, 256)    floor( ystart/256)    crc     eof];
+    dataToSend=[sof     type    addr  length mod( ystart, 256)    floor( ystart/256)    crc     eof];
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
+        if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end
  %% write zoom to register file
     fprintf(fid, '#Chunk\r\n'); 
@@ -558,6 +570,7 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#Address\r\n'); %write #Adress
     fprintf(fid, '%02X\r\n',zoom_addr ); %write #Adress Value
     fprintf(fid, '#Length\r\n'); %write #Length
+    length=[00 01];
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n', mod( zoom, 256),floor( zoom/256) ); %write angle value to file in 2 bytes hex
@@ -567,10 +580,13 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#EOF\r\n'); %write color repetitions to file
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
     type=128;
-    addr=y_start_addr;
-    dataToSend=[sof     type    addr   mod( zoom, 256)    floor( zoom/256)    crc     eof];
+    addr=zoom_addr;
+    dataToSend=[sof     type    addr  length mod( zoom, 256)    floor( zoom/256)    crc     eof];
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
+        if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end
     %% write CosAngle to register file
     fprintf(fid, '#Chunk\r\n'); 
@@ -581,6 +597,7 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '#Address\r\n'); %write #Adress
     fprintf(fid, '%02X\r\n',cosine_addr ); %write #Adress Value
     fprintf(fid, '#Length\r\n'); %write #Length
+    length=[00 01];
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n', mod( cosangle, 256),floor( cosangle/256) ); %write angle value to file in 2 bytes hex
@@ -592,9 +609,12 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file  
     type=128;
     addr=cosine_addr;
-    dataToSend=[sof     type    addr   mod( cosangle, 256)    floor( cosangle/256)    crc     eof];
+    dataToSend=[sof     type    addr  length mod( cosangle, 256)    floor( cosangle/256)    crc     eof];
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
+        if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end
     %% write SinAngle to register file
     fprintf(fid, '#Chunk\r\n'); 
@@ -606,6 +626,7 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '%02X\r\n',sine_addr ); %write #Adress Value
     fprintf(fid, '#Length\r\n'); %write #Length
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
+    length=[00 01];
     fprintf(fid, '#Payload\r\n'); %write #Payload
     fprintf(fid, '%02X\r\n', mod( sinangle, 256) ,floor( sinangle/256)); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
@@ -616,9 +637,12 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file 
  type=128;
     addr=sine_addr;
-    dataToSend=[sof     type    addr   mod( sinangle, 256)    floor( sinangle/256)    crc     eof];
+    dataToSend=[sof     type    addr   length mod( sinangle, 256)    floor( sinangle/256)    crc     eof];
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
+        if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end
 
 
@@ -663,6 +687,9 @@ while (total_data_len > 0)
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
+        if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end    
 end
 
@@ -687,12 +714,18 @@ end
     fprintf(fid, '%02X\r\n',dataToSend ); %write summary chunk
     if get(handles.en_serial_checkbox, 'Value') == 1 
             fwrite(serial_port, dataToSend);
+            if dbg_wr
+                fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+            end;
     end
         %% End of transaction
     uiwait(msgbox('Image Transmission is DONE!!!','Status'));
     fclose (fid);
     if get(handles.en_serial_checkbox, 'Value') == 1     
     	fclose(serial_port);
+        if dbg_wr
+            fclose(dbg_fid);
+        end;
     end
     set(handles.text_cmp_img, 'String', [num2str(toc) ' Seconds']);   
 function edit_dbg_addr_msb_Callback(hObject, eventdata, handles)
@@ -844,7 +877,11 @@ clc;
         fopen(serial_port); %Open serial port
     end;
     fid_debug = fopen('../../../debug_uart_tx_1.txt', 'w');  % open the file with write permission
-
+	%% debug serial
+	dbg_wr=1;
+	if dbg_wr
+		dbg_fid = fopen('p:\dbg_uart_output.txt', 'w');  % open the file with write permission
+	end
 % Prepare data
     sof = hex2dec(get(handles.sof_edit, 'String'));
     eof = hex2dec(get(handles.eof_edit, 'String'));
@@ -867,6 +904,9 @@ clc;
     fprintf(fid_debug, '%02X\r\n',dataToSend ); %write color repetitions to file
     if get(handles.en_serial_checkbox, 'Value') == 1     
         fwrite(serial_port, dataToSend);
+		if dbg_wr
+			fprintf(dbg_fid,'%02X\r\n',fread(serial_port));
+		end;
     end
     fclose(fid_debug);
 
@@ -929,6 +969,9 @@ uiwait(msgbox('Registers Transmission is DONE!!!','Status'));
 %fclose (fid);
 if get(handles.en_serial_checkbox, 'Value') == 1
     fclose(serial_port);
+	if dbg_wr
+		fclose(dbg_fid);
+	end;
 end;
 
 

@@ -1,11 +1,11 @@
 ------------------------------------------------------------------------------------------------
--- Model Name 	:	IS42S16400 SDRAM Controller
+-- Model Name 	:	IS42S12560 SDRAM Controller
 -- File Name	:	sdram_controller.vhd
 -- Generated	:	September 2010
 -- Author		:	Beeri Schreiber and Alon Yavich
 -- Project		:	RunLen Project
 ------------------------------------------------------------------------------------------------
--- Description: This controller implements the IS42S16400 SDRAM Controller, with the
+-- Description: This controller implements the IS42S12560 SDRAM Controller, with the
 --				following characteristics:
 -- 					1) Row width 12
 -- 					2) Column width 8
