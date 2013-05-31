@@ -42,8 +42,8 @@ constant uart_period_c	:	time := (1 sec) / real(baudrate_c);
 
 component mds_top
 	generic (
-				img_hor_pixels_g	:	positive					:= 640;	-- active pixels
-				img_ver_lines_g	:	positive					:= 480;	-- active lines
+				img_hor_pixels_g	:	positive					:= 256;	-- active pixels
+				img_ver_lines_g	:	positive					:= 192;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 --				rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
@@ -56,6 +56,10 @@ component mds_top
 				rst_133				:	in std_logic;
 				rst_100				:	in std_logic;
 				rst_40				:	in std_logic;
+				--Clock and Reset to SDRAM, VESA
+				clk_sdram_out		:	out std_logic;
+				clk_vesa_out		:	out std_logic;
+
 				--UART
 				uart_serial_in		:	in std_logic;
 				uart_serial_out		:	out std_logic;
@@ -78,30 +82,38 @@ component mds_top
 				g_out				:	out std_logic_vector(9 downto 0);   	--Output G Pixel
 				b_out				:	out std_logic_vector(9 downto 0);  		--Output B Pixel
 				
-					--Blanking signal
-				blank				:	out std_logic;										--Blanking signal
+				--Blanking signal
+				blank				:	out std_logic;							--Blanking signal
 					
-					--Sync Signals			
-				hsync				:	out std_logic;										--HSync Signal
-				vsync				:	out std_logic;										--VSync Signal
-
+				--Sync Signals			
+				hsync				:	out std_logic;							--HSync Signal
+				vsync				:	out std_logic;							--VSync Signal
+				
 				--Debug Ports
 				dbg_rx_path_cyc		:	out std_logic;							--RX Path WBM_CYC_O for debug
-				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
 				dbg_adrr_reg_mem	:	out std_logic_vector (23 downto 0);		--debug Register Value
+				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
 				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
 				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
 				dbg_sdram_active		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
 				dbg_disp_active		:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+				
 				dbg_manipulation_Y_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
 				dbg_manipulation_Z_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
+				dbg_manipulation_trig	:	out std_logic;	
+				dbg_sin_reg				:out std_logic_vector (15 downto 0);
 
+				dbg_trig_in      : in std_logic;	
+				dbg_trig_sw		: in std_logic;	
+				dbg_image_tx_en	:	out std_logic;	
+				dbg_img_tx_sw	: in std_logic;	
+				
 				dbg_icy_bus_taken	:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
 				dbg_icz_bus_taken	:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
-				dbg_wr_bank_val		:	out std_logic;							--Write SDRAM Bank Value
+				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
 				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
 				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
-				dbg_actual_rd_bank	:	out std_logic							--Actual Written bank
+				dbg_actual_rd_bank	:	out std_logic						--Actual Written bank
 			);
 end component mds_top;
 
@@ -216,7 +228,6 @@ signal clk_100			:	std_logic := '0';
 signal rst_100			:	std_logic;
 signal clk_40			:	std_logic := '0';
 signal rst_40			:	std_logic;
-signal img_man_trigger 	:	 std_logic;
 --UART
 signal uart_serial_in	:	std_logic;
 signal uart_serial_out	:	std_logic;
@@ -244,10 +255,17 @@ signal dbg_rx_path_cyc	:	std_logic;							--RX Path WBM_CYC_O for debug
 signal dbg_type_reg_disp:	std_logic_vector (7 downto 0);		--Display Type Register value for Debug
 signal dbg_type_reg_mem	:	std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
 signal dbg_type_reg_tx	:	std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
+signal dbg_sin_reg_out	:	std_logic_vector (15 downto 0);		--RX_Path Type Register value for Debug
+
+
 signal dbg_sdram_active	:	std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
 signal dbg_disp_active	:	std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
 signal dbg_manipulation_Y_active	:	std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
 signal dbg_manipulation_Z_active	:	std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+signal dbg_image_tx_en	:	std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+
+signal dbg_manipulation_trig	:	std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+
 signal dbg_icy_bus_taken:	std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
 signal dbg_icz_bus_taken:	std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
 signal dbg_wr_bank_val	:	std_logic;							--Expected Write SDRAM Bank Value
@@ -303,7 +321,6 @@ mds_top_inst	: mds_top
                 rst_133	            =>	rst_133,
                 rst_100	            =>	rst_100,
                 rst_40	            =>	rst_40,
-                --img_trigger => img_man_trigger,
 				uart_serial_in		=>	uart_serial_in	,
 				uart_serial_out		=>	uart_serial_out	,
 				dram_addr			=>	dram_addr		,
@@ -332,6 +349,13 @@ mds_top_inst	: mds_top
                 dbg_disp_active		=>	dbg_disp_active		,
 				dbg_manipulation_Y_active => dbg_manipulation_Y_active ,
 				dbg_manipulation_Z_active => dbg_manipulation_Z_active ,
+				dbg_manipulation_trig	=> dbg_manipulation_trig,
+				dbg_sin_reg				=>dbg_sin_reg_out,
+
+				dbg_trig_in=>'0',
+				dbg_trig_sw=>'0',
+				dbg_img_tx_sw=>'0',
+				dbg_image_tx_en	=>dbg_image_tx_en,
 				dbg_icy_bus_taken	=>	dbg_icy_bus_taken	,
 				dbg_icz_bus_taken	=>	dbg_icz_bus_taken,	
 				dbg_wr_bank_val 	=>	dbg_wr_bank_val,

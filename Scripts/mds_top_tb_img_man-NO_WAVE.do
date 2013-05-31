@@ -49,6 +49,6 @@ vsim -t ps -novopt work.mds_top_tb
 --update
 --WaveRestoreZoom {0 ps} {5250 us}
 
-run 1500 ms
+run 250 ms
 
 

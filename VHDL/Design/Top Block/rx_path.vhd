@@ -12,6 +12,7 @@
 --			Number		Date		Name				Description
 --			1.00		4.4.2011	Alon Yavich			Creation
 --			1.01		28.5.2011	Beeri Schreiber		Debbuged, Added Type states
+--			1.02		29.05.2013	uri					type_reg_clients_c changed to 4
 ------------------------------------------------------------------------------------------------
 --	Todo:	
 --			(1) Separate Wishbone into different entity
@@ -89,7 +90,7 @@ type wbm_states is
 ----------------------------------------------------------------------------------
 --	###########################		Costants		##############################	--
 	constant base_type_reg_addr_c	:	natural		:= 13;	--Type register Base address (0xD) 
-	constant type_reg_clients_c		:	natural		:= 3;	--Clients: mem_mng, disp_ctrl, tx_path, image_manipulation
+	constant type_reg_clients_c		:	natural		:= 4;	--Clients: mem_mng, disp_ctrl, tx_path, image_manipulation
 ---------------------------------  Components		------------------------------
 component ram_simple
 	generic (

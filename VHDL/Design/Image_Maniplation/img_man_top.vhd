@@ -77,7 +77,7 @@ entity img_man_top is
 				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
 				rd_wbm_err_i		:   in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
-				--dbg_sin_reg			:	out std_logic_vector (15 downto 0);
+				dbg_sin_reg			:	out std_logic_vector (15 downto 0)
 				
 			);
 end entity img_man_top;
@@ -889,5 +889,6 @@ begin
 	end if;
 end process trigger_proc;
 
-
+dbg_proc:
+dbg_sin_reg<=sin_reg_dout;
 end architecture rtl_img_man_top;

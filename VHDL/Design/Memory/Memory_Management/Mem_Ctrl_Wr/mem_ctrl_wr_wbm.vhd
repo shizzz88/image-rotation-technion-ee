@@ -37,8 +37,8 @@ entity mem_ctrl_wr_wbm is
 		reset_polarity_g	:	std_logic				:= '0';	--When rst = reset_polarity_g, system is in RESET mode
 		mode_g				:	natural range 0 to 7 	:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
 		message_g			:	natural range 0 to 7 	:= 1;	--Relevant bit in type register, which represent Image chunk ('0') or Summary chunk ('1') mode
-		img_hor_pixels_g	:	positive				:= 640;	--640 activepixels
-		img_ver_lines_g		:	positive				:= 480	--480 active lines
+		img_hor_pixels_g	:	positive				:= 256;	--256 activepixels
+		img_ver_lines_g		:	positive				:= 192	--192 active lines
 		);
   port (
 		-- Clocks and Reset 
@@ -474,7 +474,7 @@ architecture rtl_mem_ctrl_wr_wbm of mem_ctrl_wr_wbm is
 			-- if (wbm_cur_st = wbm_sum_st)
 			-- and ram_cnt_zero_bool then 	--End of calculation
 			if (wbm_cur_st = wbm_wait_switch_st) 
-			and (sum_wr_cnt = wr_cnt*2) then --Image is OK. End of image transmission
+			and (sum_wr_cnt = wr_cnt*2) then --Image is OK. End of image transmission  original:and (sum_wr_cnt = wr_cnt*2) then 
 				wr_cnt_to_rd	<= wr_cnt;		--Latch value, for Mem_Mng_Rd
 				wr_cnt_en		<= '1';
 			else

@@ -24,6 +24,10 @@ add wave  -radix hexadecimal -group display -group disp_ctr  		sim:/mds_top_tb/m
 add wave  -radix unsigned -group display -group pxl_mng   		sim:/mds_top_tb/mds_top_inst/disp_ctrl_inst/pixel_mng_inst/*
 add wave -radix hexadecimal  -group display -group vesa_gen_ctrl 	sim:/mds_top_tb/mds_top_inst/disp_ctrl_inst/vesa_gen_ctrl_inst/*
 
+add wave -radix hexadecimal  -group rx_path -group mp_dec 		sim:/mds_top_tb/mds_top_inst/rx_path_inst/mp_dec1/*
+add wave -radix hexadecimal  -group rx_path -group uart_rx_c 	sim:/mds_top_tb/mds_top_inst/rx_path_inst/uart_rx_c/*
+add wave -radix hexadecimal  -group rx_path -group top 			sim:/mds_top_tb/mds_top_inst/rx_path_inst/*
+
 add wave -radix hexadecimal  -group sys_top_tb -group tb sim:/mds_top_tb/*
 add wave -radix hexadecimal  -group sys_top_tb -group mds_top sim:/mds_top_tb/mds_top_inst/*
 add wave -radix hexadecimal  -group sys_top_tb -group vesa_pic_col sim:/mds_top_tb/vesa_pic_col_inst/*

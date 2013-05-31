@@ -26,8 +26,8 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top is
 	generic (
-				img_hor_pixels_g	:	positive				:= 640;	-- active pixels
-				img_ver_lines_g	:	positive					:= 480;	-- active lines
+				img_hor_pixels_g	:	positive				:= 256;	-- active pixels
+				img_ver_lines_g	:	positive					:= 192;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 	-- uri ran	rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
@@ -74,21 +74,27 @@ entity mds_top is
 				vsync				:	out std_logic;							--VSync Signal
 				
 				--Debug Ports
-				dbg_rx_path_cyc		:	out std_logic;							--RX Path WBM_CYC_O for debug
-				dbg_adrr_reg_mem	:	out std_logic_vector (23 downto 0);		--debug Register Value
-				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
-				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
-				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
+				dbg_rx_path_cyc			:	out std_logic;							--RX Path WBM_CYC_O for debug
+				dbg_adrr_reg_mem		:	out std_logic_vector (23 downto 0);		--debug Register Value
+				dbg_type_reg_mem		:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
+				dbg_type_reg_disp		:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
+				dbg_type_reg_tx			:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
 				dbg_sdram_active		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
-				dbg_disp_active		:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
+				dbg_disp_active			:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
 				dbg_manipulation_Y_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
 				dbg_manipulation_Z_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
-				dbg_icy_bus_taken	:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
-				dbg_icz_bus_taken	:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
-				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
-				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
-				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
-				dbg_actual_rd_bank	:	out std_logic						--Actual Written bank
+				dbg_manipulation_trig	:	out std_logic;	
+				dbg_sin_reg				:out std_logic_vector (15 downto 0);
+				dbg_trig_in     			: in std_logic;	
+				dbg_trig_sw				: in std_logic;	
+				dbg_image_tx_en			:	out std_logic;	
+				dbg_img_tx_sw			: in std_logic;	
+				dbg_icy_bus_taken		:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
+				dbg_icz_bus_taken		:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
+				dbg_wr_bank_val			:	out std_logic;							--Expected Write SDRAM Bank Value
+				dbg_rd_bank_val     	:	out std_logic;							--Expected Read SDRAM Bank Value
+				dbg_actual_wr_bank		:	out std_logic;							--Actual read bank
+				dbg_actual_rd_bank		:	out std_logic						--Actual Written bank
 			);
 end entity mds_top;
 
@@ -106,8 +112,8 @@ constant num_of_wbm_y_c :	natural := 3;	--3 WBM to INTERCON Y	uri ran original 2
 component img_man_top is
 	generic (
 				reset_polarity_g 		: 	std_logic 				:= '0';
-				img_hor_pixels_g		:	positive				:= 640;	-- active pixels
-				img_ver_lines_g			:	positive				:= 480;	-- active lines
+				img_hor_pixels_g		:	positive				:= 256;	-- active pixels
+				img_ver_lines_g			:	positive				:= 192;	-- active lines
 				trig_frac_size_g		: 	positive				:= 7 ;
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
@@ -118,6 +124,7 @@ component img_man_top is
 				system_rst				:	in std_logic;							--Reset
 				image_tx_en				:	out std_logic;							--enable image transmission
 				manipulation_trig		:	in std_logic;							--bank switch- indicates trigger
+				dbg_manipulation_trig   :	out std_logic;
 
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -154,7 +161,9 @@ component img_man_top is
 				rd_wbm_dat_i		:  	in std_logic_vector (7 downto 0);		--Data Out (8 bits)
 				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
-				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				rd_wbm_err_i		:   in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				dbg_sin_reg			:	out std_logic_vector (15 downto 0)
+
 			);
 end component img_man_top;
 
@@ -417,8 +426,8 @@ component mem_mng_top
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				mode_g				:	natural range 0 to 7 		:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
 				message_g			:	natural range 0 to 7 		:= 1;	--Relevant bit in type register, which represent Image chunk ('0') or Summary chunk ('1') mode
-				img_hor_pixels_g	:	positive					:= 640;	--640 active pixels
-				img_ver_lines_g		:	positive					:= 480	--480 active lines
+				img_hor_pixels_g	:	positive					:= 256;	--256 active pixels
+				img_ver_lines_g		:	positive					:= 192	--192 active lines
 			);
 	port	(
 				-- Clocks and Reset 
@@ -518,8 +527,8 @@ component disp_ctrl_top is
 			
 			--Synthetic Fram Generator
 			change_frame_clk_g		:	positive	:= 120000000;		--Change frame position each 'change_frame_clk_g' clocks
-			hor_pres_pixels_g		:	positive	:= 640;				--640X480 Pixels in frame
-			ver_pres_lines_g		:	positive	:= 480				--640X480 Pixels in frame
+			hor_pres_pixels_g		:	positive	:= 256;				--256X192 Pixels in frame
+			ver_pres_lines_g		:	positive	:= 192				--256X192 Pixels in frame
 			);
 	port	(
 				--Clock and Reset
@@ -720,9 +729,12 @@ signal	img_rd_wbm_err_i		:  std_logic;
 signal	OPEN_img_rd_wbm_dat_o		:  std_logic_vector (7 downto 0);		--Data Out (8 bits)
 signal	OPEN_img_rd_wbm_we_o			:  std_logic;	
 		--Signals from image manipulation to display
-signal	img_image_tx_en			:  std_logic;					--enable image transmission
+signal	img_man_image_tx_en			:  std_logic;					--enable image transmission
+signal	img_tx_en_mux_out:  std_logic;	
 		--Signals from mem_mng_top to image manipulation
 signal	mem_manipulation_trig	:  std_logic;					--trigger image transmission when bank switch
+signal	manipulation_trig_mux_out	:  std_logic;					--trigger image transmission when bank switch
+
 
 	-- Wishbone Master (RX Block)
 signal rx_wbm_adr_o		:	std_logic_vector (9 downto 0);		--Address in internal RAM
@@ -1060,10 +1072,7 @@ mem_mng_inst 	:	 mem_mng_top generic map
 	
 disp_ctrl_inst :	 disp_ctrl_top	
 			generic map
-			(	-- uri ran
-				--rep_size_g	=>	rep_size_g
-				 -- hor_pres_pixels_g	=>	128,										--************************************-
-				-- ver_pres_lines_g	=>	96											--************************************-
+			(	
 				hor_pres_pixels_g	=>	img_hor_pixels_g,	
 				ver_pres_lines_g	=>	img_ver_lines_g	
 			)
@@ -1101,10 +1110,13 @@ disp_ctrl_inst :	 disp_ctrl_top
 				blank		=>	blank,		
 				hsync		=>	hsync,		
 				vsync		=>	vsync,
-				image_tx_en =>  img_image_tx_en,
+				image_tx_en => img_tx_en_mux_out,-- img_man_image_tx_en,
 				dbg_type_reg=>	dbg_type_reg_disp
 			);
 
+img_tx_mux:
+img_tx_en_mux_out <= img_man_image_tx_en when dbg_img_tx_sw='0' else 	'1';
+		
 sdr_ctrl :	sdram_controller  port map
 		(
 		clk_i		=>	clk_133,
@@ -1190,6 +1202,9 @@ tx_path_inst: tx_path
 				dbg_type_reg		=>	dbg_type_reg_tx
 			);
 
+dbg_trig_mux:
+manipulation_trig_mux_out<=mem_manipulation_trig when dbg_trig_sw='0' else dbg_trig_in;
+
 img_man_top_inst: img_man_top 
 	generic map(
 				reset_polarity_g 	 =>	'0',
@@ -1203,8 +1218,10 @@ img_man_top_inst: img_man_top
 				--Clock and Reset
 				system_clk			=>	clk_100,
 				system_rst			=>	rst_100,
-				image_tx_en			=>  img_image_tx_en,
-				manipulation_trig	=>	mem_manipulation_trig,
+				image_tx_en			=>  img_man_image_tx_en,
+				manipulation_trig	=>	manipulation_trig_mux_out,
+				dbg_manipulation_trig	=>	dbg_manipulation_trig,
+
 				-- Wishbone Slave (Fr Registers)
 				wbs_adr_i			=> ic_wbs_adr_i(39 downto 30),
 				wbs_tga_i			=> ic_wbs_tga_i(39 downto 30),--(29 downto 20),--
@@ -1240,7 +1257,10 @@ img_man_top_inst: img_man_top
 				rd_wbm_dat_i		=>  img_rd_wbm_dat_i,
 				rd_wbm_stall_i		=>  img_rd_wbm_stall_i,
 				rd_wbm_ack_i		=>  img_rd_wbm_ack_i,
-				rd_wbm_err_i		=>  img_rd_wbm_err_i
+				rd_wbm_err_i		=>  img_rd_wbm_err_i,
+				dbg_sin_reg			=>	dbg_sin_reg		
+
+
 			);
 		
 -----------------------------	Debug Ports	-----------------------
@@ -1260,5 +1280,5 @@ dbg_disp_active	<=	icy_disp_wbm_cyc_o;
 dbg_img_man_active_proc:
 dbg_manipulation_Y_active	<=	 img_rd_wbm_cyc_o;
 dbg_manipulation_Z_active	<=	 img_wr_wbm_cyc_o;
-		
+dbg_image_tx_en<=img_tx_en_mux_out;
 end architecture rtl_mds_top;

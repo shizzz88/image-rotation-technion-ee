@@ -39,8 +39,8 @@ entity mem_ctrl_wr is
 		reset_polarity_g	:	std_logic				:= '0';	--When rst = reset_polarity_g, system is in RESET mode
 		mode_g				:	natural range 0 to 7 	:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
 		message_g			:	natural range 0 to 7 	:= 1;	--Relevant bit in type register, which represent Image chunk ('0') or Summary chunk ('1') mode
-		img_hor_pixels_g	:	positive				:= 640;	--640 activepixels
-		img_ver_lines_g		:	positive				:= 480	--480 active lines
+		img_hor_pixels_g	:	positive				:= 256;	--256 activepixels
+		img_ver_lines_g		:	positive				:= 192	--192 active lines
 		);
   port (
 		-- Clocks and Reset 
@@ -152,8 +152,8 @@ architecture rtl_mem_ctrl_wr of mem_ctrl_wr is
 		reset_polarity_g	:	std_logic				:= '0';	--When rst = reset_polarity_g, system is in RESET mode
 		mode_g				:	natural range 0 to 7 	:= 0;	--Relevant bit in type register, which represent Normal ('0') or Debug ('1') mode
 		message_g			:	natural range 0 to 7 	:= 1;	--Relevant bit in type register, which represent Image chunk ('0') or Summary chunk ('1') mode
-		img_hor_pixels_g	:	positive				:= 640;	--640 activepixels
-		img_ver_lines_g		:	positive				:= 480	--480 active lines
+		img_hor_pixels_g	:	positive				:= 256;	--256 activepixels
+		img_ver_lines_g		:	positive				:= 192	--192 active lines
 		);
 	port (
 		-- Clocks and Reset 

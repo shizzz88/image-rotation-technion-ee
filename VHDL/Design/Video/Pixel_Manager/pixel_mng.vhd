@@ -31,8 +31,8 @@ entity pixel_mng is
 			reset_polarity_g	:	std_logic	:= '0';		--Reset active low
 			vsync_polarity_g	:	std_logic	:= '1';		--VSync Polarity
 			screen_hor_pix_g	:	positive	:= 800;		--800X600 = Actual screen resolution
-			hor_pixels_g		:	positive	:= 640;		--640X480
-			ver_lines_g			:	positive	:= 480;		--640X480
+			hor_pixels_g		:	positive	:= 256;		--256X192
+			ver_lines_g			:	positive	:= 192;		--256X192
 			req_lines_g			:	positive	:= 3		--Number of lines to request from image transmitter, to hold in its FIFO
 	--		rep_size_g			:	positive	:= 7		--2^7=128 => Maximum of 128 repetitions for pixel / line
            );
@@ -90,7 +90,7 @@ architecture rtl_pixel_mng of pixel_mng is
 	signal pix_cnt			:	natural range 0 to num_pixels_c + 256;	--Total received pixels for specific frame
 	signal tot_req_pix		:	natural range 0 to num_pixels_c + req_lines_g*hor_pixels_g;	--Total number of requested pixels from VESA generator
 	signal pix_req_add		:	std_logic_vector(9 downto 0); --uri 26.05
-	-- signal pix_req_add		:	std_logic_vector(integer(ceil(log(real(screen_hor_pix_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from VESA + 480 
+	-- signal pix_req_add		:	std_logic_vector(integer(ceil(log(real(screen_hor_pix_g*req_lines_g)) / log(2.0))) - 1 downto 0); --Request for PIXELS*LINES pixels from VESA + 192 
 
 	--	alias  reps_in			: 	std_logic_vector (rep_size_g - 1 downto 0) is wbm_dat_i (7 downto rep_kind_pos_c);--Repetitions
 	
@@ -465,7 +465,7 @@ begin
 	----------------------------------------------------------------------------------------
 	----------------------------		pix_req_add Process				--------------------
 	----------------------------------------------------------------------------------------
-	-- The process manages the pix_req_add signal, which is pixels_req + 480
+	-- The process manages the pix_req_add signal, which is pixels_req + 192
 	----------------------------------------------------------------------------------------
 	pix_req_add_proc: process (clk_i, rst)
 	begin
