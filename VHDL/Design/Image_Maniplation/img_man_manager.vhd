@@ -28,15 +28,15 @@ use ieee.numeric_std.all;
 use ieee.math_real.all;
 
 use std.textio.all;
-use work.txt_util.all;
+--use work.txt_util.all;
 use work.ram_generic_pkg.all;
 
 entity img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
-				img_hor_pixels_g	:	positive					:= 128;	--640 pixel in a coloum
-				img_ver_lines_g	:	positive					:= 480;	--480 pixels in a row
+				img_hor_pixels_g	:	positive					:= 256;	--256 pixel in a coloum
+				img_ver_lines_g	:	positive					:= 192;	--192 pixels in a row
 				display_hor_pixels_g	:	positive					:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive					:= 600	--600 pixels in a row
 			);
@@ -129,8 +129,8 @@ architecture rtl_img_man_manager of img_man_manager is
 	constant mem_mng_dbg_msb_reg_addr_c			:	std_logic_vector (9 downto 0)		:= "0000000011";	--dbg register address(2nd Byte)
 	constant mem_mng_dbg_half_bank_reg_addr_c	:	std_logic_vector (9 downto 0)		:= "0000000100";	--dbg register address(bank Byte)
 
-	constant file_name_1_g					:	string  	:= "img_mang_toRAM_test.txt";		--out file name
-	constant file_name_2_g					:	string  	:= "img_mang_toSDRAM_test.txt";		--out file name
+	-- constant file_name_1_g					:	string  	:= "img_mang_toRAM_test.txt";		--out file name
+	-- constant file_name_2_g					:	string  	:= "img_mang_toSDRAM_test.txt";		--out file name
 
 	constant wb_burst_int                   :	positive			:=1024;				--length of burst for write back to SDRAM -1, because counting starts with 0. burst length should be such that for some N : wb_burst_int*N=img_hor_pixels_g*img_ver_lines_g
 	constant wb_burst_length_c				:	std_logic_vector 	(9 downto 0):= std_logic_vector(to_unsigned( wb_burst_int-1,10)); 	-- wb_burst_length_c   for wb purposes
@@ -262,8 +262,8 @@ end component ram_generic;
 	signal RAM_is_full				: std_logic;	
 	signal wb_address				: std_logic_vector(22 downto 0);
 	signal ram_addr_in_counter		: std_logic_vector(wb_burst_length_c'left downto 0);
-	file   out_file_1					: TEXT open write_mode is file_name_1_g;
-	file   out_file_2					: TEXT open write_mode is file_name_2_g;
+	-- file   out_file_1					: TEXT open write_mode is file_name_1_g;
+	-- file   out_file_2					: TEXT open write_mode is file_name_2_g;
 
 	signal write_SDRAM_state 		: write_states;
 	signal wr_wbm_adr_o_counter		: std_logic_vector(wb_burst_length_c'left downto 0);--wbm_adr_o  counter
@@ -363,26 +363,26 @@ image_tx_en	<=	manipulation_complete;
 			------------------------------Idle State--------------------------------- --
 				when fsm_idle_st =>
 					--for debug - disable block
-					-- if (req_trig='1')  then
-						-- report "Image Manipulation disabled - start display of original image from original bank  Time: " & time'image(now) severity note;
-						-- cur_st	<= 	fsm_idle_st;
-						-- manipulation_complete	<='1';
-					-- elsif (manipulation_complete='1') then
-						-- manipulation_complete	<='1';
-						-- cur_st	<= 	fsm_idle_st;
-					-- else
-						-- manipulation_complete	<='0';
-						-- cur_st	<= 	fsm_idle_st;	
-					-- end if;
+--					if (req_trig='1')  then
+--						report "Image Manipulation disabled - start display of original image from original bank  Time: " & time'image(now) severity note;
+--						cur_st	<= 	fsm_idle_st;
+--						manipulation_complete	<='1';
+--					elsif (manipulation_complete='1') then
+--						manipulation_complete	<='1';
+--						cur_st	<= 	fsm_idle_st;
+--					else
+--						manipulation_complete	<='0';
+--						cur_st	<= 	fsm_idle_st;	
+					--end if;
 					
-					if (req_trig='1')  then
-						report "Start of Image Manipulation  Time: " & time'image(now) severity note;
-						cur_st	<= 	fsm_increment_coord_st;
-						manipulation_complete	<='0';
+					 if (req_trig='1')  then
+						 report "Start of Image Manipulation  Time: " & time'image(now) severity note;
+						 cur_st	<= 	fsm_increment_coord_st;
+						 manipulation_complete	<='0';
 
-					else
-						cur_st 	<= 	fsm_idle_st;
-					end if;				
+					 else
+						 cur_st 	<= 	fsm_idle_st;
+					 end if;				
 			-----------------------------Increment coordinate state----------------------	
 				when fsm_increment_coord_st	=>				
 								ram_din_valid          <='0';
@@ -824,29 +824,29 @@ image_tx_en	<=	manipulation_complete;
 ---------------------------------------------------------------------------------------
 -- THE process will write output image to txt file
 ---------------------------------------------------------------------------------------
-	writeTxtProcess : PROCESS(sys_clk)
+	-- writeTxtProcess : PROCESS(sys_clk)
 
-  BEGIN
+  -- BEGIN
 
-    if rising_edge(sys_clk) then
+    -- if rising_edge(sys_clk) then
 
-		IF (write_SDRAM_state=write_burst_st and wr_wbm_stall_i='0') THEN
-			--print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
-			--print tl,tr,bl,br,delta_row,delta_col (decimal) , out_of_range //str((row_index_signed))& " "&str((col_index_signed))& 
-				print(out_file_2, str (ram_dout));			
-		END IF;
-             IF (cur_st=result_to_RAM_st) THEN
-                        --print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
-                        --print tl,tr,bl,br,delta_row,delta_col (decimal) , out_of_range //str((row_index_signed))& " "&str((col_index_signed))& 
-                        if (addr_calc_oor='0') then
-                                print(out_file_1, str (pixel_res));
-                        else
-                                print(out_file_1, "0");
-                        end if;
-                END IF;
-	end if;
+		-- IF (write_SDRAM_state=write_burst_st and wr_wbm_stall_i='0') THEN
+			-- --print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
+			-- --print tl,tr,bl,br,delta_row,delta_col (decimal) , out_of_range //str((row_index_signed))& " "&str((col_index_signed))& 
+				-- print(out_file_2, str (ram_dout));			
+		-- END IF;
+             -- IF (cur_st=result_to_RAM_st) THEN
+                        -- --print(out_file, "0x"&hstr(tl_out_sig)& " 0x"&hstr(tr_out_sig)& " 0x"&hstr(bl_out_sig)& " 0x"&hstr(br_out_sig)& " "&str(delta_row_out_sig)& " "&str(delta_col_out_sig)& "   " &str(out_of_range_sig));
+                        -- --print tl,tr,bl,br,delta_row,delta_col (decimal) , out_of_range //str((row_index_signed))& " "&str((col_index_signed))& 
+                        -- if (addr_calc_oor='0') then
+                                -- print(out_file_1, str (pixel_res));
+                        -- else
+                                -- print(out_file_1, "0");
+                        -- end if;
+                -- END IF;
+	-- end if;
 
-  END PROCESS writeTxtProcess;	
+  -- END PROCESS writeTxtProcess;	
 ---------------------------------------------------------------------------------------
 ----------------------------	addr_calc process	-----------------------------------
 ---------------------------------------------------------------------------------------
