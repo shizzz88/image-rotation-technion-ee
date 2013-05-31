@@ -37,8 +37,8 @@
 --          row=vertical=x
 --          col=horizontal=y         
 --
---          RowSizeIn=480;
---          ColSizeIn=640;
+--          RowSizeIn=192;
+--          ColSizeIn=256;
 --          RowStart=30;
 --          ColStart=29;
 --          Row_size_after_crop=RowSizeIn+1-RowStart;%m=67
@@ -62,8 +62,8 @@ library work ;
 entity addr_calc is
 	generic (
 			reset_polarity_g		:	std_logic	:= '0';			--Reset active low
-			x_size_in_g				:	positive 	:= 480;				-- number of rows  in the input image
-			y_size_in_g				:	positive 	:= 640;				-- number of columns  in the input image
+			x_size_in_g				:	positive 	:= 192;				-- number of rows  in the input image
+			y_size_in_g				:	positive 	:= 256;				-- number of columns  in the input image
 
 			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image

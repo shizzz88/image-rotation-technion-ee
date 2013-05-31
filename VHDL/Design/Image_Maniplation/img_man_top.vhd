@@ -28,8 +28,8 @@ library work ;
 entity img_man_top is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
-				img_hor_pixels_g	:	positive					:= 128;	-- active pixels
-				img_ver_lines_g	:	positive					:= 480;	-- active lines
+				img_hor_pixels_g	:	positive					:= 256;	-- active pixels
+				img_ver_lines_g	:	positive					:= 192;	-- active lines
 				trig_frac_size_g	: 	positive					:= 7 ;
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row
@@ -40,6 +40,7 @@ entity img_man_top is
 				system_rst				:	in std_logic;							--Reset
 				image_tx_en				:	out std_logic;							--enable image transmission
 				manipulation_trig				:	in std_logic;							--bank switch- indicates trigger
+				dbg_manipulation_trig   :	out std_logic;
 				-- Wishbone Slave (For Registers)
 				wbs_adr_i			:	in std_logic_vector (9 downto 0);		--Address in internal RAM
 				wbs_tga_i			:	in std_logic_vector (9 downto 0);		--Burst Length
@@ -75,7 +76,8 @@ entity img_man_top is
 				rd_wbm_dat_i		:  	in std_logic_vector (7 downto 0);		--Data Out (8 bits)
 				rd_wbm_stall_i		:	in std_logic;							--Slave is not ready to receive new data (Internal RAM has not been written YET to SDRAM)
 				rd_wbm_ack_i		:   in std_logic;							--Input data has been successfuly acknowledged
-				rd_wbm_err_i		:   in std_logic							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				rd_wbm_err_i		:   in std_logic;							--Error: Address should be incremental, but receives address was not as expected (0 --> 1023)
+				--dbg_sin_reg			:	out std_logic_vector (15 downto 0);
 				
 			);
 end entity img_man_top;
@@ -163,8 +165,8 @@ end component wbs_reg;
 component addr_calc is
 	generic (
 				reset_polarity_g		:	std_logic	:= '0';					--Reset active low
-				x_size_in_g				:	positive 	:= 480;	-- number of rows  in the input image
-				y_size_in_g				:	positive 	:= 640;	-- number of columns  in the input image
+				x_size_in_g				:	positive 	:= 192;	-- number of rows  in the input image
+				y_size_in_g				:	positive 	:= 256;	-- number of columns  in the input image
 				x_size_out_g			:	positive 	:= 600;				-- number of rows  in theoutput image
 				y_size_out_g			:	positive 	:= 800;				-- number of columns  in the output image
 				trig_frac_size_g		:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
@@ -207,8 +209,8 @@ component img_man_manager is
 	generic (
 				reset_polarity_g 	: 	std_logic 					:= '0';
 				trig_frac_size_g	:	positive := 7;				-- number of digits after dot = resolution of fracture (binary)
-				img_hor_pixels_g	:	positive					:= 128;	-- pixel in a coloum
-				img_ver_lines_g	:	positive					:= 480;	-- pixels in a row
+				img_hor_pixels_g	:	positive					:= 256;	-- pixel in a coloum
+				img_ver_lines_g	:	positive					:= 192;	-- pixels in a row
 				display_hor_pixels_g	:	positive				:= 800;	--800 pixel in a coloum
 				display_ver_pixels_g	:	positive				:= 600	--600 pixels in a row				
 			);
@@ -398,6 +400,8 @@ signal en_trig_proc						:	std_logic;
 --- garbage signals 
 signal  addr_tr_out_garbage				:	 std_logic_vector (22 downto 0);
 signal  addr_br_out_garbage				:	 std_logic_vector (22 downto 0);
+
+
 --	###########################		Implementation		##############################	--
 begin	
 	
@@ -860,10 +864,12 @@ begin
 		trig_cnt		<=	(others=>'0')	;	
 	    en_trig_proc	<=  '0';
 		trigger			<='0';
- 
+		dbg_manipulation_trig	<='0';	
 	elsif (rising_edge (system_clk))  then
 		if (manipulation_trig='1') then --summery chunk
 			en_trig_proc<='1';
+			----------------DEBUG-------
+			dbg_manipulation_trig	<='1';	
 		end if;	
 		
 		if (en_trig_proc='1') then
@@ -882,5 +888,6 @@ begin
 	
 	end if;
 end process trigger_proc;
+
 
 end architecture rtl_img_man_top;
