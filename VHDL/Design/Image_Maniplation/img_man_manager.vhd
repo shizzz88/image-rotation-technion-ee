@@ -27,8 +27,8 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
-use std.textio.all;
---use work.txt_util.all;
+-- use std.textio.all;
+-- use work.txt_util.all;
 use work.ram_generic_pkg.all;
 
 entity img_man_manager is
@@ -379,7 +379,7 @@ image_tx_en	<=	manipulation_complete;
 						 report "Start of Image Manipulation  Time: " & time'image(now) severity note;
 						 cur_st	<= 	fsm_increment_coord_st;
 						 manipulation_complete	<='0';
-
+                        
 					 else
 						 cur_st 	<= 	fsm_idle_st;
 					 end if;				
@@ -447,7 +447,7 @@ image_tx_en	<=	manipulation_complete;
 					if (addr_calc_oor='0') then
 						ram_din	<= pixel_res;
 					else 
-						ram_din	<= (others => '1');	--"111111111"=>write white pixel for out of range
+						ram_din	<= (others => '1');--write black pixel in case out of range
 					end if;
 					
 					ram_addr_in<=ram_addr_in_counter;
@@ -884,6 +884,9 @@ addr_calc_proc : process (sys_clk,sys_rst)
 			addr_row_idx_in		<=  row_index_signed;	--from coord calc process to address calc
 			addr_col_idx_in		<=  col_index_signed;	--from coord calc process to address calc
 			--debbug
+			
+
+			
 			if (addr_tl_out(8 downto 1)= "11111111") then
 				addr_calc_tl		<=  '0' & addr_tl_out(22 downto 2)& '0';
 			else
@@ -894,6 +897,7 @@ addr_calc_proc : process (sys_clk,sys_rst)
 			else
 				addr_calc_bl		<=  '0' & addr_bl_out(22 downto 1);
 			end if;
+
 
 			addr_calc_d_row		<=  addr_delta_row_out;	                
 			addr_calc_d_col		<=  addr_delta_col_out; 
@@ -1041,7 +1045,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						r_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
 						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 00010000
 						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 00000000
-						r_wr_wbm_dat_o	<=	"00000000";--(others => '0'); --address from addr_calc
+						r_wr_wbm_dat_o	<=	"0000" & addr_calc_tl(19 downto 16);--(others => '0'); --address from addr_calc
 						r_wr_wbm_tga_o	<=	(others => '0');
 						r_wr_wbm_cyc_o	<=	'1';
 						r_wr_wbm_stb_o	<=	'1';
@@ -1245,7 +1249,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						r_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
 						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 00010000
 						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 00000000
-						r_wr_wbm_dat_o	<=	"00000000";--(others => '0'); --0
+						r_wr_wbm_dat_o	<=	"0000"& addr_calc_bl(19 downto 16);--"00000000"
 						r_wr_wbm_tga_o	<=	(others => '0');
 						r_wr_wbm_cyc_o	<=	'1';
 						r_wr_wbm_stb_o	<=	'1';
@@ -1488,7 +1492,7 @@ coord_proc : process (sys_clk,sys_rst)
 		elsif rising_edge(sys_clk) then
 			if (cur_st=fsm_idle_st) then 						--initialize row and col counter
 				row_index_signed<=row_start;
-				col_index_signed<= col_start-1	;				--col starts with col_start -1 since fsm_increment_st is prior to calculation
+				col_index_signed<= col_start-1;				--col starts with col_start -1 since fsm_increment_st is prior to calculation!!!!!!!!!!!!!!!!!!!!!!!!!!
 				
 				final_pixel <='0';
 			

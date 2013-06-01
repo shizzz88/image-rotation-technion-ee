@@ -270,7 +270,7 @@ RESERVED_INPUT               : B21       :        :                   :         
 RESERVED_INPUT               : B22       :        :                   :         : 4         :                
 RESERVED_INPUT               : B23       :        :                   :         : 4         :                
 RESERVED_INPUT               : B24       :        :                   :         : 5         :                
-dbg_uart_serial_out          : B25       : output : 3.3-V LVTTL       :         : 5         : Y              
+uart_serial_out              : B25       : output : 3.3-V LVTTL       :         : 5         : Y              
 GND                          : B26       : gnd    :                   :         :           :                
 VCCIO2                       : C1        : power  :                   : 3.3V    : 2         :                
 RESERVED_INPUT               : C2        :        :                   :         : 2         :                
@@ -487,9 +487,9 @@ RESERVED_INPUT               : L4        :        :                   :         
 GND                          : L5        : gnd    :                   :         :           :                
 dbg_7[3]                     : L6        : output : 3.3-V LVTTL       :         : 2         : Y              
 dbg_7[2]                     : L7        : output : 3.3-V LVTTL       :         : 2         : Y              
-altera_reserved_tms          : L8        : input  : 3.3-V LVTTL       :         : 2         : N              
+TMS                          : L8        : input  :                   :         : 2         :                
 dbg_7[4]                     : L9        : output : 3.3-V LVTTL       :         : 2         : Y              
-uart_serial_out              : L10       : output : 3.3-V LVTTL       :         : 2         : N              
+RESERVED_INPUT               : L10       :        :                   :         : 2         :                
 VCCINT                       : L11       : power  :                   : 1.2V    :           :                
 GND                          : L12       : gnd    :                   :         :           :                
 GND                          : L13       : gnd    :                   :         :           :                
@@ -511,9 +511,9 @@ dbg_6[3]                     : M2        : output : 3.3-V LVTTL       :         
 dbg_6[2]                     : M3        : output : 3.3-V LVTTL       :         : 2         : Y              
 dbg_6[0]                     : M4        : output : 3.3-V LVTTL       :         : 2         : Y              
 dbg_6[1]                     : M5        : output : 3.3-V LVTTL       :         : 2         : Y              
-altera_reserved_tck          : M6        : input  : 3.3-V LVTTL       :         : 2         : N              
-altera_reserved_tdo          : M7        : output : 3.3-V LVTTL       :         : 2         : N              
-altera_reserved_tdi          : M8        : input  : 3.3-V LVTTL       :         : 2         : N              
+TCK                          : M6        : input  :                   :         : 2         :                
+TDO                          : M7        : output :                   :         : 2         :                
+TDI                          : M8        : input  :                   :         : 2         :                
 VCCIO2                       : M9        : power  :                   : 3.3V    : 2         :                
 VCCINT                       : M10       : power  :                   : 1.2V    :           :                
 VCCINT                       : M11       : power  :                   : 1.2V    :           :                

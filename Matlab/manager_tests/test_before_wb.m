@@ -28,6 +28,7 @@ row=1;
 col=1;
 
 
+% filename='..\..\..\sim640\img_mang_toRAM_test.txt';
 filename='..\..\img_mang_toRAM_test.txt';
 
 %# read the whole file to a temporary cell array
@@ -38,8 +39,8 @@ fclose(fid);
 %# remove the lines starting with headerline
 tmp = tmp{1};
 
-HorResOut=256;
-VerResOut=256;
+HorResOut=512;
+VerResOut=12;
 
 
 %new loop - row build
@@ -102,3 +103,42 @@ figure(2)
 imshow(ImOut,[])%
 title('to SDRAM');
 
+
+%% to SC-FIFO img
+row=1;
+col=1;
+
+
+filename='..\..\sc_fifo_input.txt';
+
+%# read the whole file to a temporary cell array
+fid = fopen(filename,'rt');
+tmp = textscan(fid,'%s','Delimiter','\n');
+fclose(fid);
+
+%# remove the lines starting with headerline
+tmp = tmp{1};
+
+
+
+
+%new loop - row build
+ImOut=uint8(zeros(VerResOut,HorResOut));
+for row=1:VerResOut%:-1:1
+    for col=1:HorResOut %:-1:1
+       if ((row-1)*HorResOut +col) > size(tmp) 
+           break;
+       end
+        if strcmp(tmp((row-1)*HorResOut+col),'UUUUUUUU')
+             ImOut(row,col)=0;
+       else
+           ImOut(row,col)=bin2dec(tmp((row-1)*HorResOut+col));
+        end
+
+   end
+end
+
+
+figure(3)
+imshow(ImOut,[])%
+title('to SC-FIFO');

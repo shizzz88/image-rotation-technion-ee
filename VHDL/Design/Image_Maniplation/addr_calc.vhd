@@ -68,7 +68,7 @@ entity addr_calc is
 			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size_g			:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth_g				:	positive	:= 12;				-- 
+			-- pipe_depth_g				:	positive	:= 12;				-- 
 			valid_setup_g				:	positive	:= 10
 			);
 	port	(
@@ -230,8 +230,8 @@ begin
 	
 	--if	(enable_unit='1') then
 	--calc new frame size = frame size after crop
-			new_frame_x_size			<= 	x_size_in_g + 1 - conv_integer(std_logic_vector(x_crop_start));                                            
-			new_frame_y_size			<= 	y_size_in_g + 1 - conv_integer(std_logic_vector(y_crop_start));                                            
+			new_frame_x_size			<= 	x_size_in_g + 1 - TO_INTEGER(x_crop_start);                                            
+			new_frame_y_size			<= 	y_size_in_g + 1 - TO_INTEGER(y_crop_start);                                            
 			
 	--divide by 2 and shift left by 21 (shift_left_by_21 ==> multiply by 128^3, divide by 2=> shift right by 1)						
 			new_frame_x_size_shift(new_frame_x_size_shift'left  )					<= '0' ;
@@ -303,8 +303,8 @@ end process trig_proc;
 	----------------------------		valid_proc Process			------------------------
 	----------------------------------------------------------------------------------------
 	-- a process indicating when data output is valid
-    -- after reset, the proccess counts until pipe_depth_g then data_valid_out_sig='1'
-    -- aftewards every valid_setup_g-1 clocks data_valid_out_sig='1'
+    -- en_valid_count - is enable signal for counting if(the 4th if), until there is data valid . 
+    -- 
 	----------------------------------------------------------------------------------------
 valid_proc: process (system_clk, system_rst)
 begin
@@ -322,12 +322,12 @@ begin
 			valid_counter <= valid_counter;
 			data_valid_out_sig <= '0';
 		
-		elsif 	( (trigger_unit and enable and  not(en_valid_count)) ='1') then		-- trigger and enable
+		elsif 	( (trigger_unit and enable and  not(en_valid_count)) ='1') then		-- trigger and enable  and not counting yet
 			valid_counter <= 0;
 			en_valid_count <= '1';
 			data_valid_out_sig <= '0';
 			
-		elsif (   ( en_valid_count and enable) ='1') then  	--enable after trigger, calc not completed
+		elsif (   ( en_valid_count and enable) ='1') then  	--counting is enabled,
 			if  (valid_counter < valid_setup_g-1) then
 				valid_counter <= valid_counter+1;
 				data_valid_out_sig <= '0';

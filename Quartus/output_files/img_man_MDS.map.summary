@@ -1,14 +1,14 @@
-Analysis & Synthesis Status : Successful - Fri May 31 16:06:59 2013
+Analysis & Synthesis Status : Successful - Sat Jun 01 18:16:22 2013
 Quartus II 64-Bit Version : 12.1 Build 177 11/07/2012 SJ Full Version
 Revision Name : img_man_MDS
 Top-level Entity Name : img_man_MDS
 Family : Cyclone II
-Total logic elements : N/A until Partition Merge
-    Total combinational functions : N/A until Partition Merge
-    Dedicated logic registers : N/A until Partition Merge
-Total registers : N/A until Partition Merge
-Total pins : N/A until Partition Merge
-Total virtual pins : N/A until Partition Merge
-Total memory bits : N/A until Partition Merge
-Embedded Multiplier 9-bit elements : N/A until Partition Merge
-Total PLLs : N/A until Partition Merge
+Total logic elements : 5,143
+    Total combinational functions : 3,933
+    Dedicated logic registers : 2,994
+Total registers : 2994
+Total pins : 152
+Total virtual pins : 0
+Total memory bits : 145,480
+Embedded Multiplier 9-bit elements : 24
+Total PLLs : 1

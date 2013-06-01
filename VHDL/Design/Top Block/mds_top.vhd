@@ -12,7 +12,9 @@
 --			1.00		25.5.2011	Beeri Schreiber			Creation
 --			1.10		5.2.2012	Beeri Schreiber			Added clock domain
 --			1.2			11.12.2012	uri ran					nivun
---    1.21  27.03.2013  uri ran     image_man_top added to top design
+--   		1.21  		27.03.2013  uri ran    				image_man_top added to top design
+--			1.3			01.06.2013	uri ran					working version for 512x512 input image(on DE2)
+--			                                                req_lines_g changed to 2 to support 512x512 image
 ------------------------------------------------------------------------------------------------
 --	Todo:
 --			(1) ADD img_man including adding ports to wishbone intercon
@@ -26,8 +28,8 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top is
 	generic (
-				img_hor_pixels_g	:	positive				:= 256;	-- active pixels
-				img_ver_lines_g	:	positive					:= 192;	-- active lines
+				img_hor_pixels_g	:	positive				:= 512;	-- active pixels
+				img_ver_lines_g	:	positive					:= 512;	-- active lines
 				sys_clk_g			:	positive	:= 100000000;		--100MHz for System
 	-- uri ran	rep_size_g			:	positive	:= 8;				--2^7=128 => Maximum of 128 repetitions for pixel / line
 				baudrate_g			:	positive	:= 115200
@@ -1072,7 +1074,7 @@ mem_mng_inst 	:	 mem_mng_top generic map
 	
 disp_ctrl_inst :	 disp_ctrl_top	
 			generic map
-			(	
+			(	req_lines_g	=>2,
 				hor_pres_pixels_g	=>	img_hor_pixels_g,	
 				ver_pres_lines_g	=>	img_ver_lines_g	
 			)

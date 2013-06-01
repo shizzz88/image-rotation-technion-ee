@@ -170,7 +170,7 @@ component addr_calc is
 				x_size_out_g			:	positive 	:= 600;				-- number of rows  in theoutput image
 				y_size_out_g			:	positive 	:= 800;				-- number of columns  in the output image
 				trig_frac_size_g		:	positive 	:= 7;				-- number of digits after dot = resolution of fracture (binary)
-				pipe_depth_g			:	positive	:= 12;				-- 
+				-- pipe_depth_g			:	positive	:= 12;				-- 
 				valid_setup_g			:	positive	:= 10
 			);
 	port	(
@@ -585,7 +585,7 @@ begin
 				x_size_out_g			=> 600,				-- number of rows  in theoutput image
 				y_size_out_g			=> 800,				-- number of columns  in the output image
 				trig_frac_size_g		=> 7,				-- number of digits after dot = resolution of fracture (binary)
-				pipe_depth_g			=> 12,				-- 
+				-- pipe_depth_g			=> 12,				-- 
 				valid_setup_g			=> 10
 	)
 	port map(

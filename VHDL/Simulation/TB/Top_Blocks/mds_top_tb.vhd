@@ -22,8 +22,8 @@ use ieee.std_logic_unsigned.all;
 
 entity mds_top_tb is
 	generic (
-	          img_hor_pixels_g	:	positive					:= 256;	-- active pixels 192x128
-	          img_ver_lines_g	:	positive					:= 192;	-- active lines 
+	          img_hor_pixels_g	:	positive					:= 512;	-- active pixels 192x128
+	          img_ver_lines_g	:	positive					:= 12;	-- active lines 
 	
 		--original	uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
 			uart_tx_delay_g		:	positive	:= 1000000000;			--Clock cycles between two transmissions
