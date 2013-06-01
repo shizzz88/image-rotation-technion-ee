@@ -31,8 +31,8 @@ entity addr_calc_tb is
 						reset_polarity_g		:	std_logic	:= '0';			--Reset active low
 
 			file_name_g				:	string  	:= "test_modelsim.txt";		--out file name
-			x_size_in_g				:	positive 	:= 480;		
-			y_size_in_g				:	positive 	:= 640;		
+			x_size_in_g				:	positive 	:= 384;		
+			y_size_in_g				:	positive 	:= 512;		
 			x_size_out_g				:	positive 	:= 600;
 			y_size_out_g				:	positive 	:= 800;
 			trig_frac_size			:	positive 	:= 7				-- number of digits after dot = resolution of fracture (binary)
@@ -50,7 +50,7 @@ component addr_calc
 			x_size_out_g				:	positive 	:= 600;				-- number of rows  in theoutput image
 			y_size_out_g				:	positive 	:= 800;				-- number of columns  in the output image
 			trig_frac_size_g			:	positive 	:= 7	;			-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth_g				:	positive	:= 12;
+			-- pipe_depth_g				:	positive	:= 12;
 			valid_setup_g				:	positive	:= 5
 			);
 
@@ -210,10 +210,10 @@ ram_start_add_sig	    <=  "00000000000000000000000";	--ram start addr=0
 -- col_idx_sig <= to_signed(301,11);
 
 fsm_proc: process (system_clk, system_rst)
-	variable row_cnt : natural := (x_size_out_g-x_size_in_g)/2;
-	variable col_cnt : natural := (y_size_out_g-y_size_in_g)/2;
-	variable row_cnt_final_val : natural := row_cnt+x_size_in_g;
-	variable col_cnt_final_val : natural := col_cnt+y_size_in_g;
+	variable row_cnt : natural := (x_size_out_g-x_size_in_g)/2+1;
+	variable col_cnt : natural := (y_size_out_g-y_size_in_g)/2+1;
+	variable row_cnt_final_val : natural := row_cnt+x_size_in_g-1;
+	variable col_cnt_final_val : natural := col_cnt+y_size_in_g-1;
 	begin
 		if (system_rst = reset_polarity_g) then
 				trigger<='0';
@@ -242,7 +242,7 @@ fsm_proc: process (system_clk, system_rst)
 				when fsm_increment_coord_st	=>				
 					if (col_cnt=col_cnt_final_val)   then	
 						row_cnt:=row_cnt+1;
-						col_cnt:=(y_size_out_g-y_size_in_g)/2;
+						col_cnt:=(y_size_out_g-y_size_in_g)/2+1;
 						curr_st<=fsm_trigger_st;
 
 					elsif (row_cnt<=row_cnt_final_val) then
@@ -277,8 +277,8 @@ addr_calc_inst :	 addr_calc
 			x_size_out_g			=> x_size_out_g,				-- number of rows  in theoutput image
 			y_size_out_g			=> y_size_out_g,				-- number of columns  in the output image
 			trig_frac_size_g			=> 7,			-- number of digits after dot = resolution of fracture (binary)
-			pipe_depth_g				=> 12,
-			valid_setup_g				=> 5
+			-- pipe_depth_g				=> 12,
+			valid_setup_g				=> 8
 			)                     
 			
 			port map

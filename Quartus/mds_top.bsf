@@ -354,12 +354,12 @@ applicable agreement for further details.
 	)
 	(parameter
 		"img_hor_pixels_g"
-		"256"
+		"512"
 		""
 		(type "PARAMETER_SIGNED_DEC")	)
 	(parameter
 		"img_ver_lines_g"
-		"192"
+		"512"
 		""
 		(type "PARAMETER_SIGNED_DEC")	)
 	(parameter

@@ -186,7 +186,7 @@ if {[is_project_open]} {
    ;##################################
    ;# Using on board MAX232 transceiver
    set_location_assignment PIN_C25  -to uart_serial_in
-   set_location_assignment PIN_B25  -to dbg_uart_serial_out
+   set_location_assignment PIN_B25  -to uart_serial_out
 
 
    ;##################################
