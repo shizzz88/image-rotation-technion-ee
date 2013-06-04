@@ -1,11 +1,11 @@
-Fitter Status : Successful - Sat Jun 01 18:17:12 2013
+Fitter Status : Successful - Tue Jun 04 19:22:40 2013
 Quartus II 64-Bit Version : 12.1 Build 177 11/07/2012 SJ Full Version
 Revision Name : img_man_MDS
 Top-level Entity Name : img_man_MDS
 Family : Cyclone II
 Device : EP2C35F672C6
 Timing Models : Final
-Total logic elements : 4,870 / 33,216 ( 15 % )
+Total logic elements : 4,862 / 33,216 ( 15 % )
     Total combinational functions : 3,943 / 33,216 ( 12 % )
     Dedicated logic registers : 2,826 / 33,216 ( 9 % )
 Total registers : 2826
