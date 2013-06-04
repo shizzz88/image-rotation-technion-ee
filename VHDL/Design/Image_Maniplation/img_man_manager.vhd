@@ -447,7 +447,7 @@ image_tx_en	<=	manipulation_complete;
 					if (addr_calc_oor='0') then
 						ram_din	<= pixel_res;
 					else 
-						ram_din	<= (others => '1');--write black pixel in case out of range
+						ram_din	<= "00000011";--(others => '0');--write black pixel in case out of range
 					end if;
 					
 					ram_addr_in<=ram_addr_in_counter;

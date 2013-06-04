@@ -1,15 +1,15 @@
 function varargout = CompressGui(varargin)
-% COMPRESSGUI M-file for CompressGui.fig
-%      COMPRESSGUI, by itself, creates a new COMPRESSGUI or raises the existing
+% CompressGui M-file for CompressGui.fig
+%      CompressGui, by itself, creates a new CompressGui or raises the existing
 %      singleton*.
 %
-%      H = COMPRESSGUI returns the handle to a new COMPRESSGUI or the handle to
+%      H = CompressGui returns the handle to a new CompressGui or the handle to
 %      the existing singleton*.
 %
-%      COMPRESSGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in COMPRESSGUI.M with the given input arguments.
+%      CompressGui('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in CompressGui.M with the given input arguments.
 %
-%      COMPRESSGUI('Property','Value',...) creates a new COMPRESSGUI or raises the
+%      CompressGui('Property','Value',...) creates a new CompressGui or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before CompressGui_OpeningFunction gets called.  An
 %      unrecognized property name or invalid value makes property application
@@ -24,7 +24,7 @@ function varargout = CompressGui(varargin)
 
 % Edit the above text to modify the response to help CompressGui
 
-% Last Modified by GUIDE v2.5 21-May-2013 10:07:28
+% Last Modified by GUIDE v2.5 04-Jun-2013 20:24:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1249,3 +1249,28 @@ function checkbox5_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of en_serial_checkbox
+
+
+% --- Executes during object creation, after setting all properties.
+function axes5_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to axes5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: place code in OpeningFcn to populate axes5
+imshow('logo3.jpg');
+
+
+% --- Executes on button press in pushbutton8.
+function pushbutton8_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+msgbox('This project was created by Ran Mizrahi and Uri Tsipin as an undergraduate final project at Technion Institute.');
+
+
+% --- Executes on mouse press over axes background.
+function axes5_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to axes5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
