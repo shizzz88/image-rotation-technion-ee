@@ -24,7 +24,7 @@ function varargout = CompressGui(varargin)
 
 % Edit the above text to modify the response to help CompressGui
 
-% Last Modified by GUIDE v2.5 04-Jun-2013 20:24:03
+% Last Modified by GUIDE v2.5 06-Jun-2013 18:40:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -567,6 +567,14 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
 		end;
     end
  %% write zoom to register file
+    if (zoom<0)
+        zoom_lsb= -zoom;
+        zoom_msb=1;
+    else
+        zoom_lsb=zoom;
+        zoom_msb=0;
+    end
+ 
     fprintf(fid, '#Chunk\r\n'); 
     fprintf(fid, '#SOF\r\n'); %write #SOF 
     fprintf(fid, '%02X\r\n',sof ); %write SOF value
@@ -578,15 +586,15 @@ fid = fopen('p:\uart_tx_1.txt', 'w');  % open the file with write permission
     length=[00 01];
     fprintf(fid, '%02X\t%02X\r\n',00,01 ); %write lenghth of angle - 2 bytes - we write is length-1 by def. length of angle is 2 bytes.
     fprintf(fid, '#Payload\r\n'); %write #Payload
-    fprintf(fid, '%02X\r\n', mod( zoom, 256),floor( zoom/256) ); %write angle value to file in 2 bytes hex
+    fprintf(fid, '%02X\r\n', zoom_lsb,zoom_msb ); %write angle value to file in 2 bytes hex
     fprintf(fid, '#CRC\r\n'); %write color repetitions to file
-        crc = (mod((floor(zoom/256))+(mod(zoom, 256)) + 128 + 1 + zoom_addr , 256)); % calcultae crc= (\oom + type +length + address) mod 256
+        crc = (mod(zoom_lsb+zoom_msb + 128 + 1 + zoom_addr , 256)); % calcultae crc= (\oom + type +length + address) mod 256
     fprintf(fid, '%02X\r\n',crc ); %write color repetitions to file
     fprintf(fid, '#EOF\r\n'); %write color repetitions to file
     fprintf(fid, '%02X\r\n',eof ); %write color repetitions to file
     type=128;
     addr=zoom_addr;
-    dataToSend=[sof     type    addr  length mod( zoom, 256)    floor( zoom/256)    crc     eof];
+    dataToSend=[sof     type    addr  length zoom_lsb zoom_msb    crc     eof];
     if get(handles.en_serial_checkbox, 'Value') == 1 
         fwrite(serial_port, dataToSend);
         if dbg_wr
@@ -1258,7 +1266,7 @@ function axes5_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: place code in OpeningFcn to populate axes5
-imshow('logo3.jpg');
+
 
 
 % --- Executes on button press in pushbutton8.
@@ -1274,3 +1282,13 @@ function axes5_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to axes5 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes during object creation, after setting all properties.
+function axes6_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to axes6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: place code in OpeningFcn to populate axes6
+imshow('logo3.jpg');

@@ -25,10 +25,10 @@ entity mds_top_tb is
 	          img_hor_pixels_g	:	positive					:= 512;	-- active pixels 192x128
 	          img_ver_lines_g	:	positive					:= 12;	-- active lines 
 	
-		--original	uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
-			uart_tx_delay_g		:	positive	:= 1000000000;			--Clock cycles between two transmissions
+				uart_tx_delay_g		:	positive	:= 133333;			--Clock cycles between two transmissions
+			--uart_tx_delay_g		:	positive	:= 1000000000;			--Clock cycles between two transmissions
 			
-			file_max_idx_g		:	positive 	:= 1				-- uri ran Maximum file index
+			file_max_idx_g		:	positive 	:= 2				-- uri ran Maximum file index
 		);
 end entity mds_top_tb;
 

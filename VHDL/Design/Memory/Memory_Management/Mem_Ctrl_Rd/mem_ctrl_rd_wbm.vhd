@@ -87,6 +87,9 @@ entity mem_ctrl_rd_wbm is
 		wr_cnt_en	:	in std_logic;							--wr_cnt write enable flag (Active for 1 clock)
 		
 		--Debug Signals
+		dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+		dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
+
 		dbg_rd_bank	:	out std_logic						--Current bank, which is Read from.
 		); 
 end entity mem_ctrl_rd_wbm;
@@ -182,7 +185,11 @@ architecture rtl_mem_ctrl_rd_wbm of mem_ctrl_rd_wbm is
 	-- -- -- original image [bank 0,msb 0], manipulated image [bank 0,msb 1]
 	 wbm_adr_o_proc:
 	 wbm_adr_o(21)			<= 	cur_rd_addr_temp(21);
-	 wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
+	 
+	 -- wbm_adr_o(20)			<= 	not(type_reg(mode_g)); --when debug put 0- read from bottom half of bank, when normal put 1- read from top half of bank
+	 wbm_adr_o(20) <= not(type_reg(mode_g)) when dbg_rd_bank_sw_mux='0'
+					else dbg_rd_bank_sw;
+	 
 	 wbm_adr_o(19 downto 0)	<= 	cur_rd_addr_temp(19 downto 0) ;
 	 cur_rd_addr_temp <=cur_rd_addr;
 	

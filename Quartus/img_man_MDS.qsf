@@ -247,11 +247,13 @@ set_location_assignment PIN_AD12 -to dbg_actual_rd_bank
 set_location_assignment PIN_AD23 -to dbg_manipulation_Y_active
 set_location_assignment PIN_AD21 -to dbg_manipulation_Z_active
 set_location_assignment PIN_W26 -to dbg_trigger_in
-set_location_assignment PIN_N25 -to dbg_trig_sw
-set_location_assignment PIN_N26 -to dbg_img_tx_en_sw
 set_global_assignment -name SIGNALTAP_FILE output_files/signal_tap_mem_ctrl_wr.stp
 set_global_assignment -name CDF_FILE output_files/Chain2.cdf
 set_location_assignment PIN_B25 -to uart_serial_out
+set_global_assignment -name SIGNALTAP_FILE "output_files/working512 black bg/stp2.stp"
+set_global_assignment -name SIGNALTAP_FILE "output_files/working512 black bg/stp1.stp"
+set_location_assignment PIN_N25 -to dbg_rd_bank_sw_mux
+set_location_assignment PIN_N26 -to dbg_rd_bank_sw
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top

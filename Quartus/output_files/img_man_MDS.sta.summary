@@ -3,19 +3,19 @@ TimeQuest Timing Analyzer Summary
 ------------------------------------------------------------
 
 Type  : Slow Model Setup 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[1]'
-Slack : -1.487
-TNS   : -15.767
+Slack : -0.585
+TNS   : -3.162
 
 Type  : Slow Model Setup 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
-Slack : 0.469
+Slack : 0.673
 TNS   : 0.000
 
 Type  : Slow Model Setup 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
-Slack : 2.268
+Slack : 2.187
 TNS   : 0.000
 
 Type  : Slow Model Setup 'fpga_clk'
-Slack : 18.560
+Slack : 18.939
 TNS   : 0.000
 
 Type  : Slow Model Hold 'fpga_clk'
@@ -35,35 +35,35 @@ Slack : 0.391
 TNS   : 0.000
 
 Type  : Slow Model Recovery 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
-Slack : -1.144
-TNS   : -2.288
+Slack : -1.151
+TNS   : -2.302
 
 Type  : Slow Model Recovery 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[1]'
-Slack : -0.632
-TNS   : -0.632
+Slack : -0.863
+TNS   : -0.863
 
 Type  : Slow Model Recovery 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
-Slack : 1.166
+Slack : 1.061
 TNS   : 0.000
 
 Type  : Slow Model Recovery 'fpga_clk'
-Slack : 17.602
-TNS   : 0.000
-
-Type  : Slow Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
-Slack : 1.034
+Slack : 17.902
 TNS   : 0.000
 
 Type  : Slow Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[1]'
-Slack : 1.248
+Slack : 1.048
+TNS   : 0.000
+
+Type  : Slow Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
+Slack : 1.433
 TNS   : 0.000
 
 Type  : Slow Model Removal 'fpga_clk'
-Slack : 1.431
+Slack : 1.824
 TNS   : 0.000
 
 Type  : Slow Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
-Slack : 2.878
+Slack : 3.109
 TNS   : 0.000
 
 Type  : Slow Model Minimum Pulse Width 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
@@ -83,19 +83,19 @@ Slack : 10.373
 TNS   : 0.000
 
 Type  : Fast Model Setup 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
-Slack : 1.541
+Slack : 1.610
 TNS   : 0.000
 
 Type  : Fast Model Setup 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[1]'
-Slack : 1.742
+Slack : 1.679
 TNS   : 0.000
 
 Type  : Fast Model Setup 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
-Slack : 3.695
+Slack : 3.679
 TNS   : 0.000
 
 Type  : Fast Model Setup 'fpga_clk'
-Slack : 19.328
+Slack : 19.510
 TNS   : 0.000
 
 Type  : Fast Model Hold 'fpga_clk'
@@ -115,35 +115,35 @@ Slack : 0.215
 TNS   : 0.000
 
 Type  : Fast Model Recovery 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
-Slack : 0.194
+Slack : 0.191
 TNS   : 0.000
 
 Type  : Fast Model Recovery 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[1]'
-Slack : 0.650
+Slack : 0.555
 TNS   : 0.000
 
 Type  : Fast Model Recovery 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
-Slack : 2.608
+Slack : 2.573
 TNS   : 0.000
 
 Type  : Fast Model Recovery 'fpga_clk'
-Slack : 18.816
-TNS   : 0.000
-
-Type  : Fast Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
-Slack : 0.583
+Slack : 18.943
 TNS   : 0.000
 
 Type  : Fast Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[1]'
-Slack : 0.682
+Slack : 0.592
+TNS   : 0.000
+
+Type  : Fast Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[2]'
+Slack : 0.761
 TNS   : 0.000
 
 Type  : Fast Model Removal 'fpga_clk'
-Slack : 0.771
+Slack : 0.936
 TNS   : 0.000
 
 Type  : Fast Model Removal 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'
-Slack : 1.709
+Slack : 1.804
 TNS   : 0.000
 
 Type  : Fast Model Minimum Pulse Width 'inst|clk_blk_inst|pll_inst|altpll_component|pll|clk[0]'

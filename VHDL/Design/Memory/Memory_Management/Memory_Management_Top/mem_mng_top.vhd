@@ -75,6 +75,8 @@ entity mem_mng_top is
 				wbm_stb_o			:	out std_logic;							--Strobe Command to interface
 
 				--Debug Port
+				dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+				dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
 				dbg_adrr_reg		:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
@@ -272,6 +274,8 @@ component mem_ctrl_rd
 		wr_cnt_en	:	in std_logic;							--wr_cnt write enable flag (Active for 1 clock)
 
 		--Debug Signals
+		dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+		dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
 		dbg_rd_bank	:	out std_logic							--Current bank, which is Read from.
 		); 
 end component mem_ctrl_rd;
@@ -641,6 +645,8 @@ begin
 										wr_cnt_en	    =>  wr_cnt_en,
 										
 										--Debug Signals
+										dbg_rd_bank_sw		=> dbg_rd_bank_sw	,	
+										dbg_rd_bank_sw_mux	=> dbg_rd_bank_sw_mux,
 										dbg_rd_bank		=> dbg_actual_rd_bank	
 									);
 								
