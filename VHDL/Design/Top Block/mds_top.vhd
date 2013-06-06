@@ -76,6 +76,8 @@ entity mds_top is
 				vsync				:	out std_logic;							--VSync Signal
 				
 				--Debug Ports
+				dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+				dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
 				dbg_rx_path_cyc			:	out std_logic;							--RX Path WBM_CYC_O for debug
 				dbg_adrr_reg_mem		:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_type_reg_mem		:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
@@ -476,6 +478,8 @@ component mem_mng_top
 				wbm_stb_o			:	out std_logic;							--Strobe Command to interface
 
 				--Debug Port
+				dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+				dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
 				dbg_type_reg		:	out std_logic_vector (7 downto 0);		--Type Register Value
 				dbg_adrr_reg		:	out std_logic_vector (23 downto 0);		--debug Register Value
 				dbg_wr_bank_val		:	out std_logic;							--Write SDRAM Bank Value
@@ -1064,6 +1068,8 @@ mem_mng_inst 	:	 mem_mng_top generic map
 				wbm_tga_o			=>	wbm_tga_o		,	
 				wbm_cyc_o			=>	wbm_cyc_o		,	
 				wbm_stb_o			=>	wbm_stb_o		,
+				dbg_rd_bank_sw		=>  dbg_rd_bank_sw	,	
+				dbg_rd_bank_sw_mux	=>  dbg_rd_bank_sw_mux,
 				dbg_type_reg		=>	dbg_type_reg_mem,
 				dbg_adrr_reg		=>	dbg_adrr_reg_mem,
 				dbg_wr_bank_val 	=>	dbg_wr_bank_val,

@@ -219,7 +219,7 @@ end component ram_generic;
 	-------------------------FSM-------------------------------------------------------
 	signal cur_st					: fsm_states;			-- Current State
 	signal manipulation_complete	: std_logic;		-- flag, indicating when image manipulation is complete (including summery chunk)	
-	
+	signal bank_val					:std_logic;
 	-------------------------Coordinate Counter Procces
 	signal final_pixel 				: std_logic;					-- flag indicating when image is at final pixel, flags up but should enable WB of last chunk
 	signal row_index_signed		 	: signed (row_bits_c downto 0);	  
@@ -357,6 +357,7 @@ image_tx_en	<=	manipulation_complete;
 			ram_din                <=(others => '0');
 			ram_din_valid          <='0';
 			en_write_proc<='0';
+			bank_val<='1';				--reset bank value to 1, after first trigger bank val is 0
 
 		elsif rising_edge (sys_clk) then
 			case cur_st is
@@ -379,6 +380,7 @@ image_tx_en	<=	manipulation_complete;
 						 report "Start of Image Manipulation  Time: " & time'image(now) severity note;
 						 cur_st	<= 	fsm_increment_coord_st;
 						 manipulation_complete	<='0';
+						bank_val<=not(bank_val);
                         
 					 else
 						 cur_st 	<= 	fsm_idle_st;
@@ -447,7 +449,7 @@ image_tx_en	<=	manipulation_complete;
 					if (addr_calc_oor='0') then
 						ram_din	<= pixel_res;
 					else 
-						ram_din	<= "00000011";--(others => '0');--write black pixel in case out of range
+						ram_din	<= "00000100";--(others => '0');--write black pixel in case out of range
 					end if;
 					
 					ram_addr_in<=ram_addr_in_counter;
@@ -611,7 +613,9 @@ image_tx_en	<=	manipulation_complete;
 				case write_SDRAM_state is		
 			--------------------------------------------------------------------------	
 				when write_idle_st =>
-					
+					if (manipulation_complete='1') then
+					wb_address<=(others => '0');
+					end if;
 					if ((en_write_proc='1') and (finish_write_proc ='0') )  then
 						write_SDRAM_state	<= 	write_wb_addr_lsb_st;
 					else
@@ -681,7 +685,7 @@ image_tx_en	<=	manipulation_complete;
 						w_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
 						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 0000
 						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 0001
-						w_wr_wbm_dat_o	<=	"0001" & wb_address(19 downto 16);
+						w_wr_wbm_dat_o	<=	"00" & bank_val & "1" & wb_address(19 downto 16);--"0001" & wb_address(19 downto 16);
 						w_wr_wbm_tga_o	<=	(others => '0');
 						w_wr_wbm_cyc_o	<=	'1';
 						w_wr_wbm_stb_o	<=	'1';
@@ -1045,7 +1049,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						r_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
 						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 00010000
 						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 00000000
-						r_wr_wbm_dat_o	<=	"0000" & addr_calc_tl(19 downto 16);--(others => '0'); --address from addr_calc
+						r_wr_wbm_dat_o	<=	"00"& bank_val& "0" & addr_calc_tl(19 downto 16);--"0000" & addr_calc_tl(19 downto 16);--(others => '0'); --address from addr_calc
 						r_wr_wbm_tga_o	<=	(others => '0');
 						r_wr_wbm_cyc_o	<=	'1';
 						r_wr_wbm_stb_o	<=	'1';
@@ -1249,7 +1253,7 @@ read_from_SDRAM : process (sys_clk,sys_rst)
 						r_wr_wbm_adr_o	<=	mem_mng_dbg_half_bank_reg_addr_c;
 						--original image [bank 0,msb 1], manipulated image [bank 0,msb 0] 00010000
 						--original image [bank 0,msb 0], manipulated image [bank 0,msb 1] 00000000
-						r_wr_wbm_dat_o	<=	"0000"& addr_calc_bl(19 downto 16);--"00000000"
+						r_wr_wbm_dat_o	<=	"00" & bank_val & "0" & addr_calc_bl(19 downto 16);--"0000"& addr_calc_bl(19 downto 16);--"00000000"
 						r_wr_wbm_tga_o	<=	(others => '0');
 						r_wr_wbm_cyc_o	<=	'1';
 						r_wr_wbm_stb_o	<=	'1';

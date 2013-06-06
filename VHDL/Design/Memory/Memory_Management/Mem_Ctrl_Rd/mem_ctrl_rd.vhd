@@ -85,6 +85,8 @@ entity mem_ctrl_rd is
 		wr_cnt_en	:	in std_logic;							--wr_cnt write enable flag (Active for 1 clock)
 
 		--Debug Signals
+		dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+		dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
 		dbg_rd_bank	:	out std_logic							--Current bank, which is Read from.
 		); 
 end entity mem_ctrl_rd;
@@ -200,7 +202,10 @@ component mem_ctrl_rd_wbm
 		wr_cnt_en	:	in std_logic;							--wr_cnt write enable flag (Active for 1 clock)
 		
 		--Debug Signals
-		dbg_rd_bank	:	out std_logic							--Current bank, which is Read from.
+		dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+		dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
+
+		dbg_rd_bank	:	out std_logic						--Current bank, which is Read from.
 		); 
 end component mem_ctrl_rd_wbm;
 
@@ -363,7 +368,8 @@ end component mem_ctrl_rd_wbm;
 
 					wr_cnt_val	    =>	wr_cnt_val	,
 					wr_cnt_en	    =>	wr_cnt_en	,
-					
+					dbg_rd_bank_sw		=>dbg_rd_bank_sw,		
+					dbg_rd_bank_sw_mux	=>dbg_rd_bank_sw_mux,
 					dbg_rd_bank		=>	dbg_rd_bank
 					);
 		

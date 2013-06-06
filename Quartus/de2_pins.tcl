@@ -39,8 +39,8 @@ if {[is_project_open]} {
    ;# Slide Switches ('1' when up) #
    ;################################
 
-   set_location_assignment PIN_N25  -to dbg_trig_sw   ;# SW0
-   set_location_assignment PIN_N26  -to dbg_img_tx_en_sw   ;# SW1
+   set_location_assignment PIN_N25  -to dbg_rd_bank_sw_mux   ;# SW0
+   set_location_assignment PIN_N26  -to dbg_rd_bank_sw   ;# SW1
 #   set_location_assignment PIN_P25  -to SW2   ;# SW2
 #   set_location_assignment PIN_AE14 -to SW3   ;# SW3
 #   set_location_assignment PIN_AF14 -to SW4   ;# SW4
