@@ -90,30 +90,29 @@ component mds_top
 				vsync				:	out std_logic;							--VSync Signal
 				
 				--Debug Ports
-				dbg_rx_path_cyc		:	out std_logic;							--RX Path WBM_CYC_O for debug
-				dbg_adrr_reg_mem	:	out std_logic_vector (23 downto 0);		--debug Register Value
-				dbg_type_reg_mem	:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
-				dbg_type_reg_disp	:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
-				dbg_type_reg_tx		:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
+				dbg_rd_bank_sw		:	in std_logic;						--selected bank to display
+				dbg_rd_bank_sw_mux	:	in std_logic;						--mux to select if manual bank switching enabled
+				dbg_rx_path_cyc			:	out std_logic;							--RX Path WBM_CYC_O for debug
+				dbg_adrr_reg_mem		:	out std_logic_vector (23 downto 0);		--debug Register Value
+				dbg_type_reg_mem		:	out std_logic_vector (7 downto 0);		--Mem_Management Type Register value for Debug
+				dbg_type_reg_disp		:	out std_logic_vector (7 downto 0);		--Display Type Register value for Debug
+				dbg_type_reg_tx			:	out std_logic_vector (7 downto 0);		--RX_Path Type Register value for Debug
 				dbg_sdram_active		:	out std_logic;							--'1' when WBM_CYC_O from mem_mng_top to SDRAM is active
-				dbg_disp_active		:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
-				
+				dbg_disp_active			:	out std_logic;							--'1' when WBM_CYC_O from disp_ctrl_top to INTERCON_Y is active
 				dbg_manipulation_Y_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
 				dbg_manipulation_Z_active:	out std_logic;						--'1' when WBM_CYC_O from img_man_top to INTERCON_Y is active
 				dbg_manipulation_trig	:	out std_logic;	
 				dbg_sin_reg				:out std_logic_vector (15 downto 0);
-
-				dbg_trig_in      : in std_logic;	
-				dbg_trig_sw		: in std_logic;	
-				dbg_image_tx_en	:	out std_logic;	
-				dbg_img_tx_sw	: in std_logic;	
-				
-				dbg_icy_bus_taken	:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
-				dbg_icz_bus_taken	:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
-				dbg_wr_bank_val		:	out std_logic;							--Expected Write SDRAM Bank Value
-				dbg_rd_bank_val     :	out std_logic;							--Expected Read SDRAM Bank Value
-				dbg_actual_wr_bank	:	out std_logic;							--Actual read bank
-				dbg_actual_rd_bank	:	out std_logic						--Actual Written bank
+				dbg_trig_in     			: in std_logic;	
+				dbg_trig_sw				: in std_logic;	
+				dbg_image_tx_en			:	out std_logic;	
+				dbg_img_tx_sw			: in std_logic;	
+				dbg_icy_bus_taken		:	out std_logic;							--'1' when INTERCON_Y is taken, '0' otherwise
+				dbg_icz_bus_taken		:	out std_logic;							--'1' when INTERCON_Z is taken, '0' otherwise
+				dbg_wr_bank_val			:	out std_logic;							--Expected Write SDRAM Bank Value
+				dbg_rd_bank_val     	:	out std_logic;							--Expected Read SDRAM Bank Value
+				dbg_actual_wr_bank		:	out std_logic;							--Actual read bank
+				dbg_actual_rd_bank		:	out std_logic						--Actual Written bank
 			);
 end component mds_top;
 
@@ -342,6 +341,8 @@ mds_top_inst	: mds_top
 				dbg_rx_path_cyc		=>	dbg_rx_path_cyc		,
                 dbg_adrr_reg_mem	=>	dbg_adrr_reg_mem,	
 
+				dbg_rd_bank_sw		=>'0',
+				dbg_rd_bank_sw_mux  =>'0',
 				dbg_type_reg_disp	=>	dbg_type_reg_disp	,
                 dbg_type_reg_mem	=>	dbg_type_reg_mem	,
                 dbg_type_reg_tx		=>	dbg_type_reg_tx		,

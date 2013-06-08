@@ -896,6 +896,7 @@ addr_calc_proc : process (sys_clk,sys_rst)
 			else
 				addr_calc_tl		<=  '0' & addr_tl_out(22 downto 1);
 			end if;
+
 			if (addr_bl_out(8 downto 1)= "11111111") then
 				addr_calc_bl		<=  '0' & addr_bl_out(22 downto 2)& '0';
 			else
